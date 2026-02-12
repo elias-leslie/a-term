@@ -1,7 +1,6 @@
 'use client'
 
-import { Settings2 } from 'lucide-react'
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import {
   TERMINAL_CURSOR_STYLES,
   TERMINAL_FONT_SIZES,
@@ -15,6 +14,11 @@ import {
   type TerminalThemeId,
 } from '@/lib/hooks/use-terminal-settings'
 import { useClickOutside } from '@/lib/hooks/useClickOutside'
+import { SettingsButton } from './settings/SettingsButton'
+import { SettingsPanel } from './settings/SettingsPanel'
+import { SettingSelect } from './settings/SettingSelect'
+import { SettingButtonGroup } from './settings/SettingButtonGroup'
+import { SettingCheckbox } from './settings/SettingCheckbox'
 
 // Keyboard size type
 export type KeyboardSizePreset = 'small' | 'medium' | 'large'
@@ -34,12 +38,9 @@ export interface SettingsDropdownProps {
   setThemeId: (id: TerminalThemeId) => void
   showSettings: boolean
   setShowSettings: (show: boolean) => void
-  // Keyboard size (only shown on mobile)
   keyboardSize?: KeyboardSizePreset
   setKeyboardSize?: (size: KeyboardSizePreset) => void
   isMobile?: boolean
-  // When false, only renders the dropdown panel (no trigger button)
-  // Used for grid/split modes where trigger is in UnifiedTerminalHeader
   renderTrigger?: boolean
 }
 
@@ -65,341 +66,110 @@ export function SettingsDropdown({
 }: SettingsDropdownProps) {
   const buttonRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
   const closeDropdown = useCallback(
     () => setShowSettings(false),
     [setShowSettings],
   )
-  // Only include buttonRef if we're rendering it
+
   const clickOutsideRefs = useMemo(
     () => (renderTrigger ? [buttonRef, dropdownRef] : [dropdownRef]),
     [renderTrigger],
   )
 
-  // Close dropdown when clicking outside
   useClickOutside(clickOutsideRefs, closeDropdown, showSettings)
 
-  // Calculate dropdown position - opens downward from button
-  // Uses safe-area-inset for PWA/Chrome app title bars
-  const [dropdownStyle, setDropdownStyle] =
-    useState<React.CSSProperties | null>(null)
-  useLayoutEffect(() => {
-    if (showSettings) {
-      // Get safe area inset (for PWA apps with title bars)
-      const safeAreaTop = parseInt(
-        getComputedStyle(document.documentElement).getPropertyValue('--sat') ||
-          '0',
-        10,
-      )
-      const minTop = Math.max(safeAreaTop, 8)
+  // Prepare options for select components
+  const fontOptions = TERMINAL_FONTS.map((font) => ({
+    value: font.id,
+    label: font.name,
+  }))
 
-      if (renderTrigger && buttonRef.current) {
-        // Position relative to button
-        const rect = buttonRef.current.getBoundingClientRect()
-        const calculatedTop = rect.bottom + 4
-        setDropdownStyle({
-          position: 'fixed',
-          right: window.innerWidth - rect.right,
-          top: Math.max(minTop, calculatedTop),
-          zIndex: 10001,
-        })
-      } else {
-        // No button - position in top-right corner
-        setDropdownStyle({
-          position: 'fixed',
-          right: 16,
-          top: Math.max(minTop, 56), // Below typical header height
-          zIndex: 10001,
-        })
-      }
-    } else {
-      setDropdownStyle(null)
-    }
-  }, [showSettings, renderTrigger])
+  const fontSizeOptions = TERMINAL_FONT_SIZES.map((size) => ({
+    value: size,
+    label: `${size}px`,
+  }))
+
+  const themeOptions = Object.entries(TERMINAL_THEMES).map(([id, { name }]) => ({
+    value: id,
+    label: name,
+  }))
+
+  const scrollbackOptions = TERMINAL_SCROLLBACK_OPTIONS.map((opt) => ({
+    value: opt.value,
+    label: opt.label,
+  }))
+
+  const showKeyboardSettings = isMobile && keyboardSize !== undefined && setKeyboardSize
 
   return (
     <div className={renderTrigger ? 'relative ml-2' : ''}>
       {renderTrigger && (
-        <button
+        <SettingsButton
           ref={buttonRef}
-          data-testid="settings-dropdown"
+          isActive={showSettings}
           onClick={() => setShowSettings(!showSettings)}
-          title="Terminal settings"
-          className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md transition-all duration-150"
-          style={{
-            backgroundColor: showSettings
-              ? 'var(--term-bg-elevated)'
-              : 'transparent',
-            color: showSettings
-              ? 'var(--term-accent)'
-              : 'var(--term-text-muted)',
-            boxShadow: showSettings
-              ? '0 0 8px var(--term-accent-glow)'
-              : 'none',
-          }}
-          onMouseEnter={(e) => {
-            if (!showSettings) {
-              e.currentTarget.style.backgroundColor = 'var(--term-bg-elevated)'
-              e.currentTarget.style.color = 'var(--term-text-primary)'
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!showSettings) {
-              e.currentTarget.style.backgroundColor = 'transparent'
-              e.currentTarget.style.color = 'var(--term-text-muted)'
-            }
-          }}
-        >
-          <Settings2 className="w-4 h-4" />
-        </button>
+        />
       )}
 
-      {/* Settings dropdown - glass-morphism style */}
-      {/* Only render when position is calculated to avoid flash at wrong position */}
-      {showSettings && dropdownStyle && (
-        <div
-          ref={dropdownRef}
-          data-testid="settings-dropdown-menu"
-          style={{
-            ...dropdownStyle,
-            backgroundColor: 'rgba(21, 27, 35, 0.85)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: '1px solid var(--term-border-active)',
-            boxShadow:
-              '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.1)',
-          }}
-          className="rounded-lg p-4 min-w-[220px] max-h-[80vh] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-150"
-        >
-          {/* Font family */}
-          <div className="mb-4">
-            <label
-              className="block text-xs font-medium mb-1.5"
-              style={{ color: 'var(--term-text-muted)' }}
-            >
-              Font Family
-            </label>
-            <select
-              value={fontId}
-              onChange={(e) => setFontId(e.target.value as TerminalFontId)}
-              className="w-full px-2.5 py-3 min-h-[44px] text-sm rounded-md transition-colors focus:outline-none"
-              style={{
-                backgroundColor: 'var(--term-bg-deep)',
-                border: '1px solid var(--term-border)',
-                color: 'var(--term-text-primary)',
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'var(--term-accent)'
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = 'var(--term-border)'
-              }}
-            >
-              {TERMINAL_FONTS.map((font) => (
-                <option key={font.id} value={font.id}>
-                  {font.name}
-                </option>
-              ))}
-            </select>
-          </div>
+      <SettingsPanel
+        ref={dropdownRef}
+        isOpen={showSettings}
+        hasButton={renderTrigger}
+        buttonRef={buttonRef}
+      >
+        <SettingSelect
+          label="Font Family"
+          value={fontId}
+          onChange={(val) => setFontId(val as TerminalFontId)}
+          options={fontOptions}
+        />
 
-          {/* Font size */}
-          <div className="mb-4">
-            <label
-              className="block text-xs font-medium mb-1.5"
-              style={{ color: 'var(--term-text-muted)' }}
-            >
-              Font Size
-            </label>
-            <select
-              value={fontSize}
-              onChange={(e) =>
-                setFontSize(Number(e.target.value) as TerminalFontSize)
-              }
-              className="w-full px-2.5 py-3 min-h-[44px] text-sm rounded-md transition-colors focus:outline-none"
-              style={{
-                backgroundColor: 'var(--term-bg-deep)',
-                border: '1px solid var(--term-border)',
-                color: 'var(--term-text-primary)',
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'var(--term-accent)'
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = 'var(--term-border)'
-              }}
-            >
-              {TERMINAL_FONT_SIZES.map((size) => (
-                <option key={size} value={size}>
-                  {size}px
-                </option>
-              ))}
-            </select>
-          </div>
+        <SettingSelect
+          label="Font Size"
+          value={fontSize}
+          onChange={(val) => setFontSize(val as TerminalFontSize)}
+          options={fontSizeOptions}
+        />
 
-          {/* Theme */}
-          <div className="mb-4">
-            <label
-              className="block text-xs font-medium mb-1.5"
-              style={{ color: 'var(--term-text-muted)' }}
-            >
-              Theme
-            </label>
-            <select
-              value={themeId}
-              onChange={(e) => setThemeId(e.target.value as TerminalThemeId)}
-              className="w-full px-2.5 py-3 min-h-[44px] text-sm rounded-md transition-colors focus:outline-none"
-              style={{
-                backgroundColor: 'var(--term-bg-deep)',
-                border: '1px solid var(--term-border)',
-                color: 'var(--term-text-primary)',
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'var(--term-accent)'
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = 'var(--term-border)'
-              }}
-            >
-              {Object.entries(TERMINAL_THEMES).map(([id, { name }]) => (
-                <option key={id} value={id}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </div>
+        <SettingSelect
+          label="Theme"
+          value={themeId}
+          onChange={(val) => setThemeId(val as TerminalThemeId)}
+          options={themeOptions}
+        />
 
-          {/* Cursor Style */}
-          <div className="mb-4">
-            <label
-              className="block text-xs font-medium mb-1.5"
-              style={{ color: 'var(--term-text-muted)' }}
-            >
-              Cursor Style
-            </label>
-            <div className="flex gap-1.5">
-              {TERMINAL_CURSOR_STYLES.map((style) => {
-                const isActive = cursorStyle === style
-                return (
-                  <button
-                    key={style}
-                    type="button"
-                    onClick={() => setCursorStyle(style)}
-                    className="flex-1 px-2 py-2.5 min-h-[44px] text-xs rounded-md transition-all duration-150 capitalize"
-                    style={{
-                      backgroundColor: isActive
-                        ? 'var(--term-accent)'
-                        : 'var(--term-bg-deep)',
-                      color: isActive
-                        ? 'var(--term-bg-deep)'
-                        : 'var(--term-text-muted)',
-                      border: `1px solid ${isActive ? 'var(--term-accent)' : 'var(--term-border)'}`,
-                      boxShadow: isActive
-                        ? '0 0 8px var(--term-accent-glow)'
-                        : 'none',
-                    }}
-                  >
-                    {style}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+        <SettingButtonGroup
+          label="Cursor Style"
+          value={cursorStyle}
+          options={TERMINAL_CURSOR_STYLES}
+          onChange={setCursorStyle}
+        />
 
-          {/* Cursor Blink */}
-          <div className="mb-4">
-            <label className="flex items-center gap-3 cursor-pointer min-h-[44px] px-2 -mx-2 rounded-md hover:bg-[var(--term-bg-deep)]">
-              <input
-                type="checkbox"
-                checked={cursorBlink}
-                onChange={(e) => setCursorBlink(e.target.checked)}
-                className="w-5 h-5 rounded"
-                style={{
-                  accentColor: 'var(--term-accent)',
-                }}
-              />
-              <span
-                className="text-sm font-medium"
-                style={{ color: 'var(--term-text-muted)' }}
-              >
-                Cursor Blink
-              </span>
-            </label>
-          </div>
+        <SettingCheckbox
+          label="Cursor Blink"
+          checked={cursorBlink}
+          onChange={setCursorBlink}
+        />
 
-          {/* Scrollback */}
-          <div className={isMobile && keyboardSize !== undefined ? 'mb-4' : ''}>
-            <label
-              className="block text-xs font-medium mb-1.5"
-              style={{ color: 'var(--term-text-muted)' }}
-            >
-              Scrollback Buffer
-            </label>
-            <select
-              value={scrollback}
-              onChange={(e) =>
-                setScrollback(Number(e.target.value) as TerminalScrollback)
-              }
-              className="w-full px-2.5 py-3 min-h-[44px] text-sm rounded-md transition-colors focus:outline-none"
-              style={{
-                backgroundColor: 'var(--term-bg-deep)',
-                border: '1px solid var(--term-border)',
-                color: 'var(--term-text-primary)',
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'var(--term-accent)'
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = 'var(--term-border)'
-              }}
-            >
-              {TERMINAL_SCROLLBACK_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Keyboard size - only on mobile */}
-          {isMobile && keyboardSize !== undefined && setKeyboardSize && (
-            <div>
-              <label
-                className="block text-xs font-medium mb-1.5"
-                style={{ color: 'var(--term-text-muted)' }}
-              >
-                Keyboard Size
-              </label>
-              <div className="flex gap-1.5">
-                {(['small', 'medium', 'large'] as const).map((size) => {
-                  const isActive = keyboardSize === size
-                  return (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => setKeyboardSize(size)}
-                      className="flex-1 px-2 py-2.5 min-h-[44px] text-xs rounded-md transition-all duration-150 capitalize"
-                      style={{
-                        backgroundColor: isActive
-                          ? 'var(--term-accent)'
-                          : 'var(--term-bg-deep)',
-                        color: isActive
-                          ? 'var(--term-bg-deep)'
-                          : 'var(--term-text-muted)',
-                        border: `1px solid ${isActive ? 'var(--term-accent)' : 'var(--term-border)'}`,
-                        boxShadow: isActive
-                          ? '0 0 8px var(--term-accent-glow)'
-                          : 'none',
-                      }}
-                    >
-                      {size}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
+        <div className={showKeyboardSettings ? 'mb-4' : ''}>
+          <SettingSelect
+            label="Scrollback Buffer"
+            value={scrollback}
+            onChange={(val) => setScrollback(val as TerminalScrollback)}
+            options={scrollbackOptions}
+          />
         </div>
-      )}
+
+        {showKeyboardSettings && (
+          <SettingButtonGroup
+            label="Keyboard Size"
+            value={keyboardSize}
+            options={['small', 'medium', 'large'] as const}
+            onChange={setKeyboardSize}
+          />
+        )}
+      </SettingsPanel>
     </div>
   )
 }
