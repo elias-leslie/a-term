@@ -81,7 +81,7 @@ function FullKeyboardInner({
       className="terminal-keyboard-container"
       style={{ backgroundColor: 'var(--term-bg-surface)' }}
     >
-      <div ref={containerRef} />
+      <div ref={containerRef} className="terminal-simple-keyboard" />
       {/* biome-ignore lint/security/noDangerouslySetInnerHtml: Dynamic CSS from trusted getKeyboardStyles() */}
       <style dangerouslySetInnerHTML={{ __html: getKeyboardStyles(rowHeight) }} />
     </div>
