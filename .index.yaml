@@ -1,5 +1,5 @@
 project: terminal
-generated_at: 2026-02-05 02:33 UTC
+generated_at: 2026-02-12 22:30 UTC
 environment:
   python_version: '>=3.13'
   venv_path: .venv
@@ -48,17 +48,17 @@ tables:
 - task_subtask_steps
 - task_subtasks
 - tasks
+- terminal_alembic_version
 - terminal_panes
 - terminal_project_settings
 - terminal_sessions
 - user_prompts
 folders:
-  (root): 19 files - tests
+  (root): 18 files - tests
   .claude: 6 files - tests
   .dev-tools: 9 files - tests
-  .summitflow: 1 files
-  frontend: 119 files - api, components, tests
-  scripts: 14 files
+  alembic: 4 files
+  frontend: 118 files - api, components, tests
+  scripts: 13 files
   spec: 5 files - tests
-  tasks: 38 files
-  terminal: 50 files - api, services
+  terminal: 46 files - api, services
