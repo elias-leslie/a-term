@@ -1,5 +1,5 @@
 project: terminal
-generated_at: 2026-02-12 22:33 UTC
+generated_at: 2026-02-12 23:39 UTC
 environment:
   python_version: '>=3.13'
   venv_path: .venv
@@ -58,7 +58,7 @@ folders:
   .claude: 6 files - tests
   .dev-tools: 9 files - tests
   alembic: 4 files
-  frontend: 118 files - api, components, tests
+  frontend: 119 files - api, components, tests
   scripts: 13 files
   spec: 5 files - tests
   terminal: 46 files - api, services
