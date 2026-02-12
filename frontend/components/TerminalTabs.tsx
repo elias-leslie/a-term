@@ -38,19 +38,11 @@ export function TerminalTabs({
     activeSessionId,
     switchToSession,
     sessions,
-    projectTerminals,
-    adHocSessions: _adHocSessions,
     isLoading,
-
-    // Layout state
-    layoutMode: _layoutMode,
-    availableLayouts: _availableLayouts,
-    isGridMode: _isGridMode,
 
     // Terminal slots
     terminalSlots,
     orderedIds,
-    reorder: _reorder,
     swapPanes,
     canAddPane,
 
@@ -90,15 +82,11 @@ export function TerminalTabs({
     handleStatusChange,
     handleKeyboardInput,
     handleReconnect,
-    handleLayoutModeChange: _handleLayoutModeChange,
     handleAddTab,
     handleNewTerminalForProject,
-    handleProjectTabClick,
     handleProjectModeChange,
-    handleCloseAll: _handleCloseAll,
 
     // Project operations
-    resetAll: _resetAll,
     resetProject,
     disableProject,
     reset,
@@ -106,7 +94,6 @@ export function TerminalTabs({
     // Pane operations (new architecture)
     panes,
     removePane,
-    createAdHocPane: _createAdHocPane,
     saveLayouts,
   } = useTerminalTabsState({ projectId, projectPath })
 
@@ -137,19 +124,6 @@ export function TerminalTabs({
 
   // Sync modal state from URL params (keyboard shortcuts handled after hook is defined)
 
-  // Note: single mode header removed - all controls now in pane headers
-
-  // Handler for project selection from switcher
-  const _handleSelectProject = useCallback(
-    (pId: string) => {
-      const pt = projectTerminals.find((p) => p.projectId === pId)
-      if (pt) {
-        handleProjectTabClick(pt)
-      }
-    },
-    [projectTerminals, handleProjectTabClick],
-  )
-
   // Prompt cleaner state
   const [showCleaner, setShowCleaner] = useState(false)
   const [cleanerRawPrompt, setCleanerRawPrompt] = useState('')
@@ -177,8 +151,6 @@ export function TerminalTabs({
     handleSlotReset,
     handleSlotClose,
     handleSlotClean,
-    handleSlotNewShell: _handleSlotNewShell,
-    handleSlotNewClaude: _handleSlotNewClaude,
     handleSlotModeSwitch,
     isModeSwitching,
   } = useTerminalSlotHandlers({
@@ -301,7 +273,7 @@ export function TerminalTabs({
   }, [setShowKeyboardHelp, updateUrlParams])
 
   // File upload and prompt cleaner functionality
-  const { cleanPrompt, isLoading: _isCleanerLoading } = usePromptCleaner()
+  const { cleanPrompt } = usePromptCleaner()
   const {
     fileInputRef,
     progress,
@@ -310,7 +282,6 @@ export function TerminalTabs({
     handleUploadClick,
     handleFileSelect,
     handleFileInputChange,
-    handleCleanClick: _handleCleanClick,
     handleCleanerSend,
     handleCleanerCancel,
   } = useTerminalActionHandlers({

@@ -93,35 +93,43 @@ async def _background_verify_claude_start(session_id: str, tmux_session: str) ->
 
     Updates the claude_state to 'running' or 'error' based on verification.
     """
-    await asyncio.sleep(CLAUDE_STARTUP_VERIFY_DELAY_SECONDS)
+    try:
+        await asyncio.sleep(CLAUDE_STARTUP_VERIFY_DELAY_SECONDS)
 
-    # Verify Claude started
-    if _verify_claude_started(tmux_session):
-        # Only update if still in 'starting' state (handles race conditions)
-        updated = terminal_store.update_claude_state(
-            session_id, "running", expected_state="starting"
-        )
-        if updated:
-            logger.info(
-                "claude_verified_running",
-                session_id=session_id,
-                tmux_session=tmux_session,
+        # Verify Claude started
+        if _verify_claude_started(tmux_session):
+            # Only update if still in 'starting' state (handles race conditions)
+            updated = terminal_store.update_claude_state(
+                session_id, "running", expected_state="starting"
             )
+            if updated:
+                logger.info(
+                    "claude_verified_running",
+                    session_id=session_id,
+                    tmux_session=tmux_session,
+                )
+            else:
+                logger.info(
+                    "claude_state_already_changed",
+                    session_id=session_id,
+                    tmux_session=tmux_session,
+                )
         else:
-            logger.info(
-                "claude_state_already_changed",
-                session_id=session_id,
-                tmux_session=tmux_session,
-            )
-    else:
-        # Claude didn't start - set to error
-        updated = terminal_store.update_claude_state(session_id, "error", expected_state="starting")
-        if updated:
-            logger.warning(
-                "claude_start_failed",
-                session_id=session_id,
-                tmux_session=tmux_session,
-            )
+            # Claude didn't start - set to error
+            updated = terminal_store.update_claude_state(session_id, "error", expected_state="starting")
+            if updated:
+                logger.warning(
+                    "claude_start_failed",
+                    session_id=session_id,
+                    tmux_session=tmux_session,
+                )
+    except Exception as e:
+        logger.error(
+            "background_verify_failed",
+            session_id=session_id,
+            tmux_session=tmux_session,
+            error=str(e),
+        )
 
 
 # ============================================================================

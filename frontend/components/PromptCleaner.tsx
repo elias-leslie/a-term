@@ -29,6 +29,7 @@ function ProcessingView({ state, rawPrompt, scanProgress }: ProcessingViewProps)
         <div className={styles.scanLine} style={{ top: `${scanProgress}%` }} />
         <div className={styles.scanText}>{state === 'refining' ? '> REFINING...' : '> ANALYZING PROMPT...'}</div>
         <div className={styles.originalPreview}>
+          {/* biome-ignore lint/suspicious/noArrayIndexKey: static text lines from string split — order never changes */}
           {rawPrompt.split('\n').map((line, i) => <div key={i} className={styles.scanLineText}>{line || '\u00A0'}</div>)}
         </div>
       </div>

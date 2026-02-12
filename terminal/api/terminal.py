@@ -16,7 +16,14 @@ from typing import Any
 
 from fastapi import APIRouter, Query, Request, WebSocket, WebSocketDisconnect
 
-from ..config import TMUX_DEFAULT_COLS, TMUX_DEFAULT_ROWS
+from ..config import (
+    TMUX_DEFAULT_COLS,
+    TMUX_DEFAULT_ROWS,
+    TMUX_MAX_COLS,
+    TMUX_MAX_ROWS,
+    TMUX_MIN_COLS,
+    TMUX_MIN_ROWS,
+)
 from ..logging_config import get_logger
 from ..services import lifecycle
 from ..services.pty_manager import (
@@ -173,8 +180,8 @@ def _handle_websocket_message(
                 # Handle resize command
                 if "resize" in data:
                     resize = data.get("resize", {})
-                    cols = resize.get("cols", TMUX_DEFAULT_COLS)
-                    rows = resize.get("rows", TMUX_DEFAULT_ROWS)
+                    cols = min(max(int(resize.get("cols", TMUX_DEFAULT_COLS)), TMUX_MIN_COLS), TMUX_MAX_COLS)
+                    rows = min(max(int(resize.get("rows", TMUX_DEFAULT_ROWS)), TMUX_MIN_ROWS), TMUX_MAX_ROWS)
                     resize_pty(master_fd, cols, rows)
                     # Also resize the tmux window to match
                     if tmux_session_name:
@@ -301,6 +308,17 @@ async def terminal_websocket(
         # Start output reader task for live output
         output_task = asyncio.create_task(read_pty_output(websocket, master_fd))
 
+        # Start heartbeat task to keep connection alive through proxies/firewalls
+        async def _heartbeat() -> None:
+            while True:
+                await asyncio.sleep(30)
+                try:
+                    await websocket.send_bytes(b"")
+                except Exception:
+                    break
+
+        heartbeat_task = asyncio.create_task(_heartbeat())
+
         # Auto-start Claude for claude-mode sessions
         session_mode = session.get("mode")
         if session_mode == "claude":
@@ -331,7 +349,10 @@ async def terminal_websocket(
             logger.info("terminal_disconnected", session_id=session_id)
 
         finally:
+            heartbeat_task.cancel()
             output_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await heartbeat_task
             with contextlib.suppress(asyncio.CancelledError):
                 await output_task
 

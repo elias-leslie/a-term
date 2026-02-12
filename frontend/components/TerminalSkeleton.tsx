@@ -46,7 +46,7 @@ export function TerminalSkeleton() {
         {/* Fake output lines */}
         {[0.8, 0.6, 0.9, 0.4, 0.7, 0.5, 0.85, 0.3].map((width, i) => (
           <div
-            key={i}
+            key={`skeleton-line-${width}`}
             className="h-3 rounded animate-pulse"
             style={{
               backgroundColor: 'var(--term-bg-elevated)',

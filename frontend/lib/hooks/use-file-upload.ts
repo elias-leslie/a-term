@@ -28,6 +28,9 @@ interface UseFileUploadReturn {
   clearError: () => void
 }
 
+/** Max upload size in bytes (must match backend MAX_FILE_SIZE_MB) */
+const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024 // 10MB
+
 /**
  * Hook for uploading files to the terminal server.
  * Uses XMLHttpRequest for progress tracking.
@@ -39,6 +42,13 @@ export function useFileUpload(): UseFileUploadReturn {
 
   const uploadFile = useCallback(
     async (file: File): Promise<UploadResult | null> => {
+      // Client-side size validation before uploading
+      if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(1)
+        setError({ message: `File too large (${sizeMB}MB). Maximum size: 10MB` })
+        return null
+      }
+
       setIsUploading(true)
       setProgress(0)
       setError(null)

@@ -187,10 +187,17 @@ def update_pane(pane_id: PaneId, **fields: Any) -> dict[str, Any] | None:
 
 
 def delete_pane(pane_id: PaneId) -> bool:
-    """Delete a pane and all its sessions (cascading delete)."""
+    """Delete a pane and all its sessions (cascading delete).
+
+    Deletes child sessions first since there's no FK CASCADE constraint,
+    then deletes the pane itself. Both happen in a single transaction.
+    """
+    normalized_id = normalize_pane_id(pane_id)
     with get_connection() as conn, conn.cursor() as cur:
+        # Delete child sessions first to prevent orphans
+        cur.execute("DELETE FROM terminal_sessions WHERE pane_id = %s", (normalized_id,))
         cur.execute(
-            "DELETE FROM terminal_panes WHERE id = %s RETURNING id", (normalize_pane_id(pane_id),)
+            "DELETE FROM terminal_panes WHERE id = %s RETURNING id", (normalized_id,)
         )
         result = cur.fetchone()
         conn.commit()

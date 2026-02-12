@@ -165,6 +165,7 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
     }, [wsRef])
 
     // Initialize terminal
+    // biome-ignore lint/correctness/useExhaustiveDependencies: wsRef.current values are stable ref reads at call time — adding them causes reconnect loops
     useEffect(() => {
       let mounted = true
 
@@ -305,8 +306,6 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
           terminalRef.current = null
         }
       }
-      // Dependencies: only session/connection related - scroll refs update independently
-      // Note: wsRef is a stable ref, don't include wsRef.current values (causes reconnect loops)
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
       connect,

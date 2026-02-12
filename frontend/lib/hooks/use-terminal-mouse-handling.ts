@@ -1,5 +1,14 @@
 import type { Terminal } from '@xterm/xterm'
 
+/** Typed subset of xterm's internal core API used for mouse reporting detection. */
+interface XtermCoreInternal {
+  _core?: {
+    coreMouseService?: {
+      areMouseEventsActive: boolean
+    }
+  }
+}
+
 /**
  * Sets up mouse event handling for a terminal to enable local text selection
  * when mouse reporting is active in programs like tmux.
@@ -21,8 +30,7 @@ export function setupTerminalMouseHandling(
     if (!e.isTrusted) return // Skip synthetic events to prevent loops
 
     // Check if mouse reporting is enabled via xterm internal API
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const core = (terminal as any)._core
+    const core = (terminal as unknown as XtermCoreInternal)._core
     const mouseService = core?.coreMouseService
     const mouseActive = mouseService?.areMouseEventsActive
 

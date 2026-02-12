@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { LayoutMode } from '@/components/LayoutModeButton'
 import type { KeyboardSizePreset } from '@/components/SettingsDropdown'
 import type { ConnectionStatus, TerminalHandle } from '@/components/Terminal'
-import { buildApiUrl } from '@/lib/api-config'
 import { useActiveSession } from '@/lib/hooks/use-active-session'
+import { useAutoCreatePane } from '@/lib/hooks/use-auto-create-pane'
 import { useAvailableLayouts } from '@/lib/hooks/use-available-layouts'
 import { useLocalStorageState } from '@/lib/hooks/use-local-storage-state'
 import { useMediaQuery } from '@/lib/hooks/use-media-query'
@@ -197,104 +197,14 @@ export function useTerminalTabsState({
     }
   }, [availableLayouts, layoutMode])
 
-  // Helper to get correct pane name with badge
-  const getAdHocPaneName = useCallback((existingPanes: typeof panes) => {
-    const adHocCount = existingPanes.filter(
-      (p) => p.pane_type === 'adhoc',
-    ).length
-    if (adHocCount === 0) return 'Ad-Hoc Terminal'
-    return `Ad-Hoc Terminal [${adHocCount + 1}]`
-  }, [])
-
-  const _getProjectPaneName = useCallback(
-    (existingPanes: typeof panes, projId: string) => {
-      const projectPanes = existingPanes.filter((p) => p.project_id === projId)
-      const baseName = projId.charAt(0).toUpperCase() + projId.slice(1)
-      if (projectPanes.length === 0) return baseName
-      return `${baseName} [${projectPanes.length + 1}]`
-    },
-    [],
-  )
-
-  // Unified auto-create logic for both:
-  // 1. Initial load with no panes
-  // 2. Closing the last pane (1→0 transition)
-  const isAutoCreatingRef = useRef(false)
-  const initialLoadProcessed = useRef(false)
-  const prevPanesLengthRef = useRef<number | null>(null)
-
-  useEffect(() => {
-    // Skip if still loading or already creating
-    if (isLoading || isPaneCreating || isAutoCreatingRef.current) return
-
-    const prevLength = prevPanesLengthRef.current
-    const currLength = panes.length
-
-    // Update prev length for next render
-    prevPanesLengthRef.current = currLength
-
-    // Case 1: Initial load (first time we see panes data)
-    // Only auto-create if there are NO panes - otherwise just show existing panes
-    if (prevLength === null && !initialLoadProcessed.current) {
-      initialLoadProcessed.current = true
-
-      if (currLength === 0) {
-        // No panes on initial load - create default ad-hoc
-        isAutoCreatingRef.current = true
-        fetch(buildApiUrl('/api/terminal/panes/count'))
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.count === 0) {
-              return createAdHocPane(getAdHocPaneName(panes)).then(
-                (newPane) => {
-                  const shellSession = newPane.sessions.find(
-                    (s) => s.mode === 'shell',
-                  )
-                  if (shellSession) {
-                    switchToSession(shellSession.id)
-                  }
-                },
-              )
-            }
-          })
-          .catch((error) => {
-            console.error('Failed to auto-create pane on initial load:', error)
-          })
-          .finally(() => {
-            isAutoCreatingRef.current = false
-          })
-      }
-      // NOTE: Do NOT auto-create project panes based on URL param
-      // Existing panes should persist across page reloads
-      // Use the Terminal Manager modal (+) to explicitly add new project terminals
-      return
-    }
-
-    // Case 2: Last pane closed (N→0 transition, where N > 0)
-    if (prevLength !== null && prevLength > 0 && currLength === 0) {
-      isAutoCreatingRef.current = true
-      createAdHocPane(getAdHocPaneName(panes))
-        .then((newPane) => {
-          const shellSession = newPane.sessions.find((s) => s.mode === 'shell')
-          if (shellSession) {
-            switchToSession(shellSession.id)
-          }
-        })
-        .catch((error) => {
-          console.error('Failed to auto-create pane after closing last:', error)
-        })
-        .finally(() => {
-          isAutoCreatingRef.current = false
-        })
-    }
-  }, [
-    isLoading,
+  // Auto-create a default pane on initial load or when last pane is closed
+  useAutoCreatePane({
     panes,
+    isLoading,
     isPaneCreating,
     createAdHocPane,
-    getAdHocPaneName,
     switchToSession,
-  ])
+  })
 
   // Tab editing hook
   const tabEditingProps = useTabEditing({

@@ -27,16 +27,9 @@
     "rules": {
       "recommended": true,
       "suspicious": {
-        "noArrayIndexKey": "off",
-        "noExplicitAny": "off",
-        "noUnknownAtRules": "off",
-        "useIterableCallbackReturn": "off",
-        "noShadowRestrictedNames": "off"
+        "noUnknownAtRules": "off"
       },
       "correctness": {
-        "noUnsafeOptionalChaining": "off",
-        "useExhaustiveDependencies": "off",
-        "noInvalidUseBeforeDeclaration": "off"
       },
       "complexity": {
         "noImportantStyles": "off"

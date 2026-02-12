@@ -45,6 +45,44 @@ MIME_TO_EXTENSION = {
 }
 
 
+# Magic byte signatures for allowed binary types
+_MAGIC_SIGNATURES: dict[bytes, str] = {
+    b"\x89PNG\r\n\x1a\n": "image/png",
+    b"\xff\xd8\xff": "image/jpeg",
+    b"GIF87a": "image/gif",
+    b"GIF89a": "image/gif",
+    b"RIFF": "image/webp",  # WebP starts with RIFF....WEBP
+    b"%PDF": "application/pdf",
+}
+
+# Text-based types that don't have magic bytes — validated by content_type only
+_TEXT_MIME_TYPES = {"text/markdown", "text/plain", "application/json"}
+
+
+def _detect_mime_type(content: bytes, claimed_type: str) -> str | None:
+    """Detect actual MIME type from file content magic bytes.
+
+    Returns the detected MIME type if it matches an allowed type,
+    or None if the content doesn't match any known signature.
+
+    For text-based types (markdown, plain text, JSON), falls back to
+    the claimed type since these have no reliable magic bytes.
+    """
+    # Text types have no magic bytes — trust content_type for these
+    if claimed_type in _TEXT_MIME_TYPES:
+        return claimed_type
+
+    # Check binary signatures
+    for signature, mime_type in _MAGIC_SIGNATURES.items():
+        if content[:len(signature)] == signature:
+            # Special case: WebP requires WEBP at offset 8
+            if mime_type == "image/webp" and content[8:12] != b"WEBP":
+                continue
+            return mime_type
+
+    return None
+
+
 class FileUploadResponse(BaseModel):
     """Response for file upload."""
 
@@ -64,20 +102,28 @@ async def upload_file(file: UploadFile) -> FileUploadResponse:
     Allowed types: png, jpg, gif, webp, md, txt, json, pdf
     Max size: 10MB (configurable via MAX_FILE_SIZE_MB env var)
     """
-    # Validate MIME type
-    content_type = file.content_type or "application/octet-stream"
-    if content_type not in ALLOWED_MIME_TYPES:
-        raise HTTPException(
-            status_code=400,
-            detail=f"File type '{content_type}' not allowed. Allowed: {', '.join(sorted(ALLOWED_MIME_TYPES))}",
-        )
-
     # Read file content (with size limit)
     content = await file.read()
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=413,
             detail=f"File too large. Maximum size: {MAX_FILE_SIZE_MB}MB",
+        )
+
+    # Validate MIME type from client header
+    claimed_type = file.content_type or "application/octet-stream"
+    if claimed_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type '{claimed_type}' not allowed. Allowed: {', '.join(sorted(ALLOWED_MIME_TYPES))}",
+        )
+
+    # Validate actual content via magic bytes (prevents MIME spoofing)
+    content_type = _detect_mime_type(content, claimed_type)
+    if content_type is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File content does not match claimed type '{claimed_type}'",
         )
 
     # Create upload directory if needed

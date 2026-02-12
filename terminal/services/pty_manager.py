@@ -162,6 +162,9 @@ async def read_pty_output(websocket: WebSocket, master_fd: int) -> None:
                     errno=e.errno,
                 )
             queue.put_nowait(None)
+        except Exception as e:
+            logger.error("pty_read_unexpected_error", error=str(e))
+            queue.put_nowait(None)
 
     async def flush_batch() -> bool:
         """Flush accumulated batch buffer to WebSocket.

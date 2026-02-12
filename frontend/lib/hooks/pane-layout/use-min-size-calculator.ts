@@ -11,6 +11,7 @@ import {
 export function useMinSizeCalculator(
   containerRef: React.RefObject<HTMLDivElement | null>,
 ) {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: containerRef is a stable React ref — .current is read at call time, not render time
   const getMinSizePercent = useCallback(
     (direction: 'horizontal' | 'vertical') => {
       if (!containerRef.current) return DEFAULT_MIN_SIZE_PERCENT

@@ -145,30 +145,34 @@ def create_session(
         Server-generated session UUID as string
     """
     with get_connection() as conn, conn.cursor() as cur:
-        # Compute session_number: MAX+1 for this project+mode, or 1 if none exist
+        # Atomic INSERT with computed session_number to prevent race conditions.
+        # Uses a single statement so concurrent inserts see each other's MAX.
         if project_id:
             cur.execute(
                 """
-                SELECT COALESCE(MAX(session_number), 0) + 1
-                FROM terminal_sessions
-                WHERE project_id = %s AND mode = %s AND is_alive = true
+                INSERT INTO terminal_sessions
+                    (name, user_id, project_id, working_dir, mode, session_number, pane_id)
+                VALUES (
+                    %s, %s, %s, %s, %s,
+                    (SELECT COALESCE(MAX(session_number), 0) + 1
+                     FROM terminal_sessions
+                     WHERE project_id = %s AND mode = %s AND is_alive = true),
+                    %s
+                )
+                RETURNING id
                 """,
-                (project_id, mode),
+                (name, user_id, project_id, working_dir, mode, project_id, mode, pane_id),
             )
-            row = cur.fetchone()
-            session_number = row[0] if row else 1
         else:
-            session_number = 1
-
-        cur.execute(
-            """
-            INSERT INTO terminal_sessions
-                (name, user_id, project_id, working_dir, mode, session_number, pane_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            RETURNING id
-            """,
-            (name, user_id, project_id, working_dir, mode, session_number, pane_id),
-        )
+            cur.execute(
+                """
+                INSERT INTO terminal_sessions
+                    (name, user_id, project_id, working_dir, mode, session_number, pane_id)
+                VALUES (%s, %s, %s, %s, %s, 1, %s)
+                RETURNING id
+                """,
+                (name, user_id, project_id, working_dir, mode, pane_id),
+            )
         row = cur.fetchone()
         conn.commit()
 
