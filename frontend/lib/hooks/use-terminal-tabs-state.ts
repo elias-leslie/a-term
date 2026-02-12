@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import type { LayoutMode } from '@/components/LayoutModeButton'
 import type { KeyboardSizePreset } from '@/components/SettingsDropdown'
 import type { ConnectionStatus, TerminalHandle } from '@/components/Terminal'
@@ -13,18 +13,20 @@ import { useTabEditing } from '@/lib/hooks/use-tab-editing'
 import { useTerminalHandlers } from '@/lib/hooks/use-terminal-handlers'
 import { useTerminalPanes } from '@/lib/hooks/use-terminal-panes'
 import { useTerminalSettings } from '@/lib/hooks/use-terminal-settings'
-import { getSlotPanelId, type PaneSlot, panesToSlots } from '@/lib/utils/slot'
+import type { UseTerminalTabsStateProps } from './terminal-tabs-state/types'
+import {
+  getActiveSessionProjectId,
+  getPanesToSlots,
+  getOrderedIds,
+  isGridLayoutMode,
+} from './terminal-tabs-state/utils'
+import {
+  useSwapPanes,
+  useLayoutAutoDowngrade,
+  useConnectionStatus,
+} from './terminal-tabs-state/hooks'
 
-interface UseTerminalTabsStateProps {
-  projectId?: string
-  projectPath?: string
-}
-
-export function useTerminalTabsState({
-  projectId,
-  projectPath,
-}: UseTerminalTabsStateProps) {
-  // URL-based active session (single source of truth)
+export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabsStateProps) {
   const {
     activeSessionId,
     switchToSession,
@@ -34,7 +36,6 @@ export function useTerminalTabsState({
     isLoading: activeSessionLoading,
   } = useActiveSession()
 
-  // Pane-based data (new architecture: panes are the top-level container)
   const {
     panes,
     atLimit: panesAtLimit,
@@ -48,46 +49,17 @@ export function useTerminalTabsState({
     saveLayouts,
   } = useTerminalPanes()
 
-  // Layout state (single mode removed - always grid)
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('grid-2x2')
-
-  // Get the active session's project_id for per-project settings
-  const activeSessionProjectId = useMemo(() => {
-    if (!activeSessionId) return undefined
-    const activeSession = sessions.find((s) => s.id === activeSessionId)
-    return activeSession?.project_id ?? undefined
-  }, [activeSessionId, sessions])
-
-  const {
-    fontId,
-    fontSize,
-    fontFamily,
-    scrollback,
-    cursorStyle,
-    cursorBlink,
-    themeId,
-    theme,
-    setFontId,
-    setFontSize,
-    setScrollback,
-    setCursorStyle,
-    setCursorBlink,
-    setThemeId,
-  } = useTerminalSettings(activeSessionProjectId)
+  const activeSessionProjectId = useMemo(() => getActiveSessionProjectId(activeSessionId, sessions), [activeSessionId, sessions])
+  const { fontId, fontSize, fontFamily, scrollback, cursorStyle, cursorBlink, themeId, theme, setFontId, setFontSize, setScrollback, setCursorStyle, setCursorBlink, setThemeId } = useTerminalSettings(activeSessionProjectId)
   const isMobile = useMediaQuery('(max-width: 767px)')
   const [showSettings, setShowSettings] = useState(false)
-  const [keyboardSize, setKeyboardSize] =
-    useLocalStorageState<KeyboardSizePreset>('terminal-keyboard-size', 'medium')
+  const [keyboardSize, setKeyboardSize] = useLocalStorageState<KeyboardSizePreset>('terminal-keyboard-size', 'medium')
   const [showTerminalManager, setShowTerminalManager] = useState(false)
-
-  // Terminal refs and connection status tracking
   const terminalRefs = useRef<Map<string, TerminalHandle>>(new Map())
-  const [terminalStatuses, setTerminalStatuses] = useState<
-    Map<string, ConnectionStatus>
-  >(new Map())
+  const [terminalStatuses, setTerminalStatuses] = useState<Map<string, ConnectionStatus>>(new Map())
   const projectTabRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
-  // Handlers hook (includes session/project mutations and all event handlers)
   const {
     handleKeyboardSizeChange,
     handleStatusChange,
@@ -100,7 +72,6 @@ export function useTerminalTabsState({
     handleProjectModeChange,
     handleCloseAll,
     setTerminalRef,
-    // Passthrough from sub-hooks
     create: _create,
     update,
     remove,
@@ -123,7 +94,6 @@ export function useTerminalTabsState({
     setTerminalStatuses,
     setLayoutMode,
     setKeyboardSize,
-    // Pane operations
     panes,
     panesAtLimit,
     createProjectPane,
@@ -132,89 +102,20 @@ export function useTerminalTabsState({
     removePane,
   })
 
-  // Combined loading state
-  const isLoading =
-    activeSessionLoading || sessionsLoading || projectsLoading || panesLoading
-
-  // Available layouts based on viewport width
+  const isLoading = activeSessionLoading || sessionsLoading || projectsLoading || panesLoading
   const availableLayouts = useAvailableLayouts()
-
-  // Unified slots array derived from panes (new architecture)
-  // Panes are already ordered by pane_order from the API
-  const terminalSlots: PaneSlot[] = useMemo(() => {
-    return panesToSlots(panes)
-  }, [panes])
-
-  // Derive ordered IDs from panes (already ordered by pane_order)
-  const orderedIds = useMemo(() => {
-    return terminalSlots.map((slot) => getSlotPanelId(slot))
-  }, [terminalSlots])
-
-  // Reorder callback (currently no-op, ordering is DB-driven)
-  const reorder = useCallback((newOrder: string[]) => {
-    // TODO: Implement bulk reorder via API if needed
-    console.log('reorder requested:', newOrder)
-  }, [])
-
-  // Swap panes via DB-backed API
-  const swapPanes = useCallback(
-    async (slotIdA: string, slotIdB: string) => {
-      // Find pane IDs from slot IDs
-      const slotA = terminalSlots.find((s) => getSlotPanelId(s) === slotIdA)
-      const slotB = terminalSlots.find((s) => getSlotPanelId(s) === slotIdB)
-
-      if (!slotA || !slotB) {
-        console.warn('swapPanes: slot not found', { slotIdA, slotIdB })
-        return
-      }
-
-      await swapPanePositions(slotA.paneId, slotB.paneId)
-    },
-    [terminalSlots, swapPanePositions],
-  )
-
-  // Check if at maximum pane limit
-  const canAddPane = useCallback(() => {
-    return !panesAtLimit
-  }, [panesAtLimit])
-
-  // Helper to check if current layout is a grid mode
-  const isGridMode = layoutMode.startsWith('grid-')
-
-  // Get active terminal status
-  const activeStatus = activeSessionId
-    ? terminalStatuses.get(activeSessionId)
-    : undefined
-  const showReconnect =
-    activeStatus && ['disconnected', 'error', 'timeout'].includes(activeStatus)
-
-  // Auto-downgrade layout if current mode is no longer available
-  useEffect(() => {
-    if (!availableLayouts.includes(layoutMode)) {
-      const highest = availableLayouts[availableLayouts.length - 1] || 'single'
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync layout to viewport constraints
-      setLayoutMode(highest)
-    }
-  }, [availableLayouts, layoutMode])
-
-  // Auto-create a default pane on initial load or when last pane is closed
-  useAutoCreatePane({
-    panes,
-    isLoading,
-    isPaneCreating,
-    createAdHocPane,
-    switchToSession,
-  })
-
-  // Tab editing hook
-  const tabEditingProps = useTabEditing({
-    onSave: async (sessionId: string, newName: string) => {
-      await update(sessionId, { name: newName })
-    },
-  })
+  const terminalSlots = useMemo(() => getPanesToSlots(panes), [panes])
+  const orderedIds = useMemo(() => getOrderedIds(terminalSlots), [terminalSlots])
+  const reorder = useCallback((newOrder: string[]) => { console.log('reorder requested:', newOrder) }, [])
+  const swapPanes = useSwapPanes(terminalSlots, swapPanePositions)
+  const canAddPane = useCallback(() => !panesAtLimit, [panesAtLimit])
+  const isGridMode = isGridLayoutMode(layoutMode)
+  const { activeStatus, showReconnect } = useConnectionStatus(activeSessionId, terminalStatuses)
+  useLayoutAutoDowngrade(availableLayouts, layoutMode, setLayoutMode)
+  useAutoCreatePane({ panes, isLoading, isPaneCreating, createAdHocPane, switchToSession })
+  const tabEditingProps = useTabEditing({ onSave: async (sessionId: string, newName: string) => { await update(sessionId, { name: newName }) } })
 
   return {
-    // Session state
     activeSessionId,
     switchToSession,
     sessions,
@@ -222,20 +123,15 @@ export function useTerminalTabsState({
     adHocSessions,
     isLoading,
     isCreating,
-
-    // Layout state
     layoutMode,
     setLayoutMode,
     availableLayouts,
     isGridMode,
-
-    // Terminal slots (pane-based)
     terminalSlots,
     orderedIds,
     reorder,
     swapPanes,
     canAddPane,
-    // Pane operations
     panes,
     panesAtLimit,
     removePane,
@@ -244,14 +140,10 @@ export function useTerminalTabsState({
     createProjectPane,
     isPaneCreating,
     saveLayouts,
-
-    // Terminal refs and statuses
     terminalRefs,
     terminalStatuses,
     projectTabRefs,
     setTerminalRef,
-
-    // Settings
     fontId,
     fontSize,
     fontFamily,
@@ -271,19 +163,11 @@ export function useTerminalTabsState({
     keyboardSize,
     handleKeyboardSizeChange,
     isMobile,
-
-    // Terminal manager modal
     showTerminalManager,
     setShowTerminalManager,
-
-    // Connection status
     activeStatus,
     showReconnect,
-
-    // Tab editing
     ...tabEditingProps,
-
-    // Handlers
     handleStatusChange,
     handleKeyboardInput,
     handleReconnect,
@@ -293,8 +177,6 @@ export function useTerminalTabsState({
     handleProjectTabClick,
     handleProjectModeChange,
     handleCloseAll,
-
-    // Project operations
     resetProject,
     disableProject,
     reset,
