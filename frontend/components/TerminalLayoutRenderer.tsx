@@ -54,7 +54,7 @@ interface TerminalLayoutRendererProps {
   initialLayouts?: PaneLayout[]
 
   // Voice input
-  onVoice?: () => void
+  onVoice?: (sessionId?: string) => void
 }
 
 export function TerminalLayoutRenderer({

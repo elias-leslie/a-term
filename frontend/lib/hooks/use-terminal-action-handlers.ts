@@ -116,20 +116,28 @@ export function useTerminalActionHandlers({
   }, [setShowCleaner, setCleanerRawPrompt])
 
   // Voice input handlers
-  const handleVoiceOpen = useCallback(() => {
+  // Track which terminal pane triggered voice input
+  const voiceTargetRef = useRef<string | null>(null)
+
+  const handleVoiceOpen = useCallback((targetSessionId?: string) => {
+    voiceTargetRef.current = targetSessionId ?? null
     setShowVoice(true)
     voiceStartListening()
   }, [setShowVoice, voiceStartListening])
 
   const handleVoiceSend = useCallback(
     (text: string) => {
-      const terminalRef = findActiveRef(terminalRefs.current, activeSessionId)
+      // Use the specific pane that triggered voice, fall back to active/first available
+      const terminalRef = voiceTargetRef.current
+        ? terminalRefs.current.get(voiceTargetRef.current) ?? null
+        : findActiveRef(terminalRefs.current, activeSessionId)
       if (terminalRef) {
         // Use bracketed paste so TUI apps (Claude Code, vim, etc.) recognize the input
         terminalRef.pasteInput(text)
         // Send Enter separately — 150ms delay gives TUI apps time to process the paste
         setTimeout(() => terminalRef.sendInput('\r'), 150)
       }
+      voiceTargetRef.current = null
       voiceStopListening()
       voiceResetTranscript()
       setShowVoice(false)
@@ -139,10 +147,13 @@ export function useTerminalActionHandlers({
 
   const handleVoiceInsert = useCallback(
     (text: string) => {
-      const terminalRef = findActiveRef(terminalRefs.current, activeSessionId)
+      const terminalRef = voiceTargetRef.current
+        ? terminalRefs.current.get(voiceTargetRef.current) ?? null
+        : findActiveRef(terminalRefs.current, activeSessionId)
       if (terminalRef) {
         terminalRef.pasteInput(text)
       }
+      voiceTargetRef.current = null
       voiceStopListening()
       voiceResetTranscript()
       setShowVoice(false)

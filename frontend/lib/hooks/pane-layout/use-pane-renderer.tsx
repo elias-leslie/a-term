@@ -101,7 +101,7 @@ export function usePaneRenderer({
               onModeSwitch ? (mode) => onModeSwitch(slot, mode) : undefined
             }
             isModeSwitching={isModeSwitching}
-            onVoice={onVoice}
+            onVoice={onVoice ? () => onVoice(sessionId ?? undefined) : undefined}
             isMobile={isMobile}
             allSlots={paneCount > 1 ? displaySlots : undefined}
             onSwapWith={
