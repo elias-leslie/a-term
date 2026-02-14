@@ -108,7 +108,10 @@ export function useTerminalActionHandlers({
       if (!activeSessionId) return
       const terminalRef = terminalRefs.current.get(activeSessionId)
       if (terminalRef) {
-        terminalRef.sendInput(`${text}\r`)
+        // Send text first, then Enter separately so TUI apps (Claude Code, etc.)
+        // don't treat the whole thing as a paste event
+        terminalRef.sendInput(text)
+        setTimeout(() => terminalRef.sendInput('\r'), 50)
       }
       voiceStopListening()
       voiceResetTranscript()
