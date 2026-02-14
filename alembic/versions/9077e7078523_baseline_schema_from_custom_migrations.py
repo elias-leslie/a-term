@@ -1,7 +1,11 @@
 """baseline schema from custom migrations
 
+This is an intentionally empty baseline migration marker.
+The database schema was created manually before Alembic was introduced.
+This migration serves as the starting point for future schema changes.
+
 Revision ID: 9077e7078523
-Revises: 
+Revises:
 Create Date: 2026-02-08 11:59:24.138872
 
 """

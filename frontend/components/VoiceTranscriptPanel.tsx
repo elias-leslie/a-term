@@ -140,6 +140,7 @@ export function VoiceTranscriptPanel({
                 : 'Tap the mic to start dictating'
             }
             readOnly={isListening || isProcessing}
+            aria-label="Voice transcript"
           />
         </div>
 
@@ -172,6 +173,7 @@ export function VoiceTranscriptPanel({
             type="button"
             className={clsx(styles.actionBtn, styles.actionBtnSecondary)}
             onClick={handleClose}
+            aria-label="Cancel voice input"
           >
             CANCEL
           </button>
@@ -187,6 +189,7 @@ export function VoiceTranscriptPanel({
               onToggleListening()
             }}
             title={isListening ? 'Stop listening' : 'Start listening'}
+            aria-label={isListening ? 'Stop listening' : 'Start listening'}
           >
             {isListening ? (
               <MicOff className="w-5 h-5" />
@@ -201,6 +204,7 @@ export function VoiceTranscriptPanel({
               className={clsx(styles.actionBtn, styles.actionBtnPrimary)}
               onClick={handleSend}
               disabled={!hasText || isProcessing}
+              aria-label="Send transcript"
             >
               <Send className="w-3.5 h-3.5" />
               SEND
@@ -210,6 +214,7 @@ export function VoiceTranscriptPanel({
               className={styles.insertLink}
               onClick={handleInsert}
               disabled={!hasText || isProcessing}
+              aria-label="Insert transcript without enter"
             >
               insert without enter
             </button>

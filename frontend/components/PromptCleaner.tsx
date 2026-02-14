@@ -59,7 +59,8 @@ function PreviewView({ showDiff, isEditing, rawPrompt, displayedText, editedProm
         <div className={styles.singleView}>
           {isEditing ? (
             <textarea ref={textareaRef} className={styles.editTextarea} value={editedPrompt}
-              onChange={(e) => onEditedChange(e.target.value)} placeholder="Edit your prompt..." />
+              onChange={(e) => onEditedChange(e.target.value)} placeholder="Edit your prompt..."
+              aria-label="Edit cleaned prompt" />
           ) : (
             <div className={styles.cleanedPreview}>
               <div className={styles.outputLabel}><span className={styles.labelIcon}>▸</span>OUTPUT</div>

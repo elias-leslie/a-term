@@ -57,9 +57,6 @@ export function useTerminalSlotHandlers({
       const sessionId = getSlotSessionId(slot)
       if (sessionId) {
         switchToSession(sessionId)
-      } else {
-        // Session ID not found - this shouldn't happen but log it for debugging
-        console.warn('handleSlotSwitch: No session ID for slot', slot)
       }
     },
     [switchToSession],
@@ -105,18 +102,12 @@ export function useTerminalSlotHandlers({
   const handleSlotClean = useCallback(
     (slot: TerminalSlot | PaneSlot) => {
       const sessionId = getSlotSessionId(slot)
-      if (!sessionId) {
-        console.warn('handleSlotClean: No session ID for slot', slot)
-        return
-      }
+      if (!sessionId) return
+
       const terminalRef = terminalRefs.current.get(sessionId)
-      if (!terminalRef) {
-        console.warn('handleSlotClean: No terminal ref for session', sessionId)
-        return
-      }
+      if (!terminalRef) return
+
       const input = terminalRef.getLastLine()
-      // Open cleaner even if input is empty - let user see the state
-      // (empty input will show "no prompt to clean" in the cleaner)
       setCleanerRawPrompt(input || '')
       setShowCleaner(true)
     },

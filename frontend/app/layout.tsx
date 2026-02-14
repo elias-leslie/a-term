@@ -49,10 +49,14 @@ export default function RootLayout({
                 window.addEventListener('load', function() {
                   navigator.serviceWorker.register('/sw.js').then(
                     function(registration) {
-                      console.log('SW registered:', registration.scope);
+                      if (process.env.NODE_ENV === 'development') {
+                        console.log('SW registered:', registration.scope);
+                      }
                     },
                     function(err) {
-                      console.log('SW registration failed:', err);
+                      if (process.env.NODE_ENV === 'development') {
+                        console.log('SW registration failed:', err);
+                      }
                     }
                   );
                 });

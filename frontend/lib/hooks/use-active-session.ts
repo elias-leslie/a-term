@@ -139,18 +139,11 @@ export function useActiveSession(): UseActiveSessionResult {
   // Switch to a different session by updating the URL
   const switchToSession = useCallback(
     (sessionId: string) => {
-      // Verify the session exists before switching
       const sessionExists = sessions.some((s) => s.id === sessionId)
-      if (!sessionExists) {
-        console.warn(`switchToSession: session ${sessionId} does not exist`)
-        return
-      }
+      if (!sessionExists) return
 
-      // Build new URL with session param, preserving other params
       const params = new URLSearchParams(searchParams.toString())
       params.set('session', sessionId)
-
-      // Use router.push with scroll: false for shallow navigation
       router.push(`?${params.toString()}`, { scroll: false })
     },
     [sessions, searchParams, router],

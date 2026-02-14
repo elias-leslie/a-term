@@ -200,7 +200,11 @@ export function useTerminalWebSocket({
 
     ws.onmessage = (event) => {
       if (!mountedRef.current) return
-      onMessageRef.current?.(event.data)
+      try {
+        onMessageRef.current?.(event.data)
+      } catch (error) {
+        console.error('Error handling WebSocket message:', error)
+      }
     }
 
     ws.onclose = (event) => {
@@ -256,7 +260,7 @@ export function useTerminalWebSocket({
 
   const reconnect = useCallback(() => {
     disconnect()
-    hasRetriedRef.current = false
+    retryCountRef.current = 0
     onTerminalMessageRef.current?.('\x1b[33mReconnecting...\x1b[0m')
     setStatus('connecting')
     connect()

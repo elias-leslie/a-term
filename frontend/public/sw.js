@@ -1,6 +1,7 @@
 // Terminal Service Worker
 // Provides offline caching and PWA support
 
+// IMPORTANT: Bump version number on each deploy to bust client caches
 const CACHE_NAME = 'terminal-v3';
 const STATIC_CACHE_NAME = 'terminal-static-v3';
 

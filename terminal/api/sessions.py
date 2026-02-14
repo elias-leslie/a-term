@@ -186,6 +186,11 @@ async def delete_session(session_id: str) -> dict[str, Any]:
     Kills the tmux session and deletes the database record.
     Idempotent - returns success even if session didn't exist.
     """
+    try:
+        uuid.UUID(session_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid UUID") from None
+
     lifecycle.delete_session(session_id)
     return {"deleted": True, "id": session_id}
 
@@ -197,6 +202,11 @@ async def reset_session(session_id: str) -> TerminalSessionResponse:
     Deletes the session and creates a new one with the same parameters.
     Returns the new session data.
     """
+    try:
+        uuid.UUID(session_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid UUID") from None
+
     new_session_id = lifecycle.reset_session(session_id)
     if not new_session_id:
         raise HTTPException(status_code=404, detail=f"Session {session_id} not found") from None

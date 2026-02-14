@@ -16,7 +16,7 @@ from ..logging_config import get_logger
 logger = get_logger(__name__)
 
 TMUX_COMMAND_TIMEOUT = 10  # seconds for tmux subprocess calls
-_SESSION_NAME_PATTERN = re.compile(r"^[a-zA-Z0-9_\-:]+$")
+_SESSION_NAME_PATTERN = re.compile(r"^[a-zA-Z0-9_\-]+$")
 
 # Secrets filtered from tmux session environments
 FILTERED_ENV_VARS = {

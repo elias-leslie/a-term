@@ -86,10 +86,15 @@ export function useTerminalInstance(
 
       // Dynamic import xterm modules
       const xtermModule = await import('@xterm/xterm')
-      const fitModule = await import('@xterm/addon-fit')
-      const webLinksModule = await import('@xterm/addon-web-links')
-      const clipboardModule = await import('@xterm/addon-clipboard')
+      if (!mounted) return
 
+      const fitModule = await import('@xterm/addon-fit')
+      if (!mounted) return
+
+      const webLinksModule = await import('@xterm/addon-web-links')
+      if (!mounted) return
+
+      const clipboardModule = await import('@xterm/addon-clipboard')
       if (!mounted) return
 
       TerminalClass = xtermModule.Terminal
@@ -111,6 +116,8 @@ export function useTerminalInstance(
         theme: options.theme,
       })
 
+      if (!mounted) return
+
       // Create and load addons
       const fitAddon = new FitAddonClass()
       const webLinksAddon = new WebLinksAddon()
@@ -120,8 +127,11 @@ export function useTerminalInstance(
       term.loadAddon(webLinksAddon)
       term.loadAddon(clipboardAddon)
 
+      if (!mounted || !containerRef.current) return
+
       // Open terminal in container
       term.open(containerRef.current)
+      if (!mounted) return
 
       // Set up mouse handling to enable local selection when mouse reporting is active
       mouseCleanupRef.current = setupTerminalMouseHandling(
