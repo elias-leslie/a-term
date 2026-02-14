@@ -47,7 +47,7 @@ export function useTerminalActionHandlers({
         // Insert path at cursor in the active terminal
         const terminalRef = terminalRefs.current.get(activeSessionId)
         if (terminalRef) {
-          terminalRef.sendInput(result.path)
+          terminalRef.pasteInput(result.path)
         }
       }
     },
@@ -83,9 +83,9 @@ export function useTerminalActionHandlers({
       if (!activeSessionId) return
       const terminalRef = terminalRefs.current.get(activeSessionId)
       if (terminalRef) {
-        // Clear current line (send Ctrl+U) then send cleaned prompt
+        // Clear current line (send Ctrl+U) then paste cleaned prompt
         terminalRef.sendInput('\x15') // Ctrl+U
-        terminalRef.sendInput(cleanedPrompt)
+        terminalRef.pasteInput(cleanedPrompt)
       }
       setShowCleaner(false)
       setCleanerRawPrompt('')
@@ -109,9 +109,9 @@ export function useTerminalActionHandlers({
       if (!activeSessionId) return
       const terminalRef = terminalRefs.current.get(activeSessionId)
       if (terminalRef) {
-        // Send text first, then Enter separately so TUI apps (Claude Code, etc.)
-        // don't treat the whole thing as a paste event
-        terminalRef.sendInput(text)
+        // Use bracketed paste so TUI apps (Claude Code, vim, etc.) recognize the input
+        terminalRef.pasteInput(text)
+        // Send Enter separately after paste completes
         setTimeout(() => terminalRef.sendInput('\r'), 50)
       }
       voiceStopListening()
@@ -126,7 +126,7 @@ export function useTerminalActionHandlers({
       if (!activeSessionId) return
       const terminalRef = terminalRefs.current.get(activeSessionId)
       if (terminalRef) {
-        terminalRef.sendInput(text)
+        terminalRef.pasteInput(text)
       }
       voiceStopListening()
       voiceResetTranscript()

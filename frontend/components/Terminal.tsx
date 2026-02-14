@@ -163,6 +163,11 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
           return text.trim()
         },
         sendInput,
+        pasteInput: (data: string) => {
+          // Wrap in bracketed paste sequences so TUI apps (Claude Code, vim, etc.)
+          // recognize this as pasted content and insert it into their input buffer
+          sendInput(`\x1b[200~${data}\x1b[201~`)
+        },
         status,
       }),
       [status, reconnect, sendInput],

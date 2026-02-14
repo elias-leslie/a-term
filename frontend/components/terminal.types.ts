@@ -48,6 +48,8 @@ export interface TerminalHandle {
   reconnect: () => void
   getContent: () => string
   sendInput: (data: string) => void
+  /** Send text wrapped in bracketed paste sequences — needed for TUI apps like Claude Code */
+  pasteInput: (data: string) => void
   getLastLine: () => string
   status: ConnectionStatus
 }
