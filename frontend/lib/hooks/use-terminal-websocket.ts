@@ -172,6 +172,9 @@ export function useTerminalWebSocket({
       if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current)
       if (!mountedRef.current) return
 
+      // Reset retry count on successful connection
+      retryCountRef.current = 0
+
       setStatus('connected')
       onTerminalMessageRef.current?.(
         `Connected to terminal session: ${sessionId}`,
