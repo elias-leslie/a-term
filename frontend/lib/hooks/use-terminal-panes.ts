@@ -86,7 +86,7 @@ export function useTerminalPanes() {
     [updateMutation]
   )
 
-  const renamePne = useCallback(
+  const renamePane = useCallback(
     (paneId: string, newName: string) =>
       updateMutation.mutateAsync({ paneId, pane_name: newName }),
     [updateMutation]
