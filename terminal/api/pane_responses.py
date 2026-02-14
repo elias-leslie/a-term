@@ -16,6 +16,7 @@ def build_session_response(session: dict[str, Any]) -> SessionInPaneResponse:
         session_number=session["session_number"],
         is_alive=session["is_alive"],
         working_dir=session.get("working_dir"),
+        claude_state=session.get("claude_state", "not_started"),
     )
 
 

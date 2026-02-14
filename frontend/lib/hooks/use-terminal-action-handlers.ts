@@ -58,7 +58,8 @@ export function useTerminalActionHandlers({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
       if (file) {
-        handleFileSelect(file)
+        // Error state is captured by useFileUpload's error ref
+        handleFileSelect(file).catch(() => {})
       }
       // Reset input so the same file can be selected again
       e.target.value = ''

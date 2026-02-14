@@ -20,7 +20,7 @@ def fetch_sessions_for_pane(pane_id: PaneId) -> list[dict[str, Any]]:
     with get_connection() as conn, conn.cursor() as cur:
         cur.execute(
             """
-            SELECT id, name, mode, session_number, is_alive, working_dir
+            SELECT id, name, mode, session_number, is_alive, working_dir, claude_state
             FROM terminal_sessions
             WHERE pane_id = %s
             ORDER BY mode
@@ -40,7 +40,7 @@ def fetch_all_sessions_by_pane() -> dict[str, list[dict[str, Any]]]:
     with get_connection() as conn, conn.cursor() as cur:
         cur.execute(
             """
-            SELECT pane_id, id, name, mode, session_number, is_alive, working_dir
+            SELECT pane_id, id, name, mode, session_number, is_alive, working_dir, claude_state
             FROM terminal_sessions
             WHERE pane_id IS NOT NULL
             ORDER BY pane_id, mode
@@ -53,16 +53,8 @@ def fetch_all_sessions_by_pane() -> dict[str, list[dict[str, Any]]]:
         pane_id = str(row[0])
         if pane_id not in sessions_by_pane:
             sessions_by_pane[pane_id] = []
-        sessions_by_pane[pane_id].append(
-            {
-                "id": str(row[1]),
-                "name": row[2],
-                "mode": row[3],
-                "session_number": row[4],
-                "is_alive": row[5],
-                "working_dir": row[6],
-            }
-        )
+        # Skip pane_id column (row[0]) and reuse shared conversion function
+        sessions_by_pane[pane_id].append(session_row_to_dict(row[1:]))
 
     return sessions_by_pane
 

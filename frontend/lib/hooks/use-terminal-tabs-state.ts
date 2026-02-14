@@ -106,7 +106,7 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
   const availableLayouts = useAvailableLayouts()
   const terminalSlots = useMemo(() => getPanesToSlots(panes), [panes])
   const orderedIds = useMemo(() => getOrderedIds(terminalSlots), [terminalSlots])
-  const reorder = useCallback((newOrder: string[]) => { console.log('reorder requested:', newOrder) }, [])
+  const reorder = useCallback((_newOrder: string[]) => { /* noop — reorder via drag-and-drop not yet implemented */ }, [])
   const swapPanes = useSwapPanes(terminalSlots, swapPanePositions)
   const canAddPane = useCallback(() => !panesAtLimit, [panesAtLimit])
   const isGridMode = isGridLayoutMode(layoutMode)

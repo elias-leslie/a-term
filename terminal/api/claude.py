@@ -213,8 +213,8 @@ async def start_claude(session_id: str, background_tasks: BackgroundTasks) -> St
     # Fallback: Check if Claude is already running via pane content
     # This handles cases where state got out of sync
     if _is_claude_running_in_session(tmux_session):
-        # Update state to match reality
-        terminal_store.update_claude_state(session_id, "running")
+        # Update state to match reality (use expected_state to avoid overwriting concurrent changes)
+        terminal_store.update_claude_state(session_id, "running", expected_state=current_state)
         return StartClaudeResponse(
             session_id=session_id,
             started=False,
@@ -257,8 +257,8 @@ async def start_claude(session_id: str, background_tasks: BackgroundTasks) -> St
     )
 
     if result.returncode != 0:
-        # Command failed - set state to error
-        terminal_store.update_claude_state(session_id, "error")
+        # Command failed - set state to error (only if still "starting" from our update)
+        terminal_store.update_claude_state(session_id, "error", expected_state="starting")
         logger.error(
             "claude_send_keys_failed",
             session_id=session_id,

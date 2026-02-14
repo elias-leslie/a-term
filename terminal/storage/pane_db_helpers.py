@@ -72,6 +72,7 @@ def session_row_to_dict(row: tuple[Any, ...]) -> dict[str, Any]:
         "session_number": row[3],
         "is_alive": row[4],
         "working_dir": row[5],
+        "claude_state": row[6] if len(row) > 6 else "not_started",
     }
 
 

@@ -16,6 +16,7 @@ class SessionInPaneResponse(BaseModel):
     session_number: int
     is_alive: bool
     working_dir: str | None
+    claude_state: str = "not_started"
 
 
 class PaneResponse(BaseModel):

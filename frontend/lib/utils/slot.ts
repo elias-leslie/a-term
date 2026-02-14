@@ -176,7 +176,7 @@ export function paneToSlot(pane: TerminalPane): PaneSlot {
       activeSessionId: activeSession?.id ?? null,
       sessionBadge: null, // Badge is now part of pane_name
       claudeState: claudeSession
-        ? ('not_started' as const) // TODO: fetch from session
+        ? (claudeSession.claude_state as ProjectSlot['claudeState'])
         : undefined,
     }
   }

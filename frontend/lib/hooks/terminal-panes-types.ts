@@ -5,6 +5,7 @@ export interface PaneSession {
   session_number: number
   is_alive: boolean
   working_dir: string | null
+  claude_state: string
 }
 
 export interface TerminalPane {

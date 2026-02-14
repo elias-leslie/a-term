@@ -73,6 +73,7 @@ export function useTerminalWebSocket({
   const timeoutIdRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const mountedRef = useRef(true)
   const connectRef = useRef<(() => void) | undefined>(undefined)
+  const connectingRef = useRef(false)
 
   // Store callbacks in refs to avoid re-render loops
   const onStatusChangeRef = useRef(onStatusChange)
@@ -110,6 +111,10 @@ export function useTerminalWebSocket({
   }, [])
 
   const connect = useCallback(() => {
+    // Prevent stacking concurrent connection attempts
+    if (connectingRef.current) return
+    connectingRef.current = true
+
     // Close existing connection to prevent duplicates
     if (wsRef.current) {
       wsRef.current.close()
@@ -154,6 +159,7 @@ export function useTerminalWebSocket({
     }, CONNECTION_TIMEOUT)
 
     ws.onopen = () => {
+      connectingRef.current = false
       if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current)
       if (!mountedRef.current) return
 
@@ -186,6 +192,7 @@ export function useTerminalWebSocket({
     }
 
     ws.onclose = (event) => {
+      connectingRef.current = false
       if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current)
       if (!mountedRef.current) return
 
@@ -224,6 +231,7 @@ export function useTerminalWebSocket({
   }, [connect])
 
   const disconnect = useCallback(() => {
+    connectingRef.current = false
     if (timeoutIdRef.current) {
       clearTimeout(timeoutIdRef.current)
       timeoutIdRef.current = null

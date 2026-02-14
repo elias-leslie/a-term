@@ -98,7 +98,8 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
     })
 
     // Stable callback for terminal input — uses refs so identity never changes,
-    // preventing useTerminalInstance from destroying/recreating xterm on every render
+    // preventing useTerminalInstance from destroying/recreating xterm on every render.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally empty deps — reads refs at call time
     const handleTerminalData = useCallback((data: string) => {
       if (!isFocusedRef.current) return
       if (wsRef.current?.readyState === WebSocket.OPEN) {

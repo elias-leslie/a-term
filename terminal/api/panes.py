@@ -18,6 +18,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
+from ..services.lifecycle_core import _kill_tmux_session
 from ..services.pane_service import (
     convert_layout_items_to_storage,
     get_layout_update_fields,
@@ -25,6 +26,7 @@ from ..services.pane_service import (
     update_layouts_with_retry,
 )
 from ..storage import pane_crud
+from ..storage.pane_sessions import fetch_sessions_for_pane
 from .models.panes import (
     BulkLayoutUpdateRequest,
     CreatePaneRequest,
@@ -123,7 +125,16 @@ async def update_pane(pane_id: str, request: UpdatePaneRequest) -> PaneResponse:
 
 @router.delete("/api/terminal/panes/{pane_id}")
 async def delete_pane(pane_id: str) -> dict[str, Any]:
-    """Delete a terminal pane and all its sessions."""
+    """Delete a terminal pane and all its sessions.
+
+    Kills tmux sessions first to prevent orphaned processes,
+    then deletes DB records (pane + sessions).
+    """
+    # Kill tmux sessions before deleting DB records to prevent orphans
+    sessions = fetch_sessions_for_pane(pane_id)
+    for session in sessions:
+        _kill_tmux_session(session["id"], ignore_missing=True)
+
     deleted = pane_crud.delete_pane(pane_id)
     if not deleted:
         raise HTTPException(status_code=404, detail=f"Pane {pane_id} not found")
