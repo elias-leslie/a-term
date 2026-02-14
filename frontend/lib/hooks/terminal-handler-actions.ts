@@ -22,10 +22,7 @@ export async function addAdHocPaneAction(
   createAdHocPane: (paneName: string, workingDir?: string) => Promise<TerminalPane>,
   navigateToSession: (sessionId: string) => void,
 ): Promise<void> {
-  if (panesAtLimit) {
-    console.warn('Cannot add pane: at maximum limit')
-    return
-  }
+  if (panesAtLimit) return
 
   try {
     const paneName = generateAdHocPaneName(panes)
@@ -57,10 +54,7 @@ export async function addProjectPaneAction(
   navigateToSession: (sessionId: string) => void,
   startClaude: (sessionId: string) => Promise<boolean>,
 ): Promise<void> {
-  if (panesAtLimit) {
-    console.warn('Cannot add pane: at maximum limit')
-    return
-  }
+  if (panesAtLimit) return
 
   // Resolve working directory
   let workingDir = rootPath

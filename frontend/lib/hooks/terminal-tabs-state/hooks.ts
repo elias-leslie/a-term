@@ -17,10 +17,7 @@ export function useSwapPanes(
       const slotA = terminalSlots.find((s) => getSlotPanelId(s) === slotIdA)
       const slotB = terminalSlots.find((s) => getSlotPanelId(s) === slotIdB)
 
-      if (!slotA || !slotB) {
-        console.warn('swapPanes: slot not found', { slotIdA, slotIdB })
-        return
-      }
+      if (!slotA || !slotB) return
 
       await swapPanePositions(slotA.paneId, slotB.paneId)
     },

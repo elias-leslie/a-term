@@ -44,10 +44,7 @@ export async function createProjectPaneHelper(
   navigateToSession: (sessionId: string) => void,
   startClaude: (sessionId: string) => Promise<boolean>,
 ): Promise<void> {
-  if (panesAtLimit) {
-    console.warn('Cannot create pane: at maximum limit')
-    return
-  }
+  if (panesAtLimit) return
 
   try {
     const paneName = generateProjectPaneName(pt.projectId, panes)

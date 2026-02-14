@@ -14,9 +14,6 @@ interface PaneListResponse {
   max_panes: number
 }
 
-/** Delay for tmux session initialization */
-const _TMUX_INIT_DELAY_MS = 300
-
 /** Delay before scrolling tab into view */
 const TAB_SCROLL_DELAY_MS = 100
 

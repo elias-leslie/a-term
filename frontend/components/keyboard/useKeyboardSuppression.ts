@@ -46,12 +46,7 @@ export function useKeyboardSuppression() {
   const suppressKeyboard = useCallback(
     (container: HTMLElement): SuppressionMethod => {
       const textarea = getXtermTextarea(container)
-      if (!textarea) {
-        console.warn(
-          'useKeyboardSuppression: Could not find xterm helper textarea',
-        )
-        return 'none'
-      }
+      if (!textarea) return 'none'
 
       // Save original state for restoration
       originalStateRef.current = {

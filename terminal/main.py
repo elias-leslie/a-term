@@ -103,8 +103,7 @@ app.include_router(files.router)
 async def health() -> dict[str, str]:
     """Health check endpoint."""
     try:
-        conn = get_connection()
-        with conn.cursor() as cur:
+        with get_connection() as conn, conn.cursor() as cur:
             cur.execute("SELECT 1")
         return {"status": "healthy", "service": "terminal"}
     except Exception as e:

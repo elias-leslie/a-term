@@ -27,7 +27,7 @@ def _get_pool() -> ConnectionPool:
 
 
 @contextmanager
-def get_connection() -> Generator[psycopg.Connection, None, None]:
+def get_connection() -> Generator[psycopg.Connection]:
     """Get a database connection from the pool.
 
     Usage:

@@ -47,18 +47,9 @@ export default function RootLayout({
             __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').then(
-                    function(registration) {
-                      if (process.env.NODE_ENV === 'development') {
-                        console.log('SW registered:', registration.scope);
-                      }
-                    },
-                    function(err) {
-                      if (process.env.NODE_ENV === 'development') {
-                        console.log('SW registration failed:', err);
-                      }
-                    }
-                  );
+                  navigator.serviceWorker.register('/sw.js').catch(function(err) {
+                    console.error('SW registration failed:', err);
+                  });
                 });
               }
             `,

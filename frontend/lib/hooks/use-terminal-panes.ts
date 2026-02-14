@@ -137,7 +137,7 @@ export function useTerminalPanes() {
     createAdHocPane,
     isCreating: createMutation.isPending,
     setActiveMode,
-    renamePne,
+    renamePane,
     isUpdating: updateMutation.isPending,
     removePane,
     isDeleting: deleteMutation.isPending,

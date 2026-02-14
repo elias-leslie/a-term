@@ -31,7 +31,7 @@ interface TerminalContentProps {
   scrollback: TerminalScrollback
   cursorStyle: 'block' | 'underline' | 'bar'
   cursorBlink: boolean
-  theme?: unknown
+  theme?: Parameters<typeof TerminalLayoutRenderer>[0]['theme']
 
   // Settings
   fontId: TerminalFontId
@@ -224,8 +224,7 @@ export function TerminalContent({
           scrollback={scrollback}
           cursorStyle={cursorStyle}
           cursorBlink={cursorBlink}
-          // biome-ignore lint/suspicious/noExplicitAny: theme type passed through from parent
-          theme={theme as any}
+          theme={theme}
           onTerminalRef={setTerminalRef}
           onStatusChange={handleStatusChange}
           onSlotSwitch={onSlotSwitch}
