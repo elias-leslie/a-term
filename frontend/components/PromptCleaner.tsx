@@ -105,9 +105,9 @@ function HeaderBar({ showDiffToggle, state, showDiff, onToggleDiff, onClose }: H
 function ActionBar({ isEditing, onCancel, onToggleEdit, onSend }: ActionBarProps) {
   return (
     <div className={styles.actionBar}>
-      <button className={`${styles.actionBtn} ${styles.actionBtnSecondary}`} onClick={onCancel}><span className={styles.btnIcon}>✕</span>CANCEL</button>
-      <button className={`${styles.actionBtn} ${styles.actionBtnSecondary}`} onClick={onToggleEdit}><span className={styles.btnIcon}>{isEditing ? '◉' : '✎'}</span>{isEditing ? 'PREVIEW' : 'EDIT'}</button>
-      <button className={`${styles.actionBtn} ${styles.actionBtnPrimary}`} onClick={onSend}><span className={styles.btnIcon}>▶</span>SEND<span className={styles.keyHint}>⏎</span></button>
+      <button className={`${styles.actionBtn} ${styles.actionBtnSecondary}`} onClick={onCancel} aria-label="Cancel prompt cleaning"><span className={styles.btnIcon}>✕</span>CANCEL</button>
+      <button className={`${styles.actionBtn} ${styles.actionBtnSecondary}`} onClick={onToggleEdit} aria-label={isEditing ? 'Preview prompt' : 'Edit prompt'}><span className={styles.btnIcon}>{isEditing ? '◉' : '✎'}</span>{isEditing ? 'PREVIEW' : 'EDIT'}</button>
+      <button className={`${styles.actionBtn} ${styles.actionBtnPrimary}`} onClick={onSend} aria-label="Send cleaned prompt"><span className={styles.btnIcon}>▶</span>SEND<span className={styles.keyHint}>⏎</span></button>
     </div>
   )
 }

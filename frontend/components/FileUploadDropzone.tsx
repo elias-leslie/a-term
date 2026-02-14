@@ -78,6 +78,7 @@ export function FileUploadDropzone({
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
+      aria-label="File upload dropzone"
     >
       {children}
 
@@ -89,6 +90,8 @@ export function FileUploadDropzone({
             backgroundColor: 'rgba(var(--term-bg-surface-rgb), 0.9)',
             border: '2px dashed var(--term-accent)',
           }}
+          role="status"
+          aria-label="Drop file to upload"
         >
           <Upload
             className="w-12 h-12 mb-3"
