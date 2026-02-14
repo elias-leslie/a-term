@@ -165,7 +165,6 @@ export function useTerminalOrchestration({
     voiceInterimTranscript: transcription.interimTranscript,
     voiceStatus: transcription.status,
     voiceError: transcription.error,
-    voiceEngine: transcription.engine,
     isVoiceSupported: transcription.isSupported,
   }
 }
