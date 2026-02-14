@@ -3,6 +3,7 @@
 import { clsx } from 'clsx'
 import {
   ChevronDown,
+  Mic,
   Paperclip,
   Plus,
   RefreshCw,
@@ -25,6 +26,7 @@ export interface UnifiedTerminalHeaderProps {
   onReset?: () => void
   onClose?: () => void
   onUpload?: () => void
+  onVoice?: () => void
   onClean?: () => void
   /** Opens terminal manager modal - appears in ALL pane headers */
   onOpenModal?: () => void
@@ -54,6 +56,7 @@ export const UnifiedTerminalHeader = memo(function UnifiedTerminalHeader({
   onReset,
   onClose,
   onUpload,
+  onVoice,
   onClean,
   onOpenModal,
   canAddPane = true,
@@ -188,6 +191,16 @@ export const UnifiedTerminalHeader = memo(function UnifiedTerminalHeader({
             icon={<Sparkles className="w-3.5 h-3.5" />}
             onClick={onClean}
             tooltip="Clean prompt"
+            isMobile={isMobile}
+          />
+        )}
+
+        {/* Voice input */}
+        {onVoice && (
+          <IconButton
+            icon={<Mic className="w-3.5 h-3.5" />}
+            onClick={onVoice}
+            tooltip="Voice input"
             isMobile={isMobile}
           />
         )}

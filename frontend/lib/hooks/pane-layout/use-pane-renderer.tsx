@@ -32,6 +32,7 @@ interface UsePaneRendererOptions {
     | 'cursorBlink'
     | 'theme'
     | 'onStatusChange'
+    | 'onVoice'
   >
   displaySlots: (TerminalSlot | PaneSlot)[]
   paneCount: number
@@ -66,6 +67,7 @@ export function usePaneRenderer({
     cursorBlink,
     theme,
     onStatusChange,
+    onVoice,
   } = props
 
   const renderPane = useCallback(
@@ -99,6 +101,7 @@ export function usePaneRenderer({
               onModeSwitch ? (mode) => onModeSwitch(slot, mode) : undefined
             }
             isModeSwitching={isModeSwitching}
+            onVoice={onVoice}
             isMobile={isMobile}
             allSlots={paneCount > 1 ? displaySlots : undefined}
             onSwapWith={
@@ -161,6 +164,7 @@ export function usePaneRenderer({
       cursorBlink,
       theme,
       onStatusChange,
+      onVoice,
     ],
   )
 

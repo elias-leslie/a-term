@@ -52,6 +52,9 @@ interface TerminalLayoutRendererProps {
   // Layout persistence
   onLayoutChange?: (layouts: PaneLayout[]) => void
   initialLayouts?: PaneLayout[]
+
+  // Voice input
+  onVoice?: () => void
 }
 
 export function TerminalLayoutRenderer({
@@ -78,6 +81,7 @@ export function TerminalLayoutRenderer({
   onSwapPanes,
   onLayoutChange,
   initialLayouts,
+  onVoice,
 }: TerminalLayoutRendererProps) {
   return (
     <ResizablePaneLayout
@@ -104,6 +108,7 @@ export function TerminalLayoutRenderer({
       onSwapPanes={onSwapPanes}
       onLayoutChange={onLayoutChange}
       initialLayouts={initialLayouts}
+      onVoice={onVoice}
     />
   )
 }

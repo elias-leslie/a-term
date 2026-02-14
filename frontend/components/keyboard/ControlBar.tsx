@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp, Mic } from 'lucide-react'
 import { useCallback } from 'react'
 import { KeyboardKey } from './KeyboardKey'
 import { KEY_SEQUENCES } from './keyMappings'
@@ -15,6 +15,8 @@ interface ControlBarProps {
   // Keyboard minimize
   minimized?: boolean
   onToggleMinimize?: () => void
+  // Voice input
+  onVoice?: () => void
 }
 
 export function ControlBar({
@@ -23,6 +25,7 @@ export function ControlBar({
   onCtrlToggle,
   minimized = false,
   onToggleMinimize,
+  onVoice,
 }: ControlBarProps) {
   // Get shift state from shared modifier context
   const { modifiers, resetModifiers } = useModifiers()
@@ -173,6 +176,26 @@ export function ControlBar({
           CTRL
         </button>
       </div>
+
+      {/* Voice input */}
+      {onVoice && (
+        <button
+          type="button"
+          onClick={() => {
+            navigator.vibrate?.(10)
+            onVoice()
+          }}
+          className="h-9 px-2 rounded-md text-xs font-medium transition-all duration-150 active:scale-95"
+          style={{
+            backgroundColor: 'var(--term-bg-elevated)',
+            color: 'var(--term-text-muted)',
+            border: '1px solid var(--term-border)',
+          }}
+          title="Voice input"
+        >
+          <Mic className="w-4 h-4" />
+        </button>
+      )}
 
       {/* Right side - keyboard toggle */}
       {onToggleMinimize && (

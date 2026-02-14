@@ -8,6 +8,12 @@ interface UseTerminalActionHandlersParams {
   showCleaner: boolean
   setShowCleaner: (show: boolean) => void
   setCleanerRawPrompt: (prompt: string) => void
+  // Voice input
+  setShowVoice: (show: boolean) => void
+  voiceStartListening: () => void
+  voiceStopListening: () => void
+  voiceResetTranscript: () => void
+  voiceStatus: 'idle' | 'listening' | 'processing' | 'error'
 }
 
 export function useTerminalActionHandlers({
@@ -15,6 +21,11 @@ export function useTerminalActionHandlers({
   activeSessionId,
   setShowCleaner,
   setCleanerRawPrompt,
+  setShowVoice,
+  voiceStartListening,
+  voiceStopListening,
+  voiceResetTranscript,
+  voiceStatus,
 }: UseTerminalActionHandlersParams) {
   // File upload functionality
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -86,6 +97,54 @@ export function useTerminalActionHandlers({
     setCleanerRawPrompt('')
   }, [setShowCleaner, setCleanerRawPrompt])
 
+  // Voice input handlers
+  const handleVoiceOpen = useCallback(() => {
+    setShowVoice(true)
+    voiceStartListening()
+  }, [setShowVoice, voiceStartListening])
+
+  const handleVoiceSend = useCallback(
+    (text: string) => {
+      if (!activeSessionId) return
+      const terminalRef = terminalRefs.current.get(activeSessionId)
+      if (terminalRef) {
+        terminalRef.sendInput(`${text}\r`)
+      }
+      voiceStopListening()
+      voiceResetTranscript()
+      setShowVoice(false)
+    },
+    [activeSessionId, terminalRefs, voiceStopListening, voiceResetTranscript, setShowVoice],
+  )
+
+  const handleVoiceInsert = useCallback(
+    (text: string) => {
+      if (!activeSessionId) return
+      const terminalRef = terminalRefs.current.get(activeSessionId)
+      if (terminalRef) {
+        terminalRef.sendInput(text)
+      }
+      voiceStopListening()
+      voiceResetTranscript()
+      setShowVoice(false)
+    },
+    [activeSessionId, terminalRefs, voiceStopListening, voiceResetTranscript, setShowVoice],
+  )
+
+  const handleVoiceCancel = useCallback(() => {
+    voiceStopListening()
+    voiceResetTranscript()
+    setShowVoice(false)
+  }, [voiceStopListening, voiceResetTranscript, setShowVoice])
+
+  const handleVoiceToggle = useCallback(() => {
+    if (voiceStatus === 'listening') {
+      voiceStopListening()
+    } else {
+      voiceStartListening()
+    }
+  }, [voiceStatus, voiceStopListening, voiceStartListening])
+
   return {
     // File upload
     fileInputRef,
@@ -99,5 +158,12 @@ export function useTerminalActionHandlers({
     handleCleanClick,
     handleCleanerSend,
     handleCleanerCancel,
+    // Voice input
+    handleVoiceOpen,
+    handleVoiceSend,
+    handleVoiceInsert,
+    handleVoiceCancel,
+    handleVoiceToggle,
+    handleVoiceReset: voiceResetTranscript,
   }
 }

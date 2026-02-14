@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  transpilePackages: ['@agent-hub/passport-client'],
   // Proxy /api/* and /ws/* to backend server-to-server to avoid CORS issues with CF Access
   // In production: browser requests terminal.summitflow.dev/api/* (same-origin)
   // Next.js rewrites proxy to localhost:8002 (server-to-server, no CORS)

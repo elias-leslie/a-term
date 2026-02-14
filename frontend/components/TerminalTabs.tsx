@@ -88,6 +88,20 @@ export function TerminalTabs({
     // Prompt cleaner state
     showCleaner,
     cleanerRawPrompt,
+
+    // Voice input
+    showVoice,
+    voiceFinalTranscript,
+    voiceInterimTranscript,
+    voiceStatus,
+    voiceError,
+    isVoiceSupported,
+    handleVoiceOpen,
+    handleVoiceSend,
+    handleVoiceInsert,
+    handleVoiceCancel,
+    handleVoiceToggle,
+    handleVoiceReset,
   } = useTerminalOrchestration({ projectId, projectPath })
 
   // Loading state - show skeleton
@@ -151,6 +165,18 @@ export function TerminalTabs({
         activeStatus={activeStatus}
         handleKeyboardInput={handleKeyboardInput}
         handleReconnect={handleReconnect}
+        showVoice={showVoice}
+        isVoiceSupported={isVoiceSupported}
+        voiceFinalTranscript={voiceFinalTranscript}
+        voiceInterimTranscript={voiceInterimTranscript}
+        voiceStatus={voiceStatus}
+        voiceError={voiceError}
+        handleVoiceOpen={handleVoiceOpen}
+        handleVoiceSend={handleVoiceSend}
+        handleVoiceInsert={handleVoiceInsert}
+        handleVoiceCancel={handleVoiceCancel}
+        handleVoiceToggle={handleVoiceToggle}
+        handleVoiceReset={handleVoiceReset}
         className={className}
       />
 

@@ -11,12 +11,17 @@ import type {
 } from '@/lib/hooks/use-terminal-settings'
 import type { KeyboardSizePreset } from '@/components/keyboard/types'
 import type { PaneLayout } from '@/types/pane-layout'
+import type {
+  TranscriptionError,
+  TranscriptionStatus,
+} from '@agent-hub/passport-client'
 import { FileUploadDropzone } from './FileUploadDropzone'
 import { MobileKeyboard } from './keyboard/MobileKeyboard'
 import { PromptCleaner } from './PromptCleaner'
 import { SettingsDropdown } from './SettingsDropdown'
 import { TerminalLayoutRenderer } from './TerminalLayoutRenderer'
 import { UploadErrorToast, UploadProgressToast } from './UploadStatusToast'
+import { VoiceTranscriptPanel } from './VoiceTranscriptPanel'
 
 interface TerminalContentProps {
   // Terminal state
@@ -80,6 +85,20 @@ interface TerminalContentProps {
   handleKeyboardInput: (input: string) => void
   handleReconnect: () => void
 
+  // Voice input
+  showVoice: boolean
+  isVoiceSupported: boolean
+  voiceFinalTranscript: string
+  voiceInterimTranscript: string
+  voiceStatus: TranscriptionStatus
+  voiceError: TranscriptionError
+  handleVoiceOpen: () => void
+  handleVoiceSend: (text: string) => void
+  handleVoiceInsert: (text: string) => void
+  handleVoiceCancel: () => void
+  handleVoiceToggle: () => void
+  handleVoiceReset: () => void
+
   // Class name
   className?: string
 }
@@ -138,6 +157,18 @@ export function TerminalContent({
   activeStatus,
   handleKeyboardInput,
   handleReconnect,
+  showVoice,
+  isVoiceSupported,
+  voiceFinalTranscript,
+  voiceInterimTranscript,
+  voiceStatus,
+  voiceError,
+  handleVoiceOpen,
+  handleVoiceSend,
+  handleVoiceInsert,
+  handleVoiceCancel,
+  handleVoiceToggle,
+  handleVoiceReset,
   className,
 }: TerminalContentProps) {
   return (
@@ -210,6 +241,7 @@ export function TerminalContent({
           isMobile={isMobile ?? false}
           onSwapPanes={onSwapPanes}
           onLayoutChange={onLayoutChange}
+          onVoice={isVoiceSupported ? handleVoiceOpen : undefined}
         />
       </FileUploadDropzone>
 
@@ -221,6 +253,7 @@ export function TerminalContent({
             connectionStatus={activeStatus}
             onReconnect={handleReconnect}
             keyboardSize={keyboardSize}
+            onVoice={isVoiceSupported ? handleVoiceOpen : undefined}
           />
         </div>
       )}
@@ -233,6 +266,21 @@ export function TerminalContent({
           onCancel={handleCleanerCancel}
           cleanPrompt={cleanPrompt}
           showDiffToggle={true}
+        />
+      )}
+
+      {/* Voice Input Panel */}
+      {showVoice && (
+        <VoiceTranscriptPanel
+          transcript={voiceFinalTranscript}
+          interimTranscript={voiceInterimTranscript}
+          status={voiceStatus}
+          error={voiceError}
+          onSend={handleVoiceSend}
+          onInsert={handleVoiceInsert}
+          onCancel={handleVoiceCancel}
+          onToggleListening={handleVoiceToggle}
+          onReset={handleVoiceReset}
         />
       )}
     </div>

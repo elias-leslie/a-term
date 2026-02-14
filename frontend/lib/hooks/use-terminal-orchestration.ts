@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranscription } from '@agent-hub/passport-client'
 import { useLayoutPersistence } from './use-layout-persistence'
 import { usePromptCleaner } from './use-prompt-cleaner'
 import { useTerminalActionHandlers } from './use-terminal-action-handlers'
@@ -7,6 +8,18 @@ import { useTerminalNavigation } from './use-terminal-navigation'
 import { useTerminalSlotHandlers } from './use-terminal-slot-handlers'
 import { useTerminalTabsState } from './use-terminal-tabs-state'
 import { useTerminalKeyboardShortcuts } from '@/components/KeyboardShortcuts'
+
+function getVoiceWsUrl(): string {
+  if (typeof window === 'undefined') return ''
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  // Agent Hub voice WebSocket on same host, port 8003
+  const host = window.location.hostname
+  const isProduction = host.includes('summitflow.dev')
+  if (isProduction) {
+    return `wss://agent.summitflow.dev/api/voice/ws?user_id=terminal&app=terminal`
+  }
+  return `${protocol}//${host}:8003/api/voice/ws?user_id=terminal&app=terminal`
+}
 
 interface UseTerminalOrchestrationProps {
   projectId?: string
@@ -47,6 +60,12 @@ export function useTerminalOrchestration({
   const [showCleaner, setShowCleaner] = useState(false)
   const [cleanerRawPrompt, setCleanerRawPrompt] = useState('')
   const [keyboardHelpState, setKeyboardHelpState] = useState(false)
+
+  // Voice input state
+  const [showVoice, setShowVoice] = useState(false)
+  const transcription = useTranscription({
+    whisperWsUrl: getVoiceWsUrl(),
+  })
 
   // Modal management
   const modalHandlers = useTerminalModals({
@@ -97,7 +116,7 @@ export function useTerminalOrchestration({
     onJumpToTerminal: navigationHandlers.handleJumpToTerminal,
   })
 
-  // File upload and prompt cleaner
+  // File upload, prompt cleaner, and voice input
   const { cleanPrompt } = usePromptCleaner()
   const actionHandlers = useTerminalActionHandlers({
     terminalRefs,
@@ -105,6 +124,11 @@ export function useTerminalOrchestration({
     showCleaner,
     setShowCleaner,
     setCleanerRawPrompt,
+    setShowVoice,
+    voiceStartListening: transcription.startListening,
+    voiceStopListening: transcription.stopListening,
+    voiceResetTranscript: transcription.resetTranscript,
+    voiceStatus: transcription.status,
   })
 
   return {
@@ -134,5 +158,14 @@ export function useTerminalOrchestration({
     // Prompt cleaner state
     showCleaner,
     cleanerRawPrompt,
+
+    // Voice input state
+    showVoice,
+    voiceFinalTranscript: transcription.finalTranscript,
+    voiceInterimTranscript: transcription.interimTranscript,
+    voiceStatus: transcription.status,
+    voiceError: transcription.error,
+    voiceEngine: transcription.engine,
+    isVoiceSupported: transcription.isSupported,
   }
 }
