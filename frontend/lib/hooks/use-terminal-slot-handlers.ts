@@ -1,4 +1,5 @@
 import { type MutableRefObject, useCallback, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import type { TerminalMode } from '@/components/ModeToggle'
 import type { TerminalHandle } from '@/components/Terminal'
 import type { TerminalSession } from '@/lib/hooks/use-terminal-sessions'
@@ -49,6 +50,7 @@ export function useTerminalSlotHandlers({
   sessions,
   handleProjectModeChange,
 }: UseTerminalSlotHandlersParams) {
+  const queryClient = useQueryClient()
   // Track mode switch loading state
   const [isModeSwitching, setIsModeSwitching] = useState(false)
   // Handler for switching to a slot's terminal
@@ -70,10 +72,12 @@ export function useTerminalSlotHandlers({
       if (!sessionId) return
 
       const newSession = await reset(sessionId)
+      // Invalidate panes so the slot picks up the new session ID
+      await queryClient.invalidateQueries({ queryKey: ['terminal-panes'] })
       // Navigate to the new session so the terminal re-renders with the fresh connection
       switchToSession(newSession.id)
     },
-    [reset, switchToSession],
+    [reset, switchToSession, queryClient],
   )
 
   // Handler for closing a slot's terminal
