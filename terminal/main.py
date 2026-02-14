@@ -16,6 +16,7 @@ from .api import claude, files, panes, projects, sessions, terminal
 from .config import CORS_ORIGINS, TERMINAL_PORT
 from .logging_config import get_logger
 from .services import lifecycle
+from .storage.connection import close_pool, get_connection
 
 logger = get_logger(__name__)
 
@@ -69,6 +70,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # Shutdown
     logger.info("terminal_service_stopping")
+    close_pool()
+    logger.info("terminal_service_shutdown_complete")
 
 
 app = FastAPI(
@@ -99,7 +102,14 @@ app.include_router(files.router)
 @app.get("/health")
 async def health() -> dict[str, str]:
     """Health check endpoint."""
-    return {"status": "healthy", "service": "terminal"}
+    try:
+        conn = get_connection()
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1")
+        return {"status": "healthy", "service": "terminal"}
+    except Exception as e:
+        logger.error("health_check_failed", error=str(e))
+        return {"status": "unhealthy", "service": "terminal", "db": "down"}
 
 
 def main() -> None:

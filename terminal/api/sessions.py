@@ -12,6 +12,7 @@ for context-aware working directory.
 
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
 from fastapi import APIRouter, HTTPException

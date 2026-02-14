@@ -102,13 +102,24 @@ async def upload_file(file: UploadFile) -> FileUploadResponse:
     Allowed types: png, jpg, gif, webp, md, txt, json, pdf
     Max size: 10MB (configurable via MAX_FILE_SIZE_MB env var)
     """
-    # Read file content (with size limit)
-    content = await file.read()
-    if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=413,
-            detail=f"File too large. Maximum size: {MAX_FILE_SIZE_MB}MB",
-        )
+    # Read file content in chunks to enforce size limit before loading entire file
+    chunks: list[bytes] = []
+    total_size = 0
+    chunk_size = 1024 * 1024  # 1MB chunks
+
+    while True:
+        chunk = await file.read(chunk_size)
+        if not chunk:
+            break
+        total_size += len(chunk)
+        if total_size > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File too large. Maximum size: {MAX_FILE_SIZE_MB}MB",
+            )
+        chunks.append(chunk)
+
+    content = b"".join(chunks)
 
     # Validate MIME type from client header
     claimed_type = file.content_type or "application/octet-stream"

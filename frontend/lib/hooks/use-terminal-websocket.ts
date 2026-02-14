@@ -69,7 +69,7 @@ export function useTerminalWebSocket({
 }: UseTerminalWebSocketOptions): UseTerminalWebSocketReturn {
   const wsRef = useRef<WebSocket | null>(null)
   const [status, setStatus] = useState<ConnectionStatus>('connecting')
-  const hasRetriedRef = useRef(false)
+  const retryCountRef = useRef(0)
   const timeoutIdRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const mountedRef = useRef(true)
   const connectRef = useRef<(() => void) | undefined>(undefined)

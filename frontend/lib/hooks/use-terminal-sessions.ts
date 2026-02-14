@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { buildApiUrl } from '../api-config'
 
 export interface TerminalSession {
@@ -96,7 +96,12 @@ export function useTerminalSessions(projectId?: string) {
     queryFn: fetchSessions,
   })
 
-  if (!activeId && sessions.length > 0) setActiveId(sessions[0].id)
+  // Set active ID to first session if none is active (must be in useEffect to avoid setState during render)
+  useEffect(() => {
+    if (!activeId && sessions.length > 0) {
+      setActiveId(sessions[0].id)
+    }
+  }, [activeId, sessions])
 
   const createMutation = useMutation({
     mutationFn: createSession,
