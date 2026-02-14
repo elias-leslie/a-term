@@ -3,6 +3,7 @@
 import { clsx } from 'clsx'
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -96,6 +97,15 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
       isMobile,
     })
 
+    // Stable callback for terminal input — uses refs so identity never changes,
+    // preventing useTerminalInstance from destroying/recreating xterm on every render
+    const handleTerminalData = useCallback((data: string) => {
+      if (!isFocusedRef.current) return
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(data)
+      }
+    }, [])
+
     // Terminal instance initialization and lifecycle
     useTerminalInstance(
       {
@@ -105,13 +115,7 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
         fontFamily,
         scrollback,
         theme,
-        onData: (data) => {
-          // Only send input if this terminal has focus (prevents grid duplication)
-          if (!isFocusedRef.current) return
-          if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(data)
-          }
-        },
+        onData: handleTerminalData,
         setupScrolling,
       },
       {
