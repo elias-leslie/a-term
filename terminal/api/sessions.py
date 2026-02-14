@@ -134,6 +134,11 @@ async def create_session(request: CreateSessionRequest) -> TerminalSessionRespon
 @router.get("/api/terminal/sessions/{session_id}", response_model=TerminalSessionResponse)
 async def get_session(session_id: str) -> TerminalSessionResponse:
     """Get a single terminal session by ID."""
+    try:
+        uuid.UUID(session_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid UUID") from None
+
     session = terminal_store.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail=f"Session {session_id} not found") from None
@@ -147,6 +152,11 @@ async def update_session(session_id: str, request: UpdateSessionRequest) -> Term
 
     Can update: name, display_order
     """
+    try:
+        uuid.UUID(session_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid UUID") from None
+
     # Verify session exists
     existing = terminal_store.get_session(session_id)
     if not existing:

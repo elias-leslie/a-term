@@ -139,19 +139,28 @@ export function useTerminalWebSocket({
         ws.close()
         if (!mountedRef.current) return
 
-        if (!hasRetriedRef.current) {
-          hasRetriedRef.current = true
+        const maxRetries = 10
+        if (retryCountRef.current < maxRetries) {
+          // Exponential backoff: 1s, 2s, 4s, 8s, 16s, max 30s
+          const delay = Math.min(1000 * Math.pow(2, retryCountRef.current), 30000)
+          retryCountRef.current += 1
+
+          // Log warning after 3 failures
+          if (retryCountRef.current === 3) {
+            console.warn(`Connection timeout: ${retryCountRef.current} failed attempts, continuing to retry...`)
+          }
+
           onTerminalMessageRef.current?.(
-            '\x1b[33mConnection timeout, retrying...\x1b[0m',
+            `\x1b[33mConnection timeout, retrying (${retryCountRef.current}/${maxRetries})...\x1b[0m`,
           )
           setStatus('connecting')
           setTimeout(() => {
             if (mountedRef.current) connectRef.current?.()
-          }, RETRY_BACKOFF)
+          }, delay)
         } else {
           setStatus('timeout')
           onTerminalMessageRef.current?.(
-            '\r\n\x1b[31mConnection timeout\x1b[0m',
+            '\r\n\x1b[31mConnection timeout after maximum retries\x1b[0m',
           )
           onDisconnectRef.current?.()
         }
