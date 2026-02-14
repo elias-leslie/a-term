@@ -75,10 +75,11 @@ export function usePromptCleaner(): UsePromptCleanerReturn {
               { role: 'user', content: userMessage },
             ],
             max_tokens: 4096,
-            temperature: 0.3, // Lower temperature for more consistent output
+            temperature: 0.3,
             project_id: 'terminal-prompt-cleaner',
-            persist_session: false, // Don't persist these short-lived sessions
+            persist_session: false,
           }),
+          signal: AbortSignal.timeout(10000),
         })
 
         if (!response.ok) {
@@ -96,11 +97,13 @@ export function usePromptCleaner(): UsePromptCleanerReturn {
         return cleanedContent
       } catch (err) {
         const message =
-          err instanceof Error ? err.message : 'Failed to clean prompt'
+          err instanceof Error
+            ? err.name === 'TimeoutError'
+              ? 'Request timed out'
+              : err.message
+            : 'Failed to clean prompt'
         setError(message)
 
-        // Fallback: return original prompt with basic cleanup
-        console.warn('Prompt cleaner fallback:', message)
         return prompt.trim()
       } finally {
         setIsLoading(false)
