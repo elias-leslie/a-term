@@ -13,7 +13,7 @@ interface UseTerminalSlotHandlersParams {
   terminalRefs: MutableRefObject<Map<string, TerminalHandle | null>>
   switchToSession: (sessionId: string) => void
   resetProject: (projectId: string) => Promise<void>
-  reset: (sessionId: string) => Promise<unknown>
+  reset: (sessionId: string) => Promise<TerminalSession>
   disableProject: (projectId: string) => Promise<void>
   remove: (sessionId: string) => Promise<void>
   // Pane-based operations (new architecture)
@@ -66,16 +66,14 @@ export function useTerminalSlotHandlers({
   // Resets ONLY the visible session (shell OR claude, not both)
   const handleSlotReset = useCallback(
     async (slot: TerminalSlot) => {
-      if (slot.type === 'project') {
-        // Reset only the currently visible session (determined by activeMode)
-        if (slot.activeSessionId) {
-          await reset(slot.activeSessionId)
-        }
-      } else {
-        await reset(slot.sessionId)
-      }
+      const sessionId = slot.type === 'project' ? slot.activeSessionId : slot.sessionId
+      if (!sessionId) return
+
+      const newSession = await reset(sessionId)
+      // Navigate to the new session so the terminal re-renders with the fresh connection
+      switchToSession(newSession.id)
     },
-    [reset],
+    [reset, switchToSession],
   )
 
   // Handler for closing a slot's terminal

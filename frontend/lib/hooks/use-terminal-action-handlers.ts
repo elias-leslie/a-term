@@ -16,6 +16,26 @@ interface UseTerminalActionHandlersParams {
   voiceStatus: 'idle' | 'listening' | 'processing' | 'error'
 }
 
+/**
+ * Find the active terminal ref. Tries activeSessionId first (URL-derived),
+ * falls back to the first available ref (handles stale URL, e.g. when
+ * pane mode is 'claude' but URL still points to the shell session).
+ */
+function findActiveRef(
+  terminalRefs: Map<string, TerminalHandle | null>,
+  activeSessionId: string | null,
+): TerminalHandle | null {
+  if (activeSessionId) {
+    const ref = terminalRefs.get(activeSessionId)
+    if (ref) return ref
+  }
+  // Fallback: first available ref (handles URL/slot desync on initial load)
+  for (const ref of terminalRefs.values()) {
+    if (ref) return ref
+  }
+  return null
+}
+
 export function useTerminalActionHandlers({
   terminalRefs,
   activeSessionId,
@@ -43,9 +63,8 @@ export function useTerminalActionHandlers({
   const handleFileSelect = useCallback(
     async (file: File) => {
       const result = await uploadFile(file)
-      if (result && activeSessionId) {
-        // Insert path at cursor in the active terminal
-        const terminalRef = terminalRefs.current.get(activeSessionId)
+      if (result) {
+        const terminalRef = findActiveRef(terminalRefs.current, activeSessionId)
         if (terminalRef) {
           terminalRef.pasteInput(result.path)
         }
@@ -69,8 +88,7 @@ export function useTerminalActionHandlers({
 
   // Prompt cleaner handlers
   const handleCleanClick = useCallback(() => {
-    if (!activeSessionId) return
-    const terminalRef = terminalRefs.current.get(activeSessionId)
+    const terminalRef = findActiveRef(terminalRefs.current, activeSessionId)
     if (!terminalRef) return
     const input = terminalRef.getLastLine()
     if (!input.trim()) return
@@ -80,8 +98,7 @@ export function useTerminalActionHandlers({
 
   const handleCleanerSend = useCallback(
     (cleanedPrompt: string) => {
-      if (!activeSessionId) return
-      const terminalRef = terminalRefs.current.get(activeSessionId)
+      const terminalRef = findActiveRef(terminalRefs.current, activeSessionId)
       if (terminalRef) {
         // Clear current line (send Ctrl+U) then paste cleaned prompt
         terminalRef.sendInput('\x15') // Ctrl+U
@@ -106,13 +123,12 @@ export function useTerminalActionHandlers({
 
   const handleVoiceSend = useCallback(
     (text: string) => {
-      if (!activeSessionId) return
-      const terminalRef = terminalRefs.current.get(activeSessionId)
+      const terminalRef = findActiveRef(terminalRefs.current, activeSessionId)
       if (terminalRef) {
         // Use bracketed paste so TUI apps (Claude Code, vim, etc.) recognize the input
         terminalRef.pasteInput(text)
-        // Send Enter separately after paste completes
-        setTimeout(() => terminalRef.sendInput('\r'), 50)
+        // Send Enter separately — 150ms delay gives TUI apps time to process the paste
+        setTimeout(() => terminalRef.sendInput('\r'), 150)
       }
       voiceStopListening()
       voiceResetTranscript()
@@ -123,8 +139,7 @@ export function useTerminalActionHandlers({
 
   const handleVoiceInsert = useCallback(
     (text: string) => {
-      if (!activeSessionId) return
-      const terminalRef = terminalRefs.current.get(activeSessionId)
+      const terminalRef = findActiveRef(terminalRefs.current, activeSessionId)
       if (terminalRef) {
         terminalRef.pasteInput(text)
       }
