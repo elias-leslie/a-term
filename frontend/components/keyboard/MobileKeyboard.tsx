@@ -15,6 +15,7 @@ interface MobileKeyboardProps {
   onReconnect?: () => void
   keyboardSize?: KeyboardSizePreset
   onVoice?: () => void
+  voiceActive?: boolean
 }
 
 export function MobileKeyboard({
@@ -22,6 +23,7 @@ export function MobileKeyboard({
   // connectionStatus and onReconnect reserved for future mobile status display
   keyboardSize = 'medium',
   onVoice,
+  voiceActive = false,
 }: MobileKeyboardProps) {
   const [ctrlActive, setCtrlActive] = useState(false)
   // Use lazy initialization to load from localStorage
@@ -73,8 +75,8 @@ export function MobileKeyboard({
           onToggleMinimize={handleToggleMinimize}
           onVoice={onVoice}
         />
-        {/* Full keyboard - hidden when minimized */}
-        {!minimized && (
+        {/* Full keyboard - hidden when minimized or voice is active */}
+        {!minimized && !voiceActive && (
           <FullKeyboard onSend={handleSend} keyboardSize={keyboardSize} />
         )}
       </div>

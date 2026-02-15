@@ -71,97 +71,118 @@ export function ControlBar({
     clearModifiers()
   }, [shiftActive, onSend, clearModifiers])
 
+  const btnStyle = {
+    backgroundColor: 'var(--term-bg-elevated)',
+    color: 'var(--term-text-muted)',
+    border: '1px solid var(--term-border)',
+  }
+
   return (
     <div
-      className="flex items-center gap-1 px-1.5 py-1"
+      className="flex flex-col gap-1 px-1.5 py-1"
       style={{
         backgroundColor: 'var(--term-bg-surface)',
         borderTop: '1px solid var(--term-border)',
       }}
     >
-      {/* Arrow keys - optimized touch targets */}
-      <div className="flex items-center gap-0.5">
-        <KeyboardKey
-          label="←"
-          onPress={handleArrowLeft}
-          className="w-10 h-9 text-lg"
-        />
-        <KeyboardKey
-          label="↑"
-          onPress={handleArrowUp}
-          className="w-9 h-9 text-lg"
-        />
-        <KeyboardKey
-          label="↓"
-          onPress={handleArrowDown}
-          className="w-9 h-9 text-lg"
-        />
-        <KeyboardKey
-          label="→"
-          onPress={handleArrowRight}
-          className="w-10 h-9 text-lg"
-        />
+      {/* Row 1: Arrows (left) — Mic (center) — Keyboard toggle (right) */}
+      <div className="flex items-center gap-1">
+        {/* Arrow keys */}
+        <div className="flex items-center gap-0.5">
+          <KeyboardKey
+            label="←"
+            onPress={handleArrowLeft}
+            className="w-11 h-11 text-lg"
+          />
+          <KeyboardKey
+            label="↑"
+            onPress={handleArrowUp}
+            className="w-11 h-11 text-lg"
+          />
+          <KeyboardKey
+            label="↓"
+            onPress={handleArrowDown}
+            className="w-11 h-11 text-lg"
+          />
+          <KeyboardKey
+            label="→"
+            onPress={handleArrowRight}
+            className="w-11 h-11 text-lg"
+          />
+        </div>
+
+        {/* Spacer to push mic to center */}
+        <div className="flex-1" />
+
+        {/* Mic button — centered, prominent */}
+        {onVoice && (
+          <button
+            type="button"
+            onClick={() => {
+              navigator.vibrate?.(10)
+              onVoice()
+            }}
+            className="flex items-center justify-center h-11 w-11 rounded-md transition-all duration-150 active:scale-95"
+            style={btnStyle}
+            title="Voice input"
+          >
+            <Mic className="w-5 h-5" />
+          </button>
+        )}
+
+        {/* Spacer to push toggle to right */}
+        <div className="flex-1" />
+
+        {/* Keyboard toggle */}
+        {onToggleMinimize && (
+          <button
+            type="button"
+            onClick={onToggleMinimize}
+            className="flex items-center justify-center h-11 w-11 rounded-md transition-all duration-150"
+            style={{
+              backgroundColor: minimized
+                ? 'var(--term-accent)'
+                : 'var(--term-bg-elevated)',
+              color: minimized ? 'var(--term-bg-deep)' : 'var(--term-text-muted)',
+              border: `1px solid ${minimized ? 'var(--term-accent)' : 'var(--term-border)'}`,
+              boxShadow: minimized ? '0 0 8px var(--term-accent-glow)' : 'none',
+            }}
+            title={minimized ? 'Show keyboard' : 'Hide keyboard'}
+          >
+            {minimized ? (
+              <ChevronUp className="w-5 h-5" />
+            ) : (
+              <ChevronDown className="w-5 h-5" />
+            )}
+          </button>
+        )}
       </div>
 
-      {/* Quick Ctrl shortcuts */}
-      <div className="flex items-center gap-0.5 ml-0.5">
+      {/* Row 2: ESC — ^C — TAB — CTRL (stretched evenly) */}
+      <div className="flex items-center gap-1">
+        <KeyboardKey
+          label="ESC"
+          onPress={handleEsc}
+          className="flex-1 h-11 text-xs"
+        />
         <button
           type="button"
-          onClick={() => onSend('\x03')} // Ctrl+C (ETX)
-          className="h-9 px-2 rounded-md text-[10px] font-medium transition-all duration-150 active:scale-95"
-          style={{
-            backgroundColor: 'var(--term-bg-elevated)',
-            color: 'var(--term-text-muted)',
-            border: '1px solid var(--term-border)',
-          }}
+          onClick={() => onSend('\x03')}
+          className="flex-1 h-11 rounded-md text-xs font-medium transition-all duration-150 active:scale-95"
+          style={btnStyle}
           title="Interrupt (Ctrl+C)"
         >
           ^C
         </button>
-        <button
-          type="button"
-          onClick={() => onSend('\x04')} // Ctrl+D (EOT)
-          className="h-9 px-2 rounded-md text-[10px] font-medium transition-all duration-150 active:scale-95"
-          style={{
-            backgroundColor: 'var(--term-bg-elevated)',
-            color: 'var(--term-text-muted)',
-            border: '1px solid var(--term-border)',
-          }}
-          title="EOF (Ctrl+D)"
-        >
-          ^D
-        </button>
-        <button
-          type="button"
-          onClick={() => onSend('\x1a')} // Ctrl+Z (SUB)
-          className="h-9 px-2 rounded-md text-[10px] font-medium transition-all duration-150 active:scale-95"
-          style={{
-            backgroundColor: 'var(--term-bg-elevated)',
-            color: 'var(--term-text-muted)',
-            border: '1px solid var(--term-border)',
-          }}
-          title="Suspend (Ctrl+Z)"
-        >
-          ^Z
-        </button>
-      </div>
-
-      {/* Special terminal keys */}
-      <div className="flex items-center gap-0.5 ml-0.5">
-        <KeyboardKey
-          label="ESC"
-          onPress={handleEsc}
-          className="text-xs px-1.5 h-9"
-        />
         <KeyboardKey
           label="TAB"
           onPress={handleTab}
-          className="text-xs px-1.5 h-9"
+          className="flex-1 h-11 text-xs"
         />
         <button
           type="button"
           onClick={onCtrlToggle}
-          className="h-9 px-2 rounded-md text-xs font-medium transition-all duration-150 active:scale-95"
+          className="flex-1 h-11 rounded-md text-xs font-medium transition-all duration-150 active:scale-95"
           style={{
             backgroundColor: ctrlActive
               ? 'var(--term-accent)'
@@ -176,50 +197,6 @@ export function ControlBar({
           CTRL
         </button>
       </div>
-
-      {/* Voice input */}
-      {onVoice && (
-        <button
-          type="button"
-          onClick={() => {
-            navigator.vibrate?.(10)
-            onVoice()
-          }}
-          className="h-9 px-2 rounded-md text-xs font-medium transition-all duration-150 active:scale-95"
-          style={{
-            backgroundColor: 'var(--term-bg-elevated)',
-            color: 'var(--term-text-muted)',
-            border: '1px solid var(--term-border)',
-          }}
-          title="Voice input"
-        >
-          <Mic className="w-4 h-4" />
-        </button>
-      )}
-
-      {/* Right side - keyboard toggle */}
-      {onToggleMinimize && (
-        <button
-          type="button"
-          onClick={onToggleMinimize}
-          className="flex items-center justify-center h-9 w-9 rounded-md transition-all duration-150 ml-auto"
-          style={{
-            backgroundColor: minimized
-              ? 'var(--term-accent)'
-              : 'var(--term-bg-elevated)',
-            color: minimized ? 'var(--term-bg-deep)' : 'var(--term-text-muted)',
-            border: `1px solid ${minimized ? 'var(--term-accent)' : 'var(--term-border)'}`,
-            boxShadow: minimized ? '0 0 8px var(--term-accent-glow)' : 'none',
-          }}
-          title={minimized ? 'Show keyboard' : 'Hide keyboard'}
-        >
-          {minimized ? (
-            <ChevronUp className="w-4 h-4" />
-          ) : (
-            <ChevronDown className="w-4 h-4" />
-          )}
-        </button>
-      )}
     </div>
   )
 }

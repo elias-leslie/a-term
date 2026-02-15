@@ -244,8 +244,8 @@ export function TerminalContent({
         />
       </FileUploadDropzone>
 
-      {/* Mobile keyboard — hidden when voice panel is active */}
-      {isMobile && sessions.length > 0 && activeStatus && !showVoice && (
+      {/* Mobile keyboard + voice panel — ControlBar always visible, FullKeyboard hides during voice */}
+      {isMobile && sessions.length > 0 && activeStatus && (
         <div className="order-3">
           <MobileKeyboard
             onSend={handleKeyboardInput}
@@ -253,7 +253,23 @@ export function TerminalContent({
             onReconnect={handleReconnect}
             keyboardSize={keyboardSize}
             onVoice={isVoiceSupported ? handleVoiceOpen : undefined}
+            voiceActive={showVoice}
           />
+          {/* Mobile voice panel renders below ControlBar, replacing FullKeyboard */}
+          {showVoice && (
+            <VoiceTranscriptPanel
+              transcript={voiceFinalTranscript}
+              interimTranscript={voiceInterimTranscript}
+              status={voiceStatus}
+              error={voiceError}
+              onSend={handleVoiceSend}
+              onInsert={handleVoiceInsert}
+              onCancel={handleVoiceCancel}
+              onToggleListening={handleVoiceToggle}
+              onReset={handleVoiceReset}
+              isMobile={isMobile}
+            />
+          )}
         </div>
       )}
 
@@ -268,8 +284,8 @@ export function TerminalContent({
         />
       )}
 
-      {/* Voice Input Panel — inline on mobile (order-3, replaces keyboard), overlay on desktop */}
-      {showVoice && (
+      {/* Desktop voice panel — overlay/bottom-sheet */}
+      {showVoice && !isMobile && (
         <VoiceTranscriptPanel
           transcript={voiceFinalTranscript}
           interimTranscript={voiceInterimTranscript}
@@ -280,7 +296,6 @@ export function TerminalContent({
           onCancel={handleVoiceCancel}
           onToggleListening={handleVoiceToggle}
           onReset={handleVoiceReset}
-          isMobile={isMobile}
         />
       )}
     </div>

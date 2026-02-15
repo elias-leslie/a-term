@@ -144,7 +144,6 @@ export function VoiceTranscriptPanel({
 
     return (
       <div
-        className="order-3"
         style={{
           background: 'var(--term-bg-surface)',
           borderTop: '1px solid var(--term-border)',
