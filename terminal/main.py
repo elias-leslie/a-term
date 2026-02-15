@@ -11,9 +11,12 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from .api import claude, files, panes, projects, sessions, terminal
 from .config import CORS_ORIGINS, TERMINAL_PORT
+from .rate_limit import limiter
 from .logging_config import get_logger
 from .services import lifecycle
 from .storage.connection import close_pool, get_connection
@@ -80,6 +83,10 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# Rate limiting
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS middleware
 app.add_middleware(

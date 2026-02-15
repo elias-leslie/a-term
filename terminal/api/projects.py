@@ -10,8 +10,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
+
+from ..rate_limit import limiter
 
 from ..constants import SessionMode
 from ..services import lifecycle, summitflow_client
@@ -142,7 +144,8 @@ async def bulk_update_order(update: BulkOrderUpdate) -> list[ProjectResponse]:
 
 
 @router.post("/api/terminal/projects/{project_id}/reset")
-async def reset_project(project_id: str) -> dict[str, Any]:
+@limiter.limit("5/minute")
+async def reset_project(request: Request, project_id: str) -> dict[str, Any]:
     """Reset all terminal sessions for a project.
 
     Resets both shell and claude sessions if they exist.

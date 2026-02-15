@@ -1,9 +1,10 @@
 'use client'
 
+import { memo } from 'react'
 import { clsx } from 'clsx'
 import type { IconButtonProps } from './types'
 
-export function HeaderIconButton({
+export const HeaderIconButton = memo(function HeaderIconButton({
   icon,
   onClick,
   tooltip,
@@ -37,4 +38,4 @@ export function HeaderIconButton({
       {icon}
     </button>
   )
-}
+})

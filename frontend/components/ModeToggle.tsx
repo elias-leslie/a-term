@@ -1,7 +1,7 @@
 'use client'
 
 import { Loader2, Sparkles, Terminal } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { memo, useCallback, useState } from 'react'
 
 export type TerminalMode = 'shell' | 'claude'
 
@@ -18,7 +18,7 @@ interface ModeToggleProps {
  * Single-click toggle for switching between Shell and Claude modes.
  * Industrial control panel aesthetic with glowing Claude state.
  */
-export function ModeToggle({
+export const ModeToggle = memo(function ModeToggle({
   value,
   onChange,
   disabled = false,
@@ -214,4 +214,4 @@ export function ModeToggle({
       `}</style>
     </>
   )
-}
+})

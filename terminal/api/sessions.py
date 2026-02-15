@@ -15,8 +15,10 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
+
+from ..rate_limit import limiter
 
 from ..services import lifecycle
 from ..storage import terminal as terminal_store
@@ -219,7 +221,8 @@ async def reset_session(session_id: str) -> TerminalSessionResponse:
 
 
 @router.post("/api/terminal/reset-all")
-async def reset_all_sessions() -> dict[str, Any]:
+@limiter.limit("5/minute")
+async def reset_all_sessions(request: Request) -> dict[str, Any]:
     """Reset all terminal sessions.
 
     Resets every active session. Returns count of sessions reset.

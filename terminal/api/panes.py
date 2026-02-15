@@ -17,7 +17,9 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+
+from ..rate_limit import limiter
 
 from ..services.lifecycle_core import _kill_tmux_session
 from ..services.pane_service import (
@@ -74,21 +76,22 @@ async def get_pane_count() -> dict[str, Any]:
 
 
 @router.post("/api/terminal/panes", response_model=PaneResponse)
-async def create_pane(request: CreatePaneRequest) -> PaneResponse:
+@limiter.limit("20/minute")
+async def create_pane(request: Request, body: CreatePaneRequest) -> PaneResponse:
     """Create a new terminal pane with sessions.
 
     For project panes: creates shell + claude sessions.
     For adhoc panes: creates shell session only.
     """
     validate_pane_limit(pane_crud.count_panes(), MAX_PANES)
-    validate_create_pane_request(request.pane_type, request.project_id)
+    validate_create_pane_request(body.pane_type, body.project_id)
 
     try:
         pane = pane_crud.create_pane_with_sessions(
-            pane_type=request.pane_type,
-            pane_name=request.pane_name,
-            project_id=request.project_id,
-            working_dir=request.working_dir,
+            pane_type=body.pane_type,
+            pane_name=body.pane_name,
+            project_id=body.project_id,
+            working_dir=body.working_dir,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from None

@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi import APIRouter, HTTPException, Request, UploadFile
 from pydantic import BaseModel
+
+from ..rate_limit import limiter
 
 from ..config import MAX_FILE_SIZE, MAX_FILE_SIZE_MB, UPLOAD_DIR
 from ..logging_config import get_logger
@@ -93,7 +95,8 @@ class FileUploadResponse(BaseModel):
 
 
 @router.post("/api/terminal/files", response_model=FileUploadResponse)
-async def upload_file(file: UploadFile) -> FileUploadResponse:
+@limiter.limit("10/minute")
+async def upload_file(request: Request, file: UploadFile) -> FileUploadResponse:
     """Upload a file for use in terminal commands.
 
     Files are stored in ~/terminal-uploads/ with UUID naming.

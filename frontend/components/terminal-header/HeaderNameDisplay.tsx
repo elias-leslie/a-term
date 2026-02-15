@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { clsx } from 'clsx'
 import { ChevronDown } from 'lucide-react'
 import { getSlotName, type TerminalSlot } from '@/lib/utils/slot'
@@ -15,7 +16,7 @@ interface HeaderNameDisplayProps {
   onSwitch?: () => void
 }
 
-export function HeaderNameDisplay({
+export const HeaderNameDisplay = memo(function HeaderNameDisplay({
   slot,
   isActive,
   isMobile,
@@ -70,4 +71,4 @@ export function HeaderNameDisplay({
       {name}
     </span>
   )
-}
+})
