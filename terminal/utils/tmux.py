@@ -163,10 +163,16 @@ def is_claude_running_in_session(session_name: str) -> bool:
     return success and any("claude" in line.lower() for line in output.split("\n"))
 
 
-def get_scrollback(session_name: str) -> str | None:
-    """Capture tmux scrollback with escape sequences and joined wrapped lines."""
+def get_scrollback(session_name: str, max_lines: int = 500) -> str | None:
+    """Capture recent tmux scrollback with escape sequences and joined wrapped lines.
+
+    Args:
+        session_name: tmux session to capture from
+        max_lines: Max lines of history to capture. Limits reconnect payload size
+            and prevents sending megabytes of output on long-running sessions.
+    """
     success, output = run_tmux_command(
-        ["capture-pane", "-t", session_name, "-S", "-", "-e", "-J", "-p"]
+        ["capture-pane", "-t", session_name, "-S", f"-{max_lines}", "-e", "-J", "-p"]
     )
 
     if not success:

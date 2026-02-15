@@ -4,8 +4,11 @@ export const CONNECTION_TIMEOUT = 10000
 /** Retry backoff delay in milliseconds */
 export const RETRY_BACKOFF = 2000
 
-/** Terminal scrollback buffer size (default: 100000 lines to match tmux history-limit) */
-export const SCROLLBACK = 100000
+/** Terminal scrollback buffer size.
+ * 10K lines balances history access with browser performance.
+ * 100K caused progressive slowdown as xterm.js buffer management
+ * and DOM overhead grew with session lifetime. */
+export const SCROLLBACK = 10000
 
 /** Mobile device width threshold in pixels */
 export const MOBILE_WIDTH_THRESHOLD = 768

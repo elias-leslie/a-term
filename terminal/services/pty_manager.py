@@ -134,8 +134,9 @@ async def read_pty_output(websocket: WebSocket, master_fd: int) -> None:
         master_fd: Master file descriptor to read from
     """
     loop = asyncio.get_event_loop()
-    # Queue to bridge sync callback to async context
-    queue: asyncio.Queue[bytes | None] = asyncio.Queue()
+    # Queue to bridge sync callback to async context.
+    # Bounded to prevent unbounded memory growth when WS send is slower than PTY read.
+    queue: asyncio.Queue[bytes | None] = asyncio.Queue(maxsize=256)
     # Buffer for incomplete UTF-8 sequences at end of reads
     utf8_buffer = b""
     # Max buffer size - UTF-8 chars are max 4 bytes
@@ -150,7 +151,12 @@ async def read_pty_output(websocket: WebSocket, master_fd: int) -> None:
         try:
             data = os.read(master_fd, 8192)
             if data:
-                queue.put_nowait(data)
+                try:
+                    queue.put_nowait(data)
+                except asyncio.QueueFull:
+                    # Drop data when consumer can't keep up — prevents memory runaway.
+                    # Terminal output is best-effort; the user still has tmux scrollback.
+                    pass
             else:
                 queue.put_nowait(None)  # EOF
         except OSError as e:
