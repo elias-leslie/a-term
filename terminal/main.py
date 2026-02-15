@@ -16,8 +16,8 @@ from slowapi.errors import RateLimitExceeded
 
 from .api import claude, files, panes, projects, sessions, terminal
 from .config import CORS_ORIGINS, TERMINAL_PORT
-from .rate_limit import limiter
 from .logging_config import get_logger
+from .rate_limit import limiter
 from .services import lifecycle
 from .storage.connection import close_pool, get_connection
 
@@ -86,7 +86,10 @@ app = FastAPI(
 
 # Rate limiting
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(
+    RateLimitExceeded,
+    _rate_limit_exceeded_handler,  # type: ignore[arg-type]  # slowapi handler has narrower type than starlette expects
+)
 
 # CORS middleware
 app.add_middleware(

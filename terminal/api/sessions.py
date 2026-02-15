@@ -19,7 +19,6 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from ..rate_limit import limiter
-
 from ..services import lifecycle
 from ..storage import terminal as terminal_store
 

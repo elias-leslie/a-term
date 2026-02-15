@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { AdHocSlot, ProjectSlot, TerminalSlot } from './slot'
+import type { AdHocSlot, ProjectSlot } from './slot'
 import {
   getSlotBaseName,
   getSlotName,
@@ -118,10 +118,22 @@ describe('findActiveSlot', () => {
       projectName: 'Project One',
       rootPath: '/home/user/p1',
       activeMode: 'shell' as const,
+      activeSession: null,
+      activeSessionId: 'session-1',
+      sessionBadge: null,
       sessions: [
         {
           session: {
             id: 'session-1',
+            name: 'Shell',
+            user_id: null,
+            project_id: 'proj-1',
+            working_dir: '/home/user/p1',
+            mode: 'shell' as const,
+            display_order: 0,
+            is_alive: true,
+            created_at: null,
+            last_accessed_at: null,
             claude_state: 'not_started' as const,
           },
           badge: 1,

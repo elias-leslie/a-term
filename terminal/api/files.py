@@ -11,10 +11,9 @@ import uuid
 from fastapi import APIRouter, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 
-from ..rate_limit import limiter
-
 from ..config import MAX_FILE_SIZE, MAX_FILE_SIZE_MB, UPLOAD_DIR
 from ..logging_config import get_logger
+from ..rate_limit import limiter
 
 logger = get_logger(__name__)
 
