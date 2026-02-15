@@ -111,6 +111,13 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
   const canAddPane = useCallback(() => !panesAtLimit, [panesAtLimit])
   const isGridMode = isGridLayoutMode(layoutMode)
   const { activeStatus, showReconnect } = useConnectionStatus(activeSessionId, terminalStatuses)
+
+  // Derive active mode from the active session (for ControlBar model picker)
+  const activeMode = useMemo<'shell' | 'claude' | undefined>(() => {
+    if (!activeSessionId) return undefined
+    const session = sessions.find((s) => s.id === activeSessionId)
+    return session?.mode
+  }, [activeSessionId, sessions])
   useLayoutAutoDowngrade(availableLayouts, layoutMode, setLayoutMode)
   useAutoCreatePane({ panes, isLoading, isPaneCreating, createAdHocPane, switchToSession })
   const tabEditingProps = useTabEditing({ onSave: async (sessionId: string, newName: string) => { await update(sessionId, { name: newName }) } })
@@ -165,6 +172,7 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     isMobile,
     showTerminalManager,
     setShowTerminalManager,
+    activeMode,
     activeStatus,
     showReconnect,
     ...tabEditingProps,

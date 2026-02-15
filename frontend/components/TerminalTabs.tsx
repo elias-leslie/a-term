@@ -47,6 +47,7 @@ export function TerminalTabs({
     canAddPane,
     swapPanes,
     activeSessionId,
+    activeMode,
     activeStatus,
     handleKeyboardInput,
     handleReconnect,
@@ -164,6 +165,7 @@ export function TerminalTabs({
         cleanPrompt={cleanPrompt}
         sessions={sessions}
         activeSessionId={activeSessionId}
+        activeMode={activeMode}
         activeStatus={activeStatus}
         handleKeyboardInput={handleKeyboardInput}
         handleReconnect={handleReconnect}

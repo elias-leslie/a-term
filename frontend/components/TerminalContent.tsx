@@ -82,6 +82,7 @@ interface TerminalContentProps {
   // Mobile keyboard
   sessions: Array<{ id: string }>
   activeSessionId?: string | null
+  activeMode?: 'shell' | 'claude'
   activeStatus?: ConnectionStatus
   handleKeyboardInput: (input: string) => void
   handleReconnect: () => void
@@ -156,6 +157,7 @@ export function TerminalContent({
   cleanPrompt,
   sessions,
   activeSessionId,
+  activeMode,
   activeStatus,
   handleKeyboardInput,
   handleReconnect,
@@ -173,17 +175,6 @@ export function TerminalContent({
   handleVoiceReset,
   className,
 }: TerminalContentProps) {
-  // Derive the active slot's mode for ControlBar model picker
-  const activeSlot = activeSessionId
-    ? terminalSlots.find(
-        (s) =>
-          (s.type === 'project' && s.activeSessionId === activeSessionId) ||
-          (s.type === 'adhoc' && s.sessionId === activeSessionId),
-      )
-    : undefined
-  const activeMode =
-    activeSlot?.type === 'project' ? activeSlot.activeMode : undefined
-
   return (
     <div className={clsx('flex flex-col h-full min-h-0 overflow-visible', className)}>
       {/* Settings dropdown - all settings controls */}
