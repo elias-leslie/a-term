@@ -115,7 +115,11 @@ export function useTerminalInstance(
         macOptionClickForcesSelection: true,
         altClickMovesCursor: false,
         theme: options.theme,
-        smoothScrollDuration: 80,
+        // smoothScrollDuration disabled: animated scrolling (80ms) conflicts with
+        // the scroll-position-preservation in onMessage. Data arrives every ~16ms,
+        // write() auto-scrolls to bottom (instant), then scrollLines() animates back
+        // up (80ms). Before that animation finishes, next batch arrives → oscillation.
+        // Instant scrolling eliminates this fight entirely.
       })
 
       if (!mounted) return

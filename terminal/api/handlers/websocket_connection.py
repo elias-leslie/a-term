@@ -79,6 +79,11 @@ async def handle_terminal_connection(
         # Send scrollback history after resize
         scrollback = get_scrollback(tmux_session_name)
         if scrollback:
+            # tmux capture-pane -p outputs bare \n between lines.
+            # xterm.js treats \n as LF-only (cursor down, same column) without \r,
+            # causing diagonal/staircase text. Convert to \r\n so each line starts
+            # at column 0. Normalize first to avoid \r\r\n from existing \r\n pairs.
+            scrollback = scrollback.replace("\r\n", "\n").replace("\n", "\r\n")
             await websocket.send_text(scrollback)
             logger.info("scrollback_sent", session_id=session_id, bytes=len(scrollback))
 
