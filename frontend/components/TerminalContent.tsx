@@ -244,8 +244,8 @@ export function TerminalContent({
         />
       </FileUploadDropzone>
 
-      {/* Mobile keyboard */}
-      {isMobile && sessions.length > 0 && activeStatus && (
+      {/* Mobile keyboard — hidden when voice panel is active */}
+      {isMobile && sessions.length > 0 && activeStatus && !showVoice && (
         <div className="order-3">
           <MobileKeyboard
             onSend={handleKeyboardInput}
@@ -268,7 +268,7 @@ export function TerminalContent({
         />
       )}
 
-      {/* Voice Input Panel */}
+      {/* Voice Input Panel — inline on mobile (order-3, replaces keyboard), overlay on desktop */}
       {showVoice && (
         <VoiceTranscriptPanel
           transcript={voiceFinalTranscript}
@@ -280,6 +280,7 @@ export function TerminalContent({
           onCancel={handleVoiceCancel}
           onToggleListening={handleVoiceToggle}
           onReset={handleVoiceReset}
+          isMobile={isMobile}
         />
       )}
     </div>

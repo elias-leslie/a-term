@@ -1,7 +1,7 @@
 'use client'
 
 import { clsx } from 'clsx'
-import { Mic, MicOff, Send, X } from 'lucide-react'
+import { Keyboard, Mic, MicOff, Send, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   TranscriptionError,
@@ -19,6 +19,7 @@ interface VoiceTranscriptPanelProps {
   onCancel: () => void
   onToggleListening: () => void
   onReset: () => void
+  isMobile?: boolean
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -28,6 +29,15 @@ const ERROR_MESSAGES: Record<string, string> = {
   'whisper-unavailable': 'Voice server unavailable. Try a different browser.',
   'not-supported': 'Speech recognition not supported in this browser.',
   'aborted': 'Speech recognition was aborted.',
+}
+
+const SHORT_ERROR_MESSAGES: Record<string, string> = {
+  'not-allowed': 'Mic access denied',
+  'no-speech': 'No speech detected',
+  'network': 'Network error',
+  'whisper-unavailable': 'Voice unavailable',
+  'not-supported': 'Not supported',
+  'aborted': 'Aborted',
 }
 
 export function VoiceTranscriptPanel({
@@ -40,6 +50,7 @@ export function VoiceTranscriptPanel({
   onCancel,
   onToggleListening,
   onReset,
+  isMobile,
 }: VoiceTranscriptPanelProps) {
   const [editedText, setEditedText] = useState(transcript)
   const [visible, setVisible] = useState(false)
@@ -56,12 +67,12 @@ export function VoiceTranscriptPanel({
     setEditedText(transcript)
   }, [transcript])
 
-  // Auto-focus textarea
+  // Auto-focus textarea (desktop only)
   useEffect(() => {
-    if (visible) {
+    if (visible && !isMobile) {
       textareaRef.current?.focus()
     }
-  }, [visible])
+  }, [visible, isMobile])
 
   const handleSend = useCallback(() => {
     const text = editedText.trim()
@@ -74,9 +85,13 @@ export function VoiceTranscriptPanel({
   }, [editedText, onInsert])
 
   const handleClose = useCallback(() => {
+    if (isMobile) {
+      onCancel()
+      return
+    }
     setVisible(false)
     setTimeout(onCancel, 300)
-  }, [onCancel])
+  }, [onCancel, isMobile])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -95,6 +110,195 @@ export function VoiceTranscriptPanel({
   const isProcessing = status === 'processing'
   const hasText = editedText.trim().length > 0 || interimTranscript.length > 0
 
+  // Mobile: inline layout replacing the keyboard slot
+  if (isMobile) {
+    const displayText = interimTranscript
+      ? `${editedText}${editedText ? ' ' : ''}${interimTranscript}`
+      : editedText
+
+    // Mic button behavior:
+    // - Has text (listening or not) → send
+    // - Listening + no text → stop listening
+    // - Idle + no text → start listening
+    const handleMicTap = () => {
+      if (status === 'error') onReset()
+      if (hasText) {
+        handleSend()
+        return
+      }
+      onToggleListening()
+    }
+
+    // Determine mic button appearance
+    const showSendIcon = hasText
+    const showPulse = isListening && !hasText
+
+    const statusMessage =
+      status === 'error' && error
+        ? SHORT_ERROR_MESSAGES[error] ?? 'Error'
+        : isListening
+          ? 'Listening...'
+          : isProcessing
+            ? 'Processing...'
+            : 'Tap to speak'
+
+    return (
+      <div
+        className="order-3"
+        style={{
+          background: 'var(--term-bg-surface)',
+          borderTop: '1px solid var(--term-border)',
+        }}
+      >
+        {/* Transcript bubble — only when there's text */}
+        {displayText.trim() && (
+          <div
+            style={{
+              maxHeight: 128,
+              overflowY: 'auto',
+              padding: '8px 12px',
+              margin: '8px 12px 0',
+              borderRadius: 8,
+              background: 'var(--term-bg-elevated)',
+              border: '1px solid var(--term-border-active)',
+              fontFamily: '"JetBrains Mono", monospace',
+              fontSize: 13,
+              lineHeight: 1.5,
+              color: 'var(--term-text-primary)',
+            }}
+          >
+            {editedText}
+            {interimTranscript && (
+              <span style={{ color: 'var(--term-accent)', opacity: 0.7 }}>
+                {editedText ? ' ' : ''}
+                {interimTranscript}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Status line */}
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '6px 0 2px',
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: 11,
+            color:
+              status === 'error'
+                ? 'var(--term-error)'
+                : isListening
+                  ? 'var(--term-accent)'
+                  : 'var(--term-text-muted)',
+          }}
+        >
+          {statusMessage}
+        </div>
+
+        {/* Action row: [X] [MIC] [keyboard] */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 24,
+            padding: '6px 16px 12px',
+          }}
+        >
+          {/* Cancel button */}
+          <button
+            type="button"
+            onClick={handleClose}
+            aria-label="Cancel voice input"
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'transparent',
+              border: '1px solid var(--term-border-active)',
+              color: 'var(--term-text-muted)',
+              cursor: 'pointer',
+            }}
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          {/* Main mic / send button — 64x64 */}
+          <button
+            type="button"
+            className={clsx(showPulse && styles.mobileMicPulse)}
+            onClick={handleMicTap}
+            disabled={isProcessing}
+            aria-label={
+              showSendIcon
+                ? 'Send transcript'
+                : isListening
+                  ? 'Stop listening'
+                  : 'Start listening'
+            }
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: isProcessing ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s',
+              border: `2px solid ${
+                showPulse
+                  ? 'var(--term-error)'
+                  : 'var(--term-accent)'
+              }`,
+              background: showPulse
+                ? 'rgba(248, 81, 73, 0.15)'
+                : showSendIcon
+                  ? 'rgba(0, 255, 159, 0.15)'
+                  : 'rgba(0, 255, 159, 0.08)',
+              color: showPulse
+                ? 'var(--term-error)'
+                : 'var(--term-accent)',
+              opacity: isProcessing ? 0.5 : 1,
+            }}
+          >
+            {showSendIcon ? (
+              <Send className="w-6 h-6" />
+            ) : isListening ? (
+              <MicOff className="w-6 h-6" />
+            ) : (
+              <Mic className="w-6 h-6" />
+            )}
+          </button>
+
+          {/* Keyboard button — dismiss voice, return to keyboard */}
+          <button
+            type="button"
+            onClick={handleClose}
+            aria-label="Return to keyboard"
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'transparent',
+              border: '1px solid var(--term-border-active)',
+              color: 'var(--term-text-muted)',
+              cursor: 'pointer',
+            }}
+          >
+            <Keyboard className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Desktop: existing bottom-sheet overlay
   return (
     <>
       {/* Backdrop */}

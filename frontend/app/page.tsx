@@ -10,7 +10,7 @@ function TerminalPage() {
   const projectPath = searchParams.get('dir') || undefined
 
   return (
-    <div className="h-screen flex flex-col bg-slate-900">
+    <div className="h-dvh flex flex-col bg-slate-900">
       <TerminalTabs
         projectId={projectId}
         projectPath={projectPath}
@@ -25,7 +25,7 @@ export default function Home() {
   return (
     <Suspense
       fallback={
-        <div className="h-screen flex items-center justify-center bg-slate-900 text-slate-400">
+        <div className="h-dvh flex items-center justify-center bg-slate-900 text-slate-400">
           Loading terminal...
         </div>
       }
