@@ -27,17 +27,15 @@ export function ControlBar({
   onToggleMinimize,
   onVoice,
 }: ControlBarProps) {
-  // Get shift state from shared modifier context
-  const { modifiers, resetModifiers } = useModifiers()
-  const shiftActive = modifiers.shift !== 'off'
+  const { resetModifiers } = useModifiers()
 
   // Helper to clear modifiers after use
   const clearModifiers = useCallback(() => {
     if (ctrlActive && onCtrlToggle) onCtrlToggle()
-    resetModifiers() // Clear sticky shift from context
+    resetModifiers()
   }, [ctrlActive, onCtrlToggle, resetModifiers])
 
-  // Arrow key handlers - don't clear modifiers for arrows
+  // Arrow key handlers
   const handleArrowLeft = useCallback(
     () => onSend(KEY_SEQUENCES.ARROW_LEFT),
     [onSend],
@@ -61,15 +59,10 @@ export function ControlBar({
     clearModifiers()
   }, [onSend, clearModifiers])
 
-  const handleTab = useCallback(() => {
-    if (shiftActive) {
-      // Shift+Tab (backtab) - reverse tab completion
-      onSend('\x1b[Z')
-    } else {
-      onSend(KEY_SEQUENCES.TAB)
-    }
+  const handleShiftTab = useCallback(() => {
+    onSend('\x1b[Z') // Shift+Tab (backtab)
     clearModifiers()
-  }, [shiftActive, onSend, clearModifiers])
+  }, [onSend, clearModifiers])
 
   const btnStyle = {
     backgroundColor: 'var(--term-bg-elevated)',
@@ -85,55 +78,9 @@ export function ControlBar({
         borderTop: '1px solid var(--term-border)',
       }}
     >
-      {/* Row 1: Arrows (left) — Mic (center) — Keyboard toggle (right) */}
-      <div className="flex items-center gap-1">
-        {/* Arrow keys */}
-        <div className="flex items-center gap-0.5">
-          <KeyboardKey
-            label="←"
-            onPress={handleArrowLeft}
-            className="w-11 h-11 text-lg"
-          />
-          <KeyboardKey
-            label="↑"
-            onPress={handleArrowUp}
-            className="w-11 h-11 text-lg"
-          />
-          <KeyboardKey
-            label="↓"
-            onPress={handleArrowDown}
-            className="w-11 h-11 text-lg"
-          />
-          <KeyboardKey
-            label="→"
-            onPress={handleArrowRight}
-            className="w-11 h-11 text-lg"
-          />
-        </div>
-
-        {/* Spacer to push mic to center */}
-        <div className="flex-1" />
-
-        {/* Mic button — centered, prominent */}
-        {onVoice && (
-          <button
-            type="button"
-            onClick={() => {
-              navigator.vibrate?.(10)
-              onVoice()
-            }}
-            className="flex items-center justify-center h-11 w-11 rounded-md transition-all duration-150 active:scale-95"
-            style={btnStyle}
-            title="Voice input"
-          >
-            <Mic className="w-5 h-5" />
-          </button>
-        )}
-
-        {/* Spacer to push toggle to right */}
-        <div className="flex-1" />
-
-        {/* Keyboard toggle */}
+      {/* Row 1: [▲/▼] [⇧TAB]  ·····  [MIC] */}
+      <div className="flex items-center gap-1.5">
+        {/* Keyboard toggle — far left */}
         {onToggleMinimize && (
           <button
             type="button"
@@ -156,33 +103,74 @@ export function ControlBar({
             )}
           </button>
         )}
+
+        {/* Shift+Tab */}
+        <button
+          type="button"
+          onClick={handleShiftTab}
+          className="h-11 px-3 rounded-md text-xs font-medium transition-all duration-150 active:scale-95"
+          style={btnStyle}
+          title="Shift+Tab (backtab)"
+        >
+          ⇧TAB
+        </button>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Mic button — far right */}
+        {onVoice && (
+          <button
+            type="button"
+            onClick={() => {
+              navigator.vibrate?.(10)
+              onVoice()
+            }}
+            className="flex items-center justify-center h-11 w-11 rounded-md transition-all duration-150 active:scale-95"
+            style={btnStyle}
+            title="Voice input"
+          >
+            <Mic className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
-      {/* Row 2: ESC — ^C — TAB — CTRL (stretched evenly) */}
-      <div className="flex items-center gap-1">
+      {/* Row 2: [ESC]  ·  [← ↑ ↓ →]  ·  [CTRL] */}
+      <div className="flex items-center justify-center gap-3">
         <KeyboardKey
           label="ESC"
           onPress={handleEsc}
-          className="flex-1 h-11 text-xs"
+          className="w-14 h-11 text-xs"
         />
-        <button
-          type="button"
-          onClick={() => onSend('\x03')}
-          className="flex-1 h-11 rounded-md text-xs font-medium transition-all duration-150 active:scale-95"
-          style={btnStyle}
-          title="Interrupt (Ctrl+C)"
-        >
-          ^C
-        </button>
-        <KeyboardKey
-          label="TAB"
-          onPress={handleTab}
-          className="flex-1 h-11 text-xs"
-        />
+
+        {/* Arrow keys with generous spacing */}
+        <div className="flex items-center gap-2">
+          <KeyboardKey
+            label="←"
+            onPress={handleArrowLeft}
+            className="w-11 h-11 text-lg"
+          />
+          <KeyboardKey
+            label="↑"
+            onPress={handleArrowUp}
+            className="w-11 h-11 text-lg"
+          />
+          <KeyboardKey
+            label="↓"
+            onPress={handleArrowDown}
+            className="w-11 h-11 text-lg"
+          />
+          <KeyboardKey
+            label="→"
+            onPress={handleArrowRight}
+            className="w-11 h-11 text-lg"
+          />
+        </div>
+
         <button
           type="button"
           onClick={onCtrlToggle}
-          className="flex-1 h-11 rounded-md text-xs font-medium transition-all duration-150 active:scale-95"
+          className="w-14 h-11 rounded-md text-xs font-medium transition-all duration-150 active:scale-95"
           style={{
             backgroundColor: ctrlActive
               ? 'var(--term-accent)'
