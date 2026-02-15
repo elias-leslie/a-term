@@ -15,6 +15,7 @@ const SHORTCUTS: Shortcut[] = [
   { keys: 'Ctrl+Shift+Tab', description: 'Previous tab' },
   { keys: 'Ctrl+1-9', description: 'Jump to tab N' },
   { keys: '?', description: 'Show this help' },
+  { keys: 'Pause', description: 'Toggle voice input' },
   { keys: 'Esc', description: 'Close dialogs' },
 ]
 
@@ -141,12 +142,21 @@ export function useTerminalKeyboardShortcuts(handlers: {
   onPrevTerminal?: () => void
   /** Jump to terminal at position (Ctrl+1-9) */
   onJumpToTerminal?: (index: number) => void
+  /** Toggle voice input (Pause key) */
+  onVoiceToggle?: () => void
 }) {
   const [showHelp, setShowHelp] = useState(false)
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input
+      // Pause key toggles voice input — works regardless of focus
+      if (e.code === 'Pause') {
+        e.preventDefault()
+        handlers.onVoiceToggle?.()
+        return
+      }
+
+      // Don't trigger other shortcuts if user is typing in an input
       const target = e.target as HTMLElement
       if (
         target.tagName === 'INPUT' ||

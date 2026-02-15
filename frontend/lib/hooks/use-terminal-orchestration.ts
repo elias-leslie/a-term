@@ -107,15 +107,6 @@ export function useTerminalOrchestration({
     onSlotClose: slotHandlers.handleSlotClose,
   })
 
-  // Keyboard shortcuts
-  const keyboardShortcuts = useTerminalKeyboardShortcuts({
-    onNewTerminal: modalHandlers.handleOpenTerminalManager,
-    onCloseTab: navigationHandlers.handleCloseActive,
-    onNextTerminal: navigationHandlers.handleNextTerminal,
-    onPrevTerminal: navigationHandlers.handlePrevTerminal,
-    onJumpToTerminal: navigationHandlers.handleJumpToTerminal,
-  })
-
   // File upload, prompt cleaner, and voice input
   const { cleanPrompt } = usePromptCleaner()
   const actionHandlers = useTerminalActionHandlers({
@@ -129,6 +120,18 @@ export function useTerminalOrchestration({
     voiceStopListening: transcription.stopListening,
     voiceResetTranscript: transcription.resetTranscript,
     voiceStatus: transcription.status,
+  })
+
+  // Keyboard shortcuts (after actionHandlers so voice toggle is available)
+  const keyboardShortcuts = useTerminalKeyboardShortcuts({
+    onNewTerminal: modalHandlers.handleOpenTerminalManager,
+    onCloseTab: navigationHandlers.handleCloseActive,
+    onNextTerminal: navigationHandlers.handleNextTerminal,
+    onPrevTerminal: navigationHandlers.handlePrevTerminal,
+    onJumpToTerminal: navigationHandlers.handleJumpToTerminal,
+    onVoiceToggle: showVoice
+      ? actionHandlers.handleVoiceCancel
+      : actionHandlers.handleVoiceOpen,
   })
 
   return {
