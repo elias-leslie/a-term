@@ -45,6 +45,7 @@ interface TerminalLayoutRendererProps {
 
   // Device
   isMobile: boolean
+  activeSessionId?: string | null
 
   // Pane swap (for dropdown swap)
   onSwapPanes?: (slotIdA: string, slotIdB: string) => void
@@ -78,6 +79,7 @@ export function TerminalLayoutRenderer({
   onModeSwitch,
   isModeSwitching,
   isMobile,
+  activeSessionId,
   onSwapPanes,
   onLayoutChange,
   initialLayouts,
@@ -105,6 +107,7 @@ export function TerminalLayoutRenderer({
       onModeSwitch={onModeSwitch}
       isModeSwitching={isModeSwitching}
       isMobile={isMobile}
+      activeSessionId={activeSessionId}
       onSwapPanes={onSwapPanes}
       onLayoutChange={onLayoutChange}
       initialLayouts={initialLayouts}

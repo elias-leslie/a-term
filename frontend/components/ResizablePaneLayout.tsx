@@ -23,9 +23,12 @@ import {
  * - 2 panes: vertical split (side by side)
  * - 3 panes: 2+1 layout
  * - 4 panes: 2x2 grid
+ *
+ * On mobile: always renders a single full-size pane (the active one).
  */
 export function ResizablePaneLayout(props: ResizablePaneLayoutProps) {
-  const { slots, onLayoutChange, onOpenModal } = props
+  const { slots, isMobile, activeSessionId, onLayoutChange, onOpenModal } =
+    props
 
   const displaySlots = useMemo(() => slots.slice(0, MAX_PANES), [slots])
   const paneCount = displaySlots.length
@@ -42,6 +45,25 @@ export function ResizablePaneLayout(props: ResizablePaneLayoutProps) {
   if (paneCount === 0) {
     return (
       <EmptyPaneState containerRef={containerRef} onOpenModal={onOpenModal} />
+    )
+  }
+
+  // Mobile: always show single full-size pane (the active one)
+  if (isMobile) {
+    const activeSlot = activeSessionId
+      ? displaySlots.find(
+          (s) =>
+            (s.type === 'project' && s.activeSessionId === activeSessionId) ||
+            (s.type === 'adhoc' && s.sessionId === activeSessionId),
+        )
+      : undefined
+
+    return (
+      <SinglePaneLayout
+        containerRef={containerRef}
+        slot={activeSlot ?? displaySlots[0]}
+        renderPane={renderPane}
+      />
     )
   }
 

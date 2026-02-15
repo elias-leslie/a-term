@@ -42,6 +42,7 @@ export interface ResizablePaneLayoutProps {
   ) => void | Promise<void>
   isModeSwitching?: boolean
   isMobile?: boolean
+  activeSessionId?: string | null
   onLayoutChange?: (layouts: PaneLayout[]) => void
   initialLayouts?: PaneLayout[]
   onSwapPanes?: (slotIdA: string, slotIdB: string) => void

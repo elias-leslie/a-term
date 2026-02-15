@@ -81,6 +81,7 @@ interface TerminalContentProps {
 
   // Mobile keyboard
   sessions: Array<{ id: string }>
+  activeSessionId?: string | null
   activeStatus?: ConnectionStatus
   handleKeyboardInput: (input: string) => void
   handleReconnect: () => void
@@ -154,6 +155,7 @@ export function TerminalContent({
   handleCleanerCancel,
   cleanPrompt,
   sessions,
+  activeSessionId,
   activeStatus,
   handleKeyboardInput,
   handleReconnect,
@@ -238,6 +240,7 @@ export function TerminalContent({
           onModeSwitch={onModeSwitch}
           isModeSwitching={isModeSwitching}
           isMobile={isMobile ?? false}
+          activeSessionId={activeSessionId}
           onSwapPanes={onSwapPanes}
           onLayoutChange={onLayoutChange}
           onVoice={isVoiceSupported ? handleVoiceOpen : undefined}
