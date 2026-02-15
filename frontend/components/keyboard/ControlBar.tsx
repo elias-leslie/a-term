@@ -107,6 +107,8 @@ export function ControlBar({
   }
 
   const isClaudeMode = activeMode === 'claude'
+  // DEBUG: Remove after verification
+  console.log('[ControlBar] activeMode:', activeMode, 'isClaudeMode:', isClaudeMode)
 
   return (
     <div
