@@ -106,9 +106,8 @@ export function ControlBar({
     border: '1px solid var(--term-border)',
   }
 
-  const isClaudeMode = activeMode === 'claude'
-  // DEBUG: Remove after verification
-  console.log('[ControlBar] activeMode:', activeMode, 'isClaudeMode:', isClaudeMode)
+  // DEBUG: Force visible to test rendering. Real condition: activeMode === 'claude'
+  const isClaudeMode = true
 
   return (
     <div
