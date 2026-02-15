@@ -109,6 +109,11 @@ export function usePaneRenderer({
                 ? (otherSlotId) => onSwapPanes(panelId, otherSlotId)
                 : undefined
             }
+            onSwitchTo={
+              isMobile && onSwitch && paneCount > 1
+                ? (targetSlot) => onSwitch(targetSlot)
+                : undefined
+            }
           />
 
           <div

@@ -14,8 +14,10 @@ export interface PaneSwapDropdownProps {
   currentSlot: TerminalSlot
   /** All available slots for swapping */
   allSlots: TerminalSlot[]
-  /** Callback when user selects another slot to swap with */
+  /** Callback when user selects another slot to swap with (desktop: swap positions) */
   onSwapWith: (otherSlotId: string) => void
+  /** Callback to switch to another slot (mobile: navigate to pane) */
+  onSwitchTo?: (slot: TerminalSlot) => void
   isMobile?: boolean
 }
 
@@ -28,6 +30,7 @@ export function PaneSwapDropdown({
   currentSlot,
   allSlots,
   onSwapWith,
+  onSwitchTo,
   isMobile = false,
 }: PaneSwapDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -114,7 +117,7 @@ export function PaneSwapDropdown({
             }}
           >
             <ArrowLeftRight className="w-3 h-3" />
-            Swap position with
+            {isMobile ? 'Switch to' : 'Swap position with'}
           </div>
 
           {/* Other panes */}
@@ -125,7 +128,11 @@ export function PaneSwapDropdown({
               <button
                 key={slotId}
                 onClick={() => {
-                  onSwapWith(slotId)
+                  if (isMobile && onSwitchTo) {
+                    onSwitchTo(slot)
+                  } else {
+                    onSwapWith(slotId)
+                  }
                   setIsOpen(false)
                 }}
                 className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-left transition-colors hover:bg-[var(--term-bg-surface)]"

@@ -41,6 +41,8 @@ export interface UnifiedTerminalHeaderProps {
   allSlots?: TerminalSlot[]
   /** Callback when user selects another slot to swap positions with */
   onSwapWith?: (otherSlotId: string) => void
+  /** Callback to switch to another slot (mobile: navigate instead of swap) */
+  onSwitchTo?: (slot: TerminalSlot) => void
   /** Callback to reset all panes (overflow menu) */
   onResetAll?: () => void
   /** Callback to close all panes (overflow menu) */
@@ -65,6 +67,7 @@ export const UnifiedTerminalHeader = memo(function UnifiedTerminalHeader({
   isMobile = false,
   allSlots,
   onSwapWith,
+  onSwitchTo,
   onResetAll,
   onCloseAll,
 }: UnifiedTerminalHeaderProps) {
@@ -104,6 +107,7 @@ export const UnifiedTerminalHeader = memo(function UnifiedTerminalHeader({
           currentSlot={slot}
           allSlots={allSlots}
           onSwapWith={onSwapWith}
+          onSwitchTo={onSwitchTo}
           isMobile={isMobile}
         />
       ) : onSwitch ? (
