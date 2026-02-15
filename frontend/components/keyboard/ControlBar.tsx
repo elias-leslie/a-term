@@ -136,41 +136,41 @@ export function ControlBar({
       </div>
 
       {/* Row 2: [ESC]  ·  [← ↑ ↓ →]  ·  [CTRL] */}
-      <div className="flex items-center justify-center gap-3">
+      <div className="flex items-center justify-center gap-4">
         <KeyboardKey
           label="ESC"
           onPress={handleEsc}
-          className="w-14 h-11 text-xs"
+          className="w-10 h-10 text-[10px]"
         />
 
-        {/* Arrow keys with generous spacing */}
-        <div className="flex items-center gap-2">
+        {/* Arrow keys — large targets with wide spacing */}
+        <div className="flex items-center gap-4">
           <KeyboardKey
             label="←"
             onPress={handleArrowLeft}
-            className="w-11 h-11 text-lg"
+            className="w-14 h-14 text-xl"
           />
           <KeyboardKey
             label="↑"
             onPress={handleArrowUp}
-            className="w-11 h-11 text-lg"
+            className="w-14 h-14 text-xl"
           />
           <KeyboardKey
             label="↓"
             onPress={handleArrowDown}
-            className="w-11 h-11 text-lg"
+            className="w-14 h-14 text-xl"
           />
           <KeyboardKey
             label="→"
             onPress={handleArrowRight}
-            className="w-11 h-11 text-lg"
+            className="w-14 h-14 text-xl"
           />
         </div>
 
         <button
           type="button"
           onClick={onCtrlToggle}
-          className="w-14 h-11 rounded-md text-xs font-medium transition-all duration-150 active:scale-95"
+          className="w-10 h-10 rounded-md text-[10px] font-medium transition-all duration-150 active:scale-95"
           style={{
             backgroundColor: ctrlActive
               ? 'var(--term-accent)'
