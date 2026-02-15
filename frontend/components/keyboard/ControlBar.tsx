@@ -156,9 +156,6 @@ export function ControlBar({
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* DEBUG: Remove after fixing MODEL button */}
-        <span style={{ color: 'red', fontSize: 10 }}>m:{activeMode ?? 'undef'}</span>
-
         {/* Model picker — only in claude mode */}
         {isClaudeMode && (
           <div className="relative" ref={pickerRef}>
