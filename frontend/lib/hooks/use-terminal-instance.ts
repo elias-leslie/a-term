@@ -70,6 +70,7 @@ export function useTerminalInstance(
     touchCleanup: () => void
   } | null>(null)
   const focusCleanupRef = useRef<(() => void) | null>(null)
+  const scrollbarCleanupRef = useRef<(() => void) | null>(null)
 
   // Store setup function in ref to avoid re-init on changes
   const setupScrollingRef = useRef(options.setupScrolling)
@@ -114,6 +115,7 @@ export function useTerminalInstance(
         macOptionClickForcesSelection: true,
         altClickMovesCursor: false,
         theme: options.theme,
+        smoothScrollDuration: 80,
       })
 
       if (!mounted) return
@@ -146,6 +148,26 @@ export function useTerminalInstance(
       scrollCleanupRef.current = setupScrollingRef.current(
         containerRef.current,
       )
+
+      // Auto-hiding scrollbar: toggle .scrolling class on scroll events
+      const viewport =
+        containerRef.current.querySelector<HTMLElement>('.xterm-viewport')
+      let scrollTimer: ReturnType<typeof setTimeout> | null = null
+      if (viewport) {
+        const onScroll = () => {
+          viewport.classList.add('scrolling')
+          if (scrollTimer) clearTimeout(scrollTimer)
+          scrollTimer = setTimeout(() => {
+            viewport.classList.remove('scrolling')
+          }, 1500)
+        }
+        viewport.addEventListener('scroll', onScroll, { passive: true })
+        scrollbarCleanupRef.current = () => {
+          viewport.removeEventListener('scroll', onScroll)
+          if (scrollTimer) clearTimeout(scrollTimer)
+          viewport.classList.remove('scrolling')
+        }
+      }
 
       // Mobile-specific setup: suppress native keyboard (we use custom keyboard)
       if (isMobileDevice()) {
@@ -205,6 +227,11 @@ export function useTerminalInstance(
       if (mouseCleanupRef.current) {
         mouseCleanupRef.current()
         mouseCleanupRef.current = null
+      }
+      // Clean up scrollbar fade listeners
+      if (scrollbarCleanupRef.current) {
+        scrollbarCleanupRef.current()
+        scrollbarCleanupRef.current = null
       }
       // Clean up scroll listeners
       if (scrollCleanupRef.current) {
