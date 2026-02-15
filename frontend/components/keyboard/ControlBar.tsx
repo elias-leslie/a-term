@@ -1,11 +1,17 @@
 'use client'
 
-import { ChevronDown, ChevronUp, Mic } from 'lucide-react'
-import { useCallback } from 'react'
+import { ChevronDown, ChevronUp, Mic, Sparkles } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { KeyboardKey } from './KeyboardKey'
 import { KEY_SEQUENCES } from './keyMappings'
 import { useModifiers } from './ModifierContext'
 import type { TerminalInputHandler } from './types'
+
+const MODEL_OPTIONS = [
+  { id: 'opus', label: 'Opus', command: '/model opus\r' },
+  { id: 'sonnet', label: 'Sonnet', command: '/model sonnet\r' },
+  { id: 'haiku', label: 'Haiku', command: '/model haiku\r' },
+] as const
 
 interface ControlBarProps {
   onSend: TerminalInputHandler
@@ -17,6 +23,8 @@ interface ControlBarProps {
   onToggleMinimize?: () => void
   // Voice input
   onVoice?: () => void
+  // Active pane mode (show model picker when 'claude')
+  activeMode?: 'shell' | 'claude'
 }
 
 export function ControlBar({
@@ -26,8 +34,27 @@ export function ControlBar({
   minimized = false,
   onToggleMinimize,
   onVoice,
+  activeMode,
 }: ControlBarProps) {
   const { resetModifiers } = useModifiers()
+  const [showModelPicker, setShowModelPicker] = useState(false)
+  const pickerRef = useRef<HTMLDivElement>(null)
+
+  // Close picker on outside tap
+  useEffect(() => {
+    if (!showModelPicker) return
+    const handleTap = (e: MouseEvent | TouchEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowModelPicker(false)
+      }
+    }
+    document.addEventListener('mousedown', handleTap)
+    document.addEventListener('touchstart', handleTap)
+    return () => {
+      document.removeEventListener('mousedown', handleTap)
+      document.removeEventListener('touchstart', handleTap)
+    }
+  }, [showModelPicker])
 
   // Helper to clear modifiers after use
   const clearModifiers = useCallback(() => {
@@ -64,11 +91,22 @@ export function ControlBar({
     clearModifiers()
   }, [onSend, clearModifiers])
 
+  const handleModelSelect = useCallback(
+    (command: string) => {
+      navigator.vibrate?.(10)
+      onSend(command)
+      setShowModelPicker(false)
+    },
+    [onSend],
+  )
+
   const btnStyle = {
     backgroundColor: 'var(--term-bg-elevated)',
     color: 'var(--term-text-muted)',
     border: '1px solid var(--term-border)',
   }
+
+  const isClaudeMode = activeMode === 'claude'
 
   return (
     <div
@@ -78,7 +116,7 @@ export function ControlBar({
         borderTop: '1px solid var(--term-border)',
       }}
     >
-      {/* Row 1: [▲/▼] [⇧TAB]  ·····  [MIC] */}
+      {/* Row 1: [▲/▼] [⇧TAB]  ·····  [MODEL?] [MIC] */}
       <div className="flex items-center gap-1.5">
         {/* Keyboard toggle — far left */}
         {onToggleMinimize && (
@@ -117,6 +155,64 @@ export function ControlBar({
 
         {/* Spacer */}
         <div className="flex-1" />
+
+        {/* Model picker — only in claude mode */}
+        {isClaudeMode && (
+          <div className="relative" ref={pickerRef}>
+            <button
+              type="button"
+              onClick={() => setShowModelPicker((p) => !p)}
+              className="flex items-center gap-1.5 h-11 px-3 rounded-md text-xs font-medium transition-all duration-150 active:scale-95"
+              style={showModelPicker ? {
+                backgroundColor: 'rgba(0, 255, 159, 0.15)',
+                color: 'var(--term-accent)',
+                border: '1px solid var(--term-accent)',
+              } : btnStyle}
+              title="Switch Claude model"
+            >
+              <Sparkles className="w-4 h-4" />
+              MODEL
+            </button>
+
+            {/* Dropdown */}
+            {showModelPicker && (
+              <div
+                className="absolute bottom-full mb-1 right-0 rounded-lg overflow-hidden"
+                style={{
+                  backgroundColor: 'var(--term-bg-elevated)',
+                  border: '1px solid var(--term-border-active)',
+                  boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.4)',
+                  minWidth: 140,
+                  zIndex: 50,
+                }}
+              >
+                {MODEL_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => handleModelSelect(opt.command)}
+                    className="w-full text-left px-4 py-3 text-sm font-medium transition-colors duration-100"
+                    style={{
+                      color: 'var(--term-text-primary)',
+                      backgroundColor: 'transparent',
+                      borderBottom: '1px solid var(--term-border)',
+                      fontFamily: '"JetBrains Mono", monospace',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor =
+                        'rgba(0, 255, 159, 0.1)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent'
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Mic button — far right */}
         {onVoice && (
