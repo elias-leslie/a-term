@@ -48,9 +48,11 @@ async def handle_terminal_connection(
     pid: int | None = None
 
     try:
-        # Validate session and prepare tmux
+        # Validate session and prepare tmux (run in thread to avoid blocking event loop)
         try:
-            session, tmux_session_name = validate_and_prepare_session(session_id)
+            session, tmux_session_name = await asyncio.to_thread(
+                validate_and_prepare_session, session_id
+            )
         except ValueError as e:
             await websocket.close(
                 code=4000,

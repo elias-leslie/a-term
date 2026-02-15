@@ -36,14 +36,14 @@ def test_health_healthy_returns_status(test_app: TestClient) -> None:
 
 
 def test_health_unhealthy_when_db_down(test_app: TestClient) -> None:
-    """GET /health -- database unreachable returns ``{"status": "unhealthy"}``."""
+    """GET /health -- database unreachable returns 503 with unhealthy status."""
     # Arrange
     with patch("terminal.main.get_connection", side_effect=RuntimeError("connection refused")):
         # Act
         response = test_app.get("/health")
 
     # Assert
-    assert response.status_code == 200
+    assert response.status_code == 503
     body = response.json()
     assert body["status"] == "unhealthy"
     assert body["service"] == "terminal"

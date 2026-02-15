@@ -54,8 +54,8 @@ class StartClaudeResponse(BaseModel):
 # ============================================================================
 
 
-def _is_claude_running_in_session(tmux_session: str) -> bool:
-    """Check if Claude Code is already running in a tmux session.
+def _is_claude_running_in_session_sync(tmux_session: str) -> bool:
+    """Check if Claude Code is already running in a tmux session (sync).
 
     Uses tmux's pane_current_command to check if 'claude' is the foreground process.
     """
@@ -79,13 +79,18 @@ def _is_claude_running_in_session(tmux_session: str) -> bool:
     return current_command == "claude"
 
 
-def _verify_claude_started(tmux_session: str) -> bool:
+async def _is_claude_running_in_session(tmux_session: str) -> bool:
+    """Check if Claude Code is already running in a tmux session."""
+    return await asyncio.to_thread(_is_claude_running_in_session_sync, tmux_session)
+
+
+async def _verify_claude_started(tmux_session: str) -> bool:
     """Verify Claude Code has started.
 
     Returns:
         True if Claude process is running, False otherwise
     """
-    return _is_claude_running_in_session(tmux_session)
+    return await _is_claude_running_in_session(tmux_session)
 
 
 async def _background_verify_claude_start(session_id: str, tmux_session: str) -> None:
@@ -97,7 +102,7 @@ async def _background_verify_claude_start(session_id: str, tmux_session: str) ->
         await asyncio.sleep(CLAUDE_STARTUP_VERIFY_DELAY_SECONDS)
 
         # Verify Claude started
-        if _verify_claude_started(tmux_session):
+        if await _verify_claude_started(tmux_session):
             # Only update if still in 'starting' state (handles race conditions)
             updated = terminal_store.update_claude_state(
                 session_id, "running", expected_state="starting"
@@ -212,7 +217,7 @@ async def start_claude(session_id: str, background_tasks: BackgroundTasks) -> St
 
     # Fallback: Check if Claude is already running via pane content
     # This handles cases where state got out of sync
-    if _is_claude_running_in_session(tmux_session):
+    if await _is_claude_running_in_session(tmux_session):
         # Update state to match reality (use expected_state to avoid overwriting concurrent changes)
         terminal_store.update_claude_state(session_id, "running", expected_state=current_state)
         return StartClaudeResponse(
@@ -243,7 +248,8 @@ async def start_claude(session_id: str, background_tasks: BackgroundTasks) -> St
 
     # Send the claude command via send-keys
     # The command will be visible but the overlay hides it during startup
-    result = subprocess.run(
+    result = await asyncio.to_thread(
+        subprocess.run,
         [
             "tmux",
             "send-keys",

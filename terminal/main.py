@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -124,8 +125,8 @@ app.include_router(claude.router)
 app.include_router(files.router)
 
 
-@app.get("/health")
-async def health() -> dict[str, str]:
+@app.get("/health", response_model=None)
+async def health() -> dict[str, str] | JSONResponse:
     """Health check endpoint."""
     try:
         with get_connection() as conn, conn.cursor() as cur:
@@ -133,7 +134,10 @@ async def health() -> dict[str, str]:
         return {"status": "healthy", "service": "terminal"}
     except Exception as e:
         logger.error("health_check_failed", error=str(e))
-        return {"status": "unhealthy", "service": "terminal", "db": "down"}
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unhealthy", "service": "terminal", "db": "down"},
+        )
 
 
 def main() -> None:
