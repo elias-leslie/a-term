@@ -11,9 +11,12 @@ from fastapi import WebSocket, WebSocketDisconnect
 
 from ...logging_config import get_logger
 from ...services.pty_manager import read_pty_output, spawn_pty_for_tmux
-from ...utils.tmux import get_scrollback
+from ...utils.tmux import get_scrollback, is_claude_running_in_session
 from .session_validation import validate_and_prepare_session
+from .websocket_cleanup import cleanup_pty_process, cleanup_tasks
+from .websocket_heartbeat import heartbeat_loop
 from .websocket_messages import handle_websocket_message
+from .websocket_resize import wait_for_initial_resize
 
 logger = get_logger(__name__)
 
@@ -55,10 +58,8 @@ async def handle_terminal_connection(
             )
             return
 
-        # Extract session data for PTY spawn
-        stored_target_session = session.get("last_claude_session")
-
         # Spawn PTY for tmux (pass stored target session for auto-reconnect)
+        stored_target_session = session.get("last_claude_session")
         master_fd, pid = spawn_pty_for_tmux(tmux_session_name, stored_target_session)
 
         # Store session info
@@ -68,96 +69,38 @@ async def handle_terminal_connection(
             "session_name": tmux_session_name,
         }
 
-        # Wait for first resize event from frontend (sync dimensions)
-        # This ensures tmux dimensions match frontend before sending scrollback
-        initial_resize_received = False
-        resize_timeout = 5.0  # seconds to wait for resize
+        # Wait for initial resize to sync dimensions
+        await wait_for_initial_resize(
+            websocket, master_fd, session_id, tmux_session_name
+        )
 
-        try:
-            async with asyncio.timeout(resize_timeout):
-                while not initial_resize_received:
-                    message = await websocket.receive()
-                    if message["type"] == "websocket.disconnect":
-                        return
-                    resize_result = handle_websocket_message(
-                        message, master_fd, session_id, tmux_session_name
-                    )
-                    if resize_result is not None:
-                        initial_resize_received = True
-                        logger.info(
-                            "initial_resize_received",
-                            session_id=session_id,
-                            cols=resize_result[0],
-                            rows=resize_result[1],
-                        )
-        except TimeoutError:
-            # No resize received, proceed with defaults
-            logger.warning(
-                "initial_resize_timeout",
-                session_id=session_id,
-                timeout=resize_timeout,
-            )
-
-        # Capture and send scrollback after resize (dimensions now match)
+        # Send scrollback history after resize
         scrollback = get_scrollback(tmux_session_name)
         if scrollback:
             await websocket.send_text(scrollback)
-            logger.info(
-                "scrollback_sent",
-                session_id=session_id,
-                bytes=len(scrollback),
-            )
+            logger.info("scrollback_sent", session_id=session_id, bytes=len(scrollback))
 
-        # Start output reader task for live output
+        # Start background tasks
         output_task = asyncio.create_task(read_pty_output(websocket, master_fd))
-
-        # Start heartbeat task to keep connection alive through proxies/firewalls
-        async def _heartbeat() -> None:
-            while True:
-                await asyncio.sleep(30)
-                try:
-                    await websocket.send_bytes(b"")
-                except Exception:
-                    break
-
-        heartbeat_task = asyncio.create_task(_heartbeat())
+        heartbeat_task = asyncio.create_task(heartbeat_loop(websocket))
 
         # Auto-start Claude for claude-mode sessions
-        session_mode = session.get("mode")
-        if session_mode == "claude":
-            # Import here to avoid circular import
-            from ...utils.tmux import is_claude_running_in_session
+        if session.get("mode") == "claude" and not is_claude_running_in_session(tmux_session_name):
+            await asyncio.sleep(0.3)  # Wait for shell prompt
+            os.write(master_fd, b"claude --dangerously-skip-permissions\n")
+            logger.info("auto_started_claude", session_id=session_id)
 
-            # Check if Claude is already running
-            if not is_claude_running_in_session(tmux_session_name):
-                # Wait for shell prompt to appear, then send claude command
-                await asyncio.sleep(0.3)
-                os.write(master_fd, b"claude --dangerously-skip-permissions\n")
-                logger.info("auto_started_claude", session_id=session_id)
-
-        # Session tracking is now handled by tmux hooks (see main.py)
-        # No polling needed - hooks notify us instantly on session switch
-
-        # Read input from WebSocket
+        # Process incoming WebSocket messages
         try:
             while True:
                 message = await websocket.receive()
-
                 if message["type"] == "websocket.disconnect":
                     break
-
                 handle_websocket_message(message, master_fd, session_id, tmux_session_name)
-
         except WebSocketDisconnect:
             logger.info("terminal_disconnected", session_id=session_id)
-
         finally:
-            heartbeat_task.cancel()
-            output_task.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await heartbeat_task
-            with contextlib.suppress(asyncio.CancelledError):
-                await output_task
+            await cleanup_tasks(heartbeat_task, output_task)
 
     except Exception as e:
         logger.error("terminal_error", session_id=session_id, error=str(e))
@@ -166,29 +109,8 @@ async def handle_terminal_connection(
 
     finally:
         # Clean up PTY child process and fd, but keep tmux session
-        if pid is not None:
-            with contextlib.suppress(OSError):
-                os.kill(pid, 9)  # SIGKILL the tmux attach process
-            # Wait for child to exit (with retries to prevent zombie)
-            for _ in range(20):
-                try:
-                    wpid, _ = os.waitpid(pid, os.WNOHANG)
-                    if wpid != 0:
-                        break  # Child reaped
-                except ChildProcessError:
-                    break  # Already reaped by someone else
-                except OSError:
-                    break  # Process doesn't exist
-                await asyncio.sleep(0.01)  # 10ms delay between retries
-            else:
-                # Final blocking wait if still not reaped
-                with contextlib.suppress(OSError, ChildProcessError):
-                    os.waitpid(pid, 0)
-
-        if master_fd is not None:
-            with contextlib.suppress(OSError):
-                os.close(master_fd)
+        if pid is not None and master_fd is not None:
+            await cleanup_pty_process(pid, master_fd)
 
         _sessions.pop(session_id, None)
-
         logger.info("terminal_cleanup_complete", session_id=session_id)
