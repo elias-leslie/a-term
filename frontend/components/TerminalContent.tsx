@@ -248,7 +248,7 @@ export function TerminalContent({
       </FileUploadDropzone>
 
       {/* Mobile keyboard + voice panel — ControlBar always visible, FullKeyboard hides during voice */}
-      {isMobile && sessions.length > 0 && activeStatus && (
+      {isMobile && sessions.length > 0 && (
         <div className="order-3">
           <MobileKeyboard
             onSend={handleKeyboardInput}
