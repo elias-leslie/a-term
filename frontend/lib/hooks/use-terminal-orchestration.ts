@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useTranscription } from '@agent-hub/passport-client'
 import { useLayoutPersistence } from './use-layout-persistence'
 import { usePromptCleaner } from './use-prompt-cleaner'
@@ -122,6 +122,16 @@ export function useTerminalOrchestration({
     voiceStatus: transcription.status,
   })
 
+  // Pause key: first press opens voice, second press sends transcript
+  const handlePauseVoiceSend = useCallback(() => {
+    const text = transcription.finalTranscript.trim()
+    if (text) {
+      actionHandlers.handleVoiceSend(text)
+    } else {
+      actionHandlers.handleVoiceCancel()
+    }
+  }, [transcription.finalTranscript, actionHandlers])
+
   // Keyboard shortcuts (after actionHandlers so voice toggle is available)
   const keyboardShortcuts = useTerminalKeyboardShortcuts({
     onNewTerminal: modalHandlers.handleOpenTerminalManager,
@@ -130,7 +140,7 @@ export function useTerminalOrchestration({
     onPrevTerminal: navigationHandlers.handlePrevTerminal,
     onJumpToTerminal: navigationHandlers.handleJumpToTerminal,
     onVoiceToggle: showVoice
-      ? actionHandlers.handleVoiceCancel
+      ? handlePauseVoiceSend
       : actionHandlers.handleVoiceOpen,
   })
 
