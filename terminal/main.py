@@ -4,6 +4,7 @@ Independent microservice for web terminal functionality.
 Runs on port 8002, separate from main SummitFlow backend.
 """
 
+import os
 import subprocess
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -17,10 +18,30 @@ from slowapi.errors import RateLimitExceeded
 
 from .api import claude, files, panes, projects, sessions, terminal
 from .config import CORS_ORIGINS, TERMINAL_PORT
-from .logging_config import get_logger
+from .logging_config import SyslogPrefixFormatter, configure_logging, get_logger
 from .rate_limit import limiter
 from .services import lifecycle
 from .storage.connection import close_pool, get_connection
+
+# Configure structured logging (skip in test mode - tests configure their own logging)
+if not os.getenv("PYTEST_CURRENT_TEST"):
+    configure_logging()
+
+    # Configure uvicorn loggers to use syslog prefixes for journald
+    import logging
+
+    uvicorn_access_logger = logging.getLogger("uvicorn.access")
+    uvicorn_error_logger = logging.getLogger("uvicorn.error")
+    uvicorn_logger = logging.getLogger("uvicorn")
+
+    # Apply syslog formatter to all uvicorn handlers
+    for _uvicorn_log in [uvicorn_access_logger, uvicorn_error_logger, uvicorn_logger]:
+        for _handler in _uvicorn_log.handlers:
+            _handler.setFormatter(
+                SyslogPrefixFormatter(
+                    "%(levelname)s:     %(message)s"  # Match uvicorn's format
+                )
+            )
 
 logger = get_logger(__name__)
 
