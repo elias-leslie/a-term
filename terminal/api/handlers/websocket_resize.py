@@ -41,7 +41,7 @@ async def wait_for_initial_resize(
                 if message["type"] == "websocket.disconnect":
                     return False
 
-                resize_result = handle_websocket_message(
+                resize_result = await handle_websocket_message(
                     message, master_fd, session_id, tmux_session_name
                 )
                 if resize_result is not None:

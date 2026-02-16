@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 from typing import Any
@@ -21,11 +22,12 @@ from ...utils.tmux import resize_tmux_window
 logger = get_logger(__name__)
 
 
-def handle_websocket_message(
+async def handle_websocket_message(
     message: Any,
     master_fd: int,
     session_id: str,
     tmux_session_name: str | None = None,
+    last_resize: list[int] | None = None,
 ) -> tuple[int, int] | None:
     """Handle a single WebSocket message.
 
@@ -34,6 +36,8 @@ def handle_websocket_message(
         master_fd: Master file descriptor to write to
         session_id: Terminal session ID (for logging)
         tmux_session_name: tmux session name for resize operations
+        last_resize: Mutable [cols, rows] tracker for deduplication.
+            When provided, skips resize if dimensions are unchanged.
 
     Returns:
         (cols, rows) tuple if this was a resize event, None otherwise
@@ -57,10 +61,21 @@ def handle_websocket_message(
                     resize = data.get("resize", {})
                     cols = min(max(int(resize.get("cols", TMUX_DEFAULT_COLS)), TMUX_MIN_COLS), TMUX_MAX_COLS)
                     rows = min(max(int(resize.get("rows", TMUX_DEFAULT_ROWS)), TMUX_MIN_ROWS), TMUX_MAX_ROWS)
+
+                    # Skip if dimensions unchanged (dedup)
+                    if last_resize and cols == last_resize[0] and rows == last_resize[1]:
+                        return (cols, rows)
+
                     resize_pty(master_fd, cols, rows)
-                    # Also resize the tmux window to match
+                    # Resize tmux window in a thread to avoid blocking the event loop
                     if tmux_session_name:
-                        resize_tmux_window(tmux_session_name, cols, rows)
+                        await asyncio.to_thread(resize_tmux_window, tmux_session_name, cols, rows)
+
+                    # Update tracker
+                    if last_resize is not None:
+                        last_resize[0] = cols
+                        last_resize[1] = rows
+
                     logger.info(
                         "terminal_resized",
                         session_id=session_id,

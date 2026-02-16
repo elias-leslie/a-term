@@ -97,13 +97,18 @@ async def handle_terminal_connection(
             os.write(master_fd, b"claude --dangerously-skip-permissions\n")
             logger.info("auto_started_claude", session_id=session_id)
 
+        # Track last resize dimensions to skip duplicate resize events
+        last_resize = [0, 0]
+
         # Process incoming WebSocket messages
         try:
             while True:
                 message = await websocket.receive()
                 if message["type"] == "websocket.disconnect":
                     break
-                handle_websocket_message(message, master_fd, session_id, tmux_session_name)
+                await handle_websocket_message(
+                    message, master_fd, session_id, tmux_session_name, last_resize
+                )
         except WebSocketDisconnect:
             logger.info("terminal_disconnected", session_id=session_id)
         finally:
