@@ -243,6 +243,10 @@ async def read_pty_output(websocket: WebSocket, master_fd: int) -> None:
                 # Flush if batch size limit reached
                 if len(batch_buffer) >= BATCH_SIZE_LIMIT and not await flush_batch():
                     break
+                # Flush immediately if no more data pending (low-latency for interactive input).
+                # Under heavy output the queue stays non-empty, so batching still applies.
+                elif queue.empty() and not await flush_batch():
+                    break
 
     except asyncio.CancelledError:
         # Flush remaining buffer on cancellation

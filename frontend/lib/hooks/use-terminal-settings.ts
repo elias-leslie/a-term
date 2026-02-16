@@ -84,7 +84,7 @@ const STORAGE_KEY_PROJECT_PREFIX = 'terminal-settings-project-'
 const DEFAULT_SETTINGS: TerminalSettings = {
   fontId: 'jetbrains-mono',
   fontSize: 14,
-  scrollback: 100000,
+  scrollback: 10000,
   cursorStyle: 'block',
   cursorBlink: true,
   themeId: 'phosphor',
