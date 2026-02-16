@@ -151,12 +151,10 @@ async def read_pty_output(websocket: WebSocket, master_fd: int) -> None:
         try:
             data = os.read(master_fd, 8192)
             if data:
-                try:
+                # Drop data when consumer can't keep up — prevents memory runaway.
+                # Terminal output is best-effort; the user still has tmux scrollback.
+                with contextlib.suppress(asyncio.QueueFull):
                     queue.put_nowait(data)
-                except asyncio.QueueFull:
-                    # Drop data when consumer can't keep up — prevents memory runaway.
-                    # Terminal output is best-effort; the user still has tmux scrollback.
-                    pass
             else:
                 queue.put_nowait(None)  # EOF
         except OSError as e:
@@ -241,11 +239,7 @@ async def read_pty_output(websocket: WebSocket, master_fd: int) -> None:
                 batch_buffer += decoded
 
                 # Flush if batch size limit reached
-                if len(batch_buffer) >= BATCH_SIZE_LIMIT and not await flush_batch():
-                    break
-                # Flush immediately if no more data pending (low-latency for interactive input).
-                # Under heavy output the queue stays non-empty, so batching still applies.
-                elif queue.empty() and not await flush_batch():
+                if (len(batch_buffer) >= BATCH_SIZE_LIMIT and not await flush_batch()) or (queue.empty() and not await flush_batch()):
                     break
 
     except asyncio.CancelledError:
