@@ -73,12 +73,16 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
           if (!isVisibleRef.current) return
           // Preserve scroll position if user is viewing history
           const buffer = terminalRef.current.buffer.active
-          const distanceFromBottom = buffer.baseY - buffer.viewportY
-          terminalRef.current.write(data)
-          // Restore scroll position if user wasn't at bottom
-          if (distanceFromBottom > 0) {
-            terminalRef.current.scrollLines(-distanceFromBottom)
-          }
+          const isScrolledUp = buffer.viewportY < buffer.baseY
+          const savedViewportY = buffer.viewportY
+          terminalRef.current.write(data, () => {
+            // Restore absolute scroll position so the view stays on the
+            // same lines the user was reading, regardless of how many new
+            // lines were added at the bottom.
+            if (isScrolledUp && terminalRef.current) {
+              terminalRef.current.scrollToLine(savedViewportY)
+            }
+          })
         },
         onTerminalMessage: (message) => {
           terminalRef.current?.writeln(message)
