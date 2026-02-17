@@ -5,7 +5,7 @@ environment:
   venv_path: .venv
   package_manager: npm
 services:
-  backend_port: 8000
+  backend_port: 8002
   frontend_port: 3002
   infrastructure:
     neo4j: 7687

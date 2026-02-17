@@ -18,6 +18,8 @@
 #
 # Database: Restores terminal-specific tables to shared summitflow DB:
 #   - terminal_sessions
+#   - terminal_panes
+#   - terminal_project_settings
 
 set -eo pipefail
 
@@ -32,6 +34,8 @@ RESTORE_STAGING="/tmp/${PROJECT_NAME}-restore-$$"
 # Terminal-specific tables (must match backup.sh)
 TERMINAL_TABLES=(
     "terminal_sessions"
+    "terminal_panes"
+    "terminal_project_settings"
 )
 
 # Database config - terminal uses shared summitflow DB
@@ -243,7 +247,7 @@ restore_tables() {
     if [ -f "$HOME/.env.local" ]; then
         local db_url=$(grep "^DATABASE_URL=" "$HOME/.env.local" 2>/dev/null | cut -d'=' -f2- || true)
         if [ -n "$db_url" ]; then
-            local db_pass=$(echo "$db_url" | sed -n 's|postgresql://[^:]*:\([^@]*\)@.*|\1|p')
+            local db_pass=$(python3 -c "from urllib.parse import urlparse; print(urlparse('$db_url').password or '')" 2>/dev/null || true)
             export PGPASSWORD="$db_pass"
         fi
     fi

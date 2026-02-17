@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useState } from 'react'
+import { apiFetch } from '../api-fetch'
 import { buildApiUrl } from '../api-config'
 
 export interface TerminalSession {
@@ -33,19 +34,6 @@ interface CreateSessionRequest {
 interface UpdateSessionRequest {
   name?: string
   display_order?: number
-}
-
-async function apiFetch<T>(
-  url: string,
-  options?: RequestInit,
-  defaultError = 'Request failed',
-): Promise<T> {
-  const res = await fetch(buildApiUrl(url), options)
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ detail: defaultError }))
-    throw new Error(error.detail || defaultError)
-  }
-  return res.json()
 }
 
 const jsonHeaders = { 'Content-Type': 'application/json' }

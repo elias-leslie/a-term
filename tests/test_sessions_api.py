@@ -30,9 +30,9 @@ def _make_session(
     mode: str = "shell",
     project_id: str | None = None,
 ) -> dict[str, Any]:
-    """Build a fake session dict matching the shape returned by storage."""
+    """Build a fake session dict matching the shape returned by storage._row_to_dict."""
     sid = session_id or str(uuid.uuid4())
-    now = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc).isoformat()
     return {
         "id": sid,
         "name": name,
@@ -45,7 +45,9 @@ def _make_session(
         "is_alive": is_alive,
         "created_at": now,
         "last_accessed_at": now,
+        "last_claude_session": None,
         "claude_state": "not_started",
+        "pane_id": None,
     }
 
 

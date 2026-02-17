@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class SessionInPaneResponse(BaseModel):
     """Session data within a pane response."""
+
+    model_config = ConfigDict(extra="ignore")
 
     id: str
     name: str

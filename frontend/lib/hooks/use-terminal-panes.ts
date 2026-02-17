@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import * as api from './terminal-panes-api'
+import { findSessionByMode } from './terminal-handler-utils'
 import type {
   TerminalPane,
   PaneListResponse,
@@ -122,7 +123,7 @@ export function useTerminalPanes() {
 
   const getSessionByMode = useCallback(
     (pane: TerminalPane, mode: 'shell' | 'claude') =>
-      pane.sessions.find((s) => s.mode === mode) ?? null,
+      findSessionByMode(pane, mode) ?? null,
     []
   )
 

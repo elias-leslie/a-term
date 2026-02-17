@@ -13,7 +13,7 @@ import {
   type TerminalScrollback,
   type TerminalThemeId,
 } from '@/lib/hooks/use-terminal-settings'
-import { useClickOutside } from '@/lib/hooks/useClickOutside'
+import { useClickOutside } from '@/lib/hooks/use-click-outside'
 import { SettingsButton } from './settings/SettingsButton'
 import { SettingsPanel } from './settings/SettingsPanel'
 import { SettingSelect } from './settings/SettingSelect'

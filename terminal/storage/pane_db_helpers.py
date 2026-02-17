@@ -63,24 +63,10 @@ def execute_pane_query(
             return [row_to_pane_dict(row) for row in rows]
 
 
-def session_row_to_dict(row: tuple[Any, ...]) -> dict[str, Any]:
-    """Convert a session database row to dict."""
-    return {
-        "id": str(row[0]),
-        "name": row[1],
-        "mode": row[2],
-        "session_number": row[3],
-        "is_alive": row[4],
-        "working_dir": row[5],
-        "claude_state": row[6] if len(row) > 6 else "not_started",
-    }
-
-
 __all__ = [
     "PANE_FIELDS",
     "PaneId",
     "execute_pane_query",
     "normalize_pane_id",
     "row_to_pane_dict",
-    "session_row_to_dict",
 ]

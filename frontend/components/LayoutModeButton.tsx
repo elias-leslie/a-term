@@ -1,9 +1,10 @@
 'use client'
 
 import { ChevronDown, Grid2x2, type LucideIcon } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { GRID_MIN_WIDTHS, type GridLayoutMode } from '@/lib/constants/terminal'
-import { useClickOutside } from '@/lib/hooks/useClickOutside'
+import { useClickOutside } from '@/lib/hooks/use-click-outside'
+import { useDropdownPosition } from '@/lib/hooks/use-dropdown-position'
 
 // Define LayoutMode locally for standalone terminal app
 // Only grid mode supported (single mode removed)
@@ -39,35 +40,20 @@ export function LayoutModeButtons({
   const [isOpen, setIsOpen] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
 
   const closeDropdown = useCallback(() => setIsOpen(false), [])
   const clickOutsideRefs = useMemo(() => [buttonRef, dropdownRef], [])
   useClickOutside(clickOutsideRefs, closeDropdown, isOpen)
+
+  const dropdownStyle = useDropdownPosition(buttonRef, isOpen, {
+    estimatedHeight: 120,
+  })
 
   // Filter options by availableLayouts if provided
   const filteredOptions = useMemo(() => {
     if (!availableLayouts) return LAYOUT_OPTIONS
     return LAYOUT_OPTIONS.filter((opt) => availableLayouts.includes(opt.mode))
   }, [availableLayouts])
-
-  // Calculate dropdown position
-  useEffect(() => {
-    if (!isOpen || !buttonRef.current) return
-
-    const rect = buttonRef.current.getBoundingClientRect()
-    const dropdownHeight = 120
-    const spaceBelow = window.innerHeight - rect.bottom
-    const openAbove = spaceBelow < dropdownHeight
-
-    setDropdownStyle({
-      position: 'fixed',
-      top: openAbove ? undefined : rect.bottom + 4,
-      bottom: openAbove ? window.innerHeight - rect.top + 4 : undefined,
-      right: window.innerWidth - rect.right,
-      zIndex: 9999,
-    })
-  }, [isOpen])
 
   const handleSelect = (mode: LayoutMode) => {
     onLayoutChange(mode)
@@ -133,7 +119,7 @@ export function LayoutModeButtons({
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
               border: '1px solid var(--term-border-active)',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+              boxShadow: 'var(--term-shadow-dropdown)',
             }}
           >
             {filteredOptions.map(({ mode, icon: Icon, title }) => {

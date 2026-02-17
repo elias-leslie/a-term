@@ -9,6 +9,8 @@
 # Selective table dump (only terminal-specific tables)
 BACKUP_TABLES=(
     "terminal_sessions"
+    "terminal_panes"
+    "terminal_project_settings"
 )
 
 # Archive name for the DB dump inside the backup
@@ -31,6 +33,6 @@ DB_USER="summitflow_app"
 if [ -f "$HOME/.env.local" ]; then
     _terminal_db_url=$(grep "^DATABASE_URL=" "$HOME/.env.local" 2>/dev/null | cut -d'=' -f2- || true)
     if [ -n "$_terminal_db_url" ]; then
-        DB_PASSWORD=$(echo "$_terminal_db_url" | sed -n 's|postgresql://[^:]*:\([^@]*\)@.*|\1|p')
+        DB_PASSWORD=$(python3 -c "from urllib.parse import urlparse; print(urlparse('$_terminal_db_url').password or '')" 2>/dev/null || true)
     fi
 fi

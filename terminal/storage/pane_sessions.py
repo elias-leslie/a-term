@@ -5,7 +5,8 @@ from __future__ import annotations
 from typing import Any
 
 from .connection import get_connection
-from .pane_db_helpers import PaneId, normalize_pane_id, session_row_to_dict
+from .pane_db_helpers import PaneId, normalize_pane_id
+from .terminal_crud import TERMINAL_SESSION_FIELDS, _row_to_dict
 
 
 def fetch_sessions_for_pane(pane_id: PaneId) -> list[dict[str, Any]]:
@@ -19,8 +20,8 @@ def fetch_sessions_for_pane(pane_id: PaneId) -> list[dict[str, Any]]:
     """
     with get_connection() as conn, conn.cursor() as cur:
         cur.execute(
-            """
-            SELECT id, name, mode, session_number, is_alive, working_dir, claude_state
+            f"""
+            SELECT {TERMINAL_SESSION_FIELDS}
             FROM terminal_sessions
             WHERE pane_id = %s
             ORDER BY mode
@@ -28,7 +29,7 @@ def fetch_sessions_for_pane(pane_id: PaneId) -> list[dict[str, Any]]:
             (normalize_pane_id(pane_id),),
         )
         rows = cur.fetchall()
-        return [session_row_to_dict(row) for row in rows]
+        return [_row_to_dict(row) for row in rows]
 
 
 def fetch_all_sessions_by_pane() -> dict[str, list[dict[str, Any]]]:
@@ -39,8 +40,8 @@ def fetch_all_sessions_by_pane() -> dict[str, list[dict[str, Any]]]:
     """
     with get_connection() as conn, conn.cursor() as cur:
         cur.execute(
-            """
-            SELECT pane_id, id, name, mode, session_number, is_alive, working_dir, claude_state
+            f"""
+            SELECT {TERMINAL_SESSION_FIELDS}
             FROM terminal_sessions
             WHERE pane_id IS NOT NULL
             ORDER BY pane_id, mode
@@ -50,11 +51,12 @@ def fetch_all_sessions_by_pane() -> dict[str, list[dict[str, Any]]]:
 
     sessions_by_pane: dict[str, list[dict[str, Any]]] = {}
     for row in rows:
-        pane_id = str(row[0])
-        if pane_id not in sessions_by_pane:
-            sessions_by_pane[pane_id] = []
-        # Skip pane_id column (row[0]) and reuse shared conversion function
-        sessions_by_pane[pane_id].append(session_row_to_dict(row[1:]))
+        session = _row_to_dict(row)
+        pane_id = session["pane_id"]
+        if pane_id:
+            if pane_id not in sessions_by_pane:
+                sessions_by_pane[pane_id] = []
+            sessions_by_pane[pane_id].append(session)
 
     return sessions_by_pane
 

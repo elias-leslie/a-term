@@ -11,3 +11,6 @@ SESSION_MODES = ["shell", "claude"]
 
 # Type alias for session mode parameter annotations
 SessionMode = Literal["shell", "claude"]
+
+# Claude CLI command with auto-approval flag
+CLAUDE_COMMAND = "claude --dangerously-skip-permissions"

@@ -1,9 +1,11 @@
 'use client'
 
 import { MoreVertical, RefreshCw, XCircle } from 'lucide-react'
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { useClickOutside } from '@/lib/hooks/useClickOutside'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import { useClickOutside } from '@/lib/hooks/use-click-outside'
+import { useDropdownPosition } from '@/lib/hooks/use-dropdown-position'
 import { ConfirmationDialog } from './ConfirmationDialog'
+import { MenuItemButton } from './MenuItemButton'
 
 interface GlobalActionMenuProps {
   onResetAll: () => void
@@ -24,7 +26,6 @@ export function GlobalActionMenu({
   const [isOpen, setIsOpen] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
-  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({})
   const [confirmAction, setConfirmAction] = useState<{
     type: 'reset' | 'close'
     onConfirm: () => void
@@ -34,28 +35,10 @@ export function GlobalActionMenu({
   const clickOutsideRefs = useMemo(() => [buttonRef, menuRef], [])
   useClickOutside(clickOutsideRefs, closeMenu, isOpen)
 
-  // Calculate menu position based on viewport - use fixed positioning
-  useLayoutEffect(() => {
-    if (!isOpen || !buttonRef.current) return
-
-    const rect = buttonRef.current.getBoundingClientRect()
-    const menuHeight = 88 // Approximate height of 2 options
-    const menuWidth = 180
-    const spaceBelow = window.innerHeight - rect.bottom
-    const spaceRight = window.innerWidth - rect.right
-    const openAbove = spaceBelow < menuHeight
-    const openLeft = spaceRight < menuWidth
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: position must be calculated from DOM before paint
-    setMenuStyle({
-      position: 'fixed',
-      top: openAbove ? undefined : rect.bottom + 4,
-      bottom: openAbove ? window.innerHeight - rect.top + 4 : undefined,
-      right: openLeft ? window.innerWidth - rect.right : undefined,
-      left: openLeft ? undefined : rect.left,
-      zIndex: 9999,
-    })
-  }, [isOpen])
+  const menuStyle = useDropdownPosition(buttonRef, isOpen, {
+    estimatedHeight: 88,
+    estimatedWidth: 180,
+  })
 
   const handleResetAll = () => {
     setConfirmAction({
@@ -150,17 +133,17 @@ export function GlobalActionMenu({
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
               border: '1px solid var(--term-border-active)',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+              boxShadow: 'var(--term-shadow-dropdown)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <GlobalMenuItem
+            <MenuItemButton
               icon={<RefreshCw className="w-3.5 h-3.5" />}
               label="Reset All Terminals"
               onClick={handleResetAll}
               isMobile={isMobile}
             />
-            <GlobalMenuItem
+            <MenuItemButton
               icon={<XCircle className="w-3.5 h-3.5" />}
               label="Close All Terminals"
               onClick={handleCloseAll}
@@ -193,51 +176,5 @@ export function GlobalActionMenu({
         onCancel={() => setConfirmAction(null)}
       />
     </div>
-  )
-}
-
-function GlobalMenuItem({
-  icon,
-  label,
-  onClick,
-  isMobile,
-  variant = 'default',
-}: {
-  icon: React.ReactNode
-  label: string
-  onClick: () => void
-  isMobile: boolean
-  variant?: 'default' | 'danger'
-}) {
-  const colorVar =
-    variant === 'danger' ? 'var(--term-error)' : 'var(--term-text-primary)'
-  const hoverColorVar =
-    variant === 'danger' ? 'var(--term-error)' : 'var(--term-accent)'
-
-  return (
-    <button
-      role="menuitem"
-      onClick={onClick}
-      className={`
-        flex items-center gap-2 w-full text-left transition-colors
-        ${isMobile ? 'px-3 py-3 text-sm min-h-[44px]' : 'px-2.5 py-2 text-xs'}
-      `}
-      style={{
-        color: colorVar,
-        backgroundColor: 'transparent',
-        fontFamily: 'var(--font-mono)',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = 'var(--term-bg-surface)'
-        e.currentTarget.style.color = hoverColorVar
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'transparent'
-        e.currentTarget.style.color = colorVar
-      }}
-    >
-      {icon}
-      <span>{label}</span>
-    </button>
   )
 }

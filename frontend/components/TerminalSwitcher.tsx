@@ -2,7 +2,8 @@
 
 import { clsx } from 'clsx'
 import { Check, ChevronDown, Terminal as TerminalIcon } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import { useClickOutside } from '@/lib/hooks/use-click-outside'
 import { getSlotName, getSlotSessionId, type PaneSlot } from '@/lib/utils/slot'
 import { ClaudeIndicator } from './ClaudeIndicator'
 
@@ -29,22 +30,9 @@ export function TerminalSwitcher({
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // Close on outside click
-  useEffect(() => {
-    if (!isOpen) return
-
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
-        setIsOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [isOpen])
+  const closeDropdown = useCallback(() => setIsOpen(false), [])
+  const clickOutsideRefs = useMemo(() => [dropdownRef], [])
+  useClickOutside(clickOutsideRefs, closeDropdown, isOpen)
 
   // Separate project slots and ad-hoc slots
   const projectSlots = useMemo(() => {

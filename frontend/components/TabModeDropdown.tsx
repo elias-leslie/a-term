@@ -1,8 +1,9 @@
 'use client'
 
 import { ChevronDown, Loader2, Sparkles, Terminal } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useClickOutside } from '@/lib/hooks/useClickOutside'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import { useClickOutside } from '@/lib/hooks/use-click-outside'
+import { useDropdownPosition } from '@/lib/hooks/use-dropdown-position'
 
 export type TerminalMode = 'shell' | 'claude'
 
@@ -30,7 +31,6 @@ export function TabModeDropdown({
   const [internalLoading, setInternalLoading] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
 
   // Combined loading state - either external or internal
   const isCurrentlyLoading = isLoading || internalLoading
@@ -42,23 +42,7 @@ export function TabModeDropdown({
   const clickOutsideRefs = useMemo(() => [buttonRef, dropdownRef], [])
   useClickOutside(clickOutsideRefs, closeDropdown, isOpen)
 
-  // Calculate dropdown position based on viewport - use fixed positioning
-  useEffect(() => {
-    if (!isOpen || !buttonRef.current) return
-
-    const rect = buttonRef.current.getBoundingClientRect()
-    const dropdownHeight = 88 // Approximate height of 2 options
-    const spaceBelow = window.innerHeight - rect.bottom
-    const openAbove = spaceBelow < dropdownHeight
-
-    setDropdownStyle({
-      position: 'fixed',
-      top: openAbove ? undefined : rect.bottom + 4,
-      bottom: openAbove ? window.innerHeight - rect.top + 4 : undefined,
-      right: window.innerWidth - rect.right,
-      zIndex: 9999,
-    })
-  }, [isOpen])
+  const dropdownStyle = useDropdownPosition(buttonRef, isOpen)
 
   const handleSelect = async (mode: TerminalMode) => {
     // Prevent selection if already loading or selecting same mode
@@ -185,7 +169,7 @@ export function TabModeDropdown({
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
               border: '1px solid var(--term-border-active)',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+              boxShadow: 'var(--term-shadow-dropdown)',
             }}
             onClick={(e) => e.stopPropagation()}
           >

@@ -14,7 +14,6 @@ Panes are containers for 1-2 sessions:
 
 from __future__ import annotations
 
-import uuid
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
@@ -45,6 +44,7 @@ from .validators import (
     validate_active_mode,
     validate_create_pane_request,
     validate_pane_limit,
+    validate_uuid,
 )
 
 router = APIRouter(tags=["Terminal Panes"])
@@ -101,10 +101,7 @@ async def create_pane(request: Request, body: CreatePaneRequest) -> PaneResponse
 @router.get("/api/terminal/panes/{pane_id}", response_model=PaneResponse)
 async def get_pane(pane_id: str) -> PaneResponse:
     """Get a single terminal pane with its sessions."""
-    try:
-        uuid.UUID(pane_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid UUID") from None
+    validate_uuid(pane_id)
 
     pane = require_pane_exists(pane_crud.get_pane_with_sessions(pane_id), pane_id)
     return build_pane_response(pane)
@@ -113,10 +110,7 @@ async def get_pane(pane_id: str) -> PaneResponse:
 @router.patch("/api/terminal/panes/{pane_id}", response_model=PaneResponse)
 async def update_pane(pane_id: str, request: UpdatePaneRequest) -> PaneResponse:
     """Update terminal pane metadata (pane_name, active_mode)."""
-    try:
-        uuid.UUID(pane_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid UUID") from None
+    validate_uuid(pane_id)
 
     existing = require_pane_exists(pane_crud.get_pane(pane_id), pane_id)
 
@@ -143,10 +137,7 @@ async def delete_pane(pane_id: str) -> dict[str, Any]:
     Kills tmux sessions first to prevent orphaned processes,
     then deletes DB records (pane + sessions).
     """
-    try:
-        uuid.UUID(pane_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid UUID") from None
+    validate_uuid(pane_id)
 
     # Kill tmux sessions before deleting DB records to prevent orphans
     sessions = fetch_sessions_for_pane(pane_id)
@@ -182,10 +173,7 @@ async def update_pane_order(request: UpdatePaneOrderRequest) -> dict[str, Any]:
 @router.patch("/api/terminal/panes/{pane_id}/layout", response_model=PaneResponse)
 async def update_pane_layout(pane_id: str, request: UpdatePaneLayoutRequest) -> PaneResponse:
     """Update a single pane's layout (position and size)."""
-    try:
-        uuid.UUID(pane_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid UUID") from None
+    validate_uuid(pane_id)
 
     existing = require_pane_exists(pane_crud.get_pane(pane_id), pane_id)
 

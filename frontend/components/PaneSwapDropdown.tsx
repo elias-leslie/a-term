@@ -2,7 +2,8 @@
 
 import { clsx } from 'clsx'
 import { ArrowLeftRight, ChevronDown } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import { useClickOutside } from '@/lib/hooks/use-click-outside'
 import {
   getSlotName,
   getSlotPanelId,
@@ -41,22 +42,9 @@ export function PaneSwapDropdown({
   // Other slots to show in dropdown (exclude current)
   const otherSlots = allSlots.filter((s) => getSlotPanelId(s) !== currentId)
 
-  // Close on outside click
-  useEffect(() => {
-    if (!isOpen) return
-
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
-        setIsOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [isOpen])
+  const closeDropdown = useCallback(() => setIsOpen(false), [])
+  const clickOutsideRefs = useMemo(() => [dropdownRef], [])
+  useClickOutside(clickOutsideRefs, closeDropdown, isOpen)
 
   // Don't show dropdown if there's nothing to swap with
   if (otherSlots.length === 0) {

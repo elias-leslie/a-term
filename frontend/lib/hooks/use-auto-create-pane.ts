@@ -1,7 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { buildApiUrl } from '@/lib/api-config'
+import { generatePaneName } from './terminal-handler-utils'
 
 interface UseAutoCreatePaneProps {
   panes: Array<{ pane_type: string }>
@@ -31,14 +32,6 @@ export function useAutoCreatePane({
   const initialLoadProcessed = useRef(false)
   const prevPanesLengthRef = useRef<number | null>(null)
 
-  const getAdHocPaneName = useCallback((existingPanes: typeof panes) => {
-    const adHocCount = existingPanes.filter(
-      (p) => p.pane_type === 'adhoc',
-    ).length
-    if (adHocCount === 0) return 'Ad-Hoc Terminal'
-    return `Ad-Hoc Terminal [${adHocCount + 1}]`
-  }, [])
-
   useEffect(() => {
     // Skip if still loading or already creating
     if (isLoading || isPaneCreating || isAutoCreatingRef.current) return
@@ -55,11 +48,12 @@ export function useAutoCreatePane({
 
       if (currLength === 0) {
         isAutoCreatingRef.current = true
+        const adHocCount = panes.filter((p) => p.pane_type === 'adhoc').length
         fetch(buildApiUrl('/api/terminal/panes/count'))
           .then((res) => res.json())
           .then((data) => {
             if (data.count === 0) {
-              return createAdHocPane(getAdHocPaneName(panes)).then(
+              return createAdHocPane(generatePaneName('Ad-Hoc Terminal', adHocCount)).then(
                 (newPane) => {
                   const shellSession = newPane.sessions.find(
                     (s) => s.mode === 'shell',
@@ -84,7 +78,8 @@ export function useAutoCreatePane({
     // Case 2: Last pane closed (N→0 transition, where N > 0)
     if (prevLength !== null && prevLength > 0 && currLength === 0) {
       isAutoCreatingRef.current = true
-      createAdHocPane(getAdHocPaneName(panes))
+      const adHocCount = panes.filter((p) => p.pane_type === 'adhoc').length
+      createAdHocPane(generatePaneName('Ad-Hoc Terminal', adHocCount))
         .then((newPane) => {
           const shellSession = newPane.sessions.find((s) => s.mode === 'shell')
           if (shellSession) {
@@ -103,7 +98,6 @@ export function useAutoCreatePane({
     panes,
     isPaneCreating,
     createAdHocPane,
-    getAdHocPaneName,
     switchToSession,
   ])
 }

@@ -58,7 +58,13 @@ def _execute_session_query(
 
 
 def _row_to_dict(row: tuple[Any, ...]) -> dict[str, Any]:
-    """Convert a database row to a session dict."""
+    """Convert a database row to a session dict.
+
+    This is the canonical session row converter. All session queries should
+    SELECT TERMINAL_SESSION_FIELDS and use this function.
+    """
+    created_at = row[9] if len(row) > 9 else None
+    last_accessed_at = row[10] if len(row) > 10 else None
     return {
         "id": str(row[0]),
         "name": row[1],
@@ -69,8 +75,8 @@ def _row_to_dict(row: tuple[Any, ...]) -> dict[str, Any]:
         "mode": row[6],
         "session_number": row[7],
         "is_alive": row[8],
-        "created_at": row[9],
-        "last_accessed_at": row[10],
+        "created_at": created_at.isoformat() if created_at else None,
+        "last_accessed_at": last_accessed_at.isoformat() if last_accessed_at else None,
         "last_claude_session": row[11] if len(row) > 11 else None,
         "claude_state": row[12] if len(row) > 12 else "not_started",
         "pane_id": str(row[13]) if len(row) > 13 and row[13] else None,

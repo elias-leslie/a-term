@@ -2,7 +2,9 @@
 
 import { clsx } from 'clsx'
 import { MoreHorizontal, RefreshCw, X } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useClickOutside } from '@/lib/hooks/use-click-outside'
+import { MenuItemButton } from './MenuItemButton'
 
 export interface PaneOverflowMenuProps {
   onResetAll?: () => void
@@ -23,35 +25,15 @@ export function PaneOverflowMenu({
   const menuRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
-  // Close menu on outside click
+  const closeMenu = useCallback(() => setIsOpen(false), [])
+  const clickOutsideRefs = useMemo(() => [buttonRef, menuRef], [])
+  useClickOutside(clickOutsideRefs, closeMenu, isOpen)
+
   useEffect(() => {
     if (!isOpen) return
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(event.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false)
-      }
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false)
     }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [isOpen])
-
-  // Close menu on escape
-  useEffect(() => {
-    if (!isOpen) return
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsOpen(false)
-      }
-    }
-
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
   }, [isOpen])
@@ -105,59 +87,24 @@ export function PaneOverflowMenu({
           }}
         >
           {onResetAll && (
-            <MenuItem
+            <MenuItemButton
               icon={<RefreshCw className="w-3.5 h-3.5" />}
               label="Reset All"
               onClick={handleResetAll}
+              isMobile={isMobile}
             />
           )}
           {onCloseAll && (
-            <MenuItem
+            <MenuItemButton
               icon={<X className="w-3.5 h-3.5" />}
               label="Close All"
               onClick={handleCloseAll}
+              isMobile={isMobile}
               variant="danger"
             />
           )}
         </div>
       )}
     </div>
-  )
-}
-
-interface MenuItemProps {
-  icon: React.ReactNode
-  label: string
-  onClick: () => void
-  variant?: 'default' | 'danger'
-}
-
-function MenuItem({
-  icon,
-  label,
-  onClick,
-  variant = 'default',
-}: MenuItemProps) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-[var(--term-bg-surface)]"
-      style={{
-        color:
-          variant === 'danger' ? 'var(--term-error)' : 'var(--term-text-muted)',
-      }}
-      onMouseEnter={(e) => {
-        if (variant === 'default') {
-          e.currentTarget.style.color = 'var(--term-text-primary)'
-        }
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.color =
-          variant === 'danger' ? 'var(--term-error)' : 'var(--term-text-muted)'
-      }}
-    >
-      {icon}
-      <span>{label}</span>
-    </button>
   )
 }

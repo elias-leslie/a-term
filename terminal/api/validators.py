@@ -2,9 +2,21 @@
 
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
 from fastapi import HTTPException
+
+
+def validate_uuid(value: str) -> None:
+    """Validate that a string is a valid UUID.
+
+    Raises HTTPException(400) if invalid.
+    """
+    try:
+        uuid.UUID(value)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid UUID") from None
 
 
 def validate_pane_limit(current_count: int, max_panes: int) -> None:

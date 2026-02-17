@@ -9,6 +9,7 @@ from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
 
+from ...constants import CLAUDE_COMMAND
 from ...logging_config import get_logger
 from ...services.pty_manager import read_pty_output, spawn_pty_for_tmux
 from ...utils.tmux import get_scrollback, is_claude_running_in_session
@@ -94,7 +95,7 @@ async def handle_terminal_connection(
         # Auto-start Claude for claude-mode sessions
         if session.get("mode") == "claude" and not is_claude_running_in_session(tmux_session_name):
             await asyncio.sleep(0.3)  # Wait for shell prompt
-            os.write(master_fd, b"claude --dangerously-skip-permissions\n")
+            os.write(master_fd, f"{CLAUDE_COMMAND}\n".encode())
             logger.info("auto_started_claude", session_id=session_id)
 
         # Track last resize dimensions to skip duplicate resize events

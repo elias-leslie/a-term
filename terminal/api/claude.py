@@ -14,6 +14,7 @@ from typing import Literal, cast
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 
+from ..constants import CLAUDE_COMMAND
 from ..logging_config import get_logger
 from ..storage import terminal as terminal_store
 from ..utils.tmux import get_tmux_session_name, tmux_session_exists_by_name
@@ -255,7 +256,7 @@ async def start_claude(session_id: str, background_tasks: BackgroundTasks) -> St
             "send-keys",
             "-t",
             tmux_session,
-            "claude --dangerously-skip-permissions",
+            CLAUDE_COMMAND,
             "Enter",
         ],
         capture_output=True,

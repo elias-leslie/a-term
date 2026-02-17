@@ -12,15 +12,15 @@ for context-aware working directory.
 
 from __future__ import annotations
 
-import uuid
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from ..rate_limit import limiter
 from ..services import lifecycle
 from ..storage import terminal as terminal_store
+from .validators import validate_uuid
 
 router = APIRouter(tags=["Terminal Sessions"])
 
@@ -32,6 +32,8 @@ router = APIRouter(tags=["Terminal Sessions"])
 
 class TerminalSessionResponse(BaseModel):
     """Terminal session response model."""
+
+    model_config = ConfigDict(extra="ignore")
 
     id: str
     name: str
@@ -71,31 +73,6 @@ class UpdateSessionRequest(BaseModel):
 
 
 # ============================================================================
-# Helpers
-# ============================================================================
-
-
-def _session_to_response(session: dict[str, Any]) -> TerminalSessionResponse:
-    """Convert storage session to API response."""
-    return TerminalSessionResponse(
-        id=session["id"],
-        name=session["name"],
-        user_id=session.get("user_id"),
-        project_id=session.get("project_id"),
-        working_dir=session.get("working_dir"),
-        display_order=session["display_order"],
-        mode=session.get("mode", "shell"),
-        session_number=session.get("session_number", 1),
-        is_alive=session["is_alive"],
-        created_at=session["created_at"].isoformat() if session.get("created_at") else None,
-        last_accessed_at=(
-            session["last_accessed_at"].isoformat() if session.get("last_accessed_at") else None
-        ),
-        claude_state=session.get("claude_state", "not_started"),
-    )
-
-
-# ============================================================================
 # Endpoints
 # ============================================================================
 
@@ -110,7 +87,7 @@ async def list_sessions() -> TerminalSessionListResponse:
     sessions = terminal_store.list_sessions(include_dead=False)
 
     return TerminalSessionListResponse(
-        items=[_session_to_response(s) for s in sessions],
+        items=[TerminalSessionResponse.model_validate(s) for s in sessions],
         total=len(sessions),
     )
 
@@ -135,16 +112,13 @@ async def create_session(request: CreateSessionRequest) -> TerminalSessionRespon
 @router.get("/api/terminal/sessions/{session_id}", response_model=TerminalSessionResponse)
 async def get_session(session_id: str) -> TerminalSessionResponse:
     """Get a single terminal session by ID."""
-    try:
-        uuid.UUID(session_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid UUID") from None
+    validate_uuid(session_id)
 
     session = terminal_store.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail=f"Session {session_id} not found") from None
 
-    return _session_to_response(session)
+    return TerminalSessionResponse.model_validate(session)
 
 
 @router.patch("/api/terminal/sessions/{session_id}", response_model=TerminalSessionResponse)
@@ -153,10 +127,7 @@ async def update_session(session_id: str, request: UpdateSessionRequest) -> Term
 
     Can update: name, display_order
     """
-    try:
-        uuid.UUID(session_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid UUID") from None
+    validate_uuid(session_id)
 
     # Verify session exists
     existing = terminal_store.get_session(session_id)
@@ -171,13 +142,13 @@ async def update_session(session_id: str, request: UpdateSessionRequest) -> Term
         update_fields["display_order"] = request.display_order
 
     if not update_fields:
-        return _session_to_response(existing)
+        return TerminalSessionResponse.model_validate(existing)
 
     session = terminal_store.update_session(session_id, **update_fields)
     if not session:
         raise HTTPException(status_code=500, detail="Failed to update session") from None
 
-    return _session_to_response(session)
+    return TerminalSessionResponse.model_validate(session)
 
 
 @router.delete("/api/terminal/sessions/{session_id}")
@@ -187,10 +158,7 @@ async def delete_session(session_id: str) -> dict[str, Any]:
     Kills the tmux session and deletes the database record.
     Idempotent - returns success even if session didn't exist.
     """
-    try:
-        uuid.UUID(session_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid UUID") from None
+    validate_uuid(session_id)
 
     lifecycle.delete_session(session_id)
     return {"deleted": True, "id": session_id}
@@ -203,10 +171,7 @@ async def reset_session(session_id: str) -> TerminalSessionResponse:
     Deletes the session and creates a new one with the same parameters.
     Returns the new session data.
     """
-    try:
-        uuid.UUID(session_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid UUID") from None
+    validate_uuid(session_id)
 
     new_session_id = lifecycle.reset_session(session_id)
     if not new_session_id:
@@ -216,7 +181,7 @@ async def reset_session(session_id: str) -> TerminalSessionResponse:
     if not session:
         raise HTTPException(status_code=500, detail="Session reset but not found") from None
 
-    return _session_to_response(session)
+    return TerminalSessionResponse.model_validate(session)
 
 
 @router.post("/api/terminal/reset-all")
