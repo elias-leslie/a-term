@@ -45,21 +45,3 @@ export function useMediaQuery(query: string, defaultValue = false): boolean {
 
   return matches
 }
-
-/**
- * Hook to detect mobile viewport.
- * Returns true for screens < 768px.
- * Defaults to false (desktop) on server to prevent layout shift.
- */
-export function useIsMobile(): boolean {
-  return useMediaQuery('(max-width: 767px)', false)
-}
-
-/**
- * Hook to detect desktop viewport.
- * Returns true for screens >= 768px.
- * Defaults to true (desktop) on server to prevent layout shift.
- */
-export function useIsDesktop(): boolean {
-  return useMediaQuery('(min-width: 768px)', true)
-}

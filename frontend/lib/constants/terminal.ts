@@ -1,9 +1,6 @@
 /** WebSocket connection timeout in milliseconds */
 export const CONNECTION_TIMEOUT = 10000
 
-/** Retry backoff delay in milliseconds */
-export const RETRY_BACKOFF = 2000
-
 /** Terminal scrollback buffer size.
  * 10K lines balances history access with browser performance.
  * 100K caused progressive slowdown as xterm.js buffer management
@@ -12,9 +9,6 @@ export const SCROLLBACK = 10000
 
 /** Mobile device width threshold in pixels */
 export const MOBILE_WIDTH_THRESHOLD = 768
-
-/** Terminal fit delay after initialization in milliseconds */
-export const FIT_DELAY_MS = 100
 
 /** WebSocket close code for dead session */
 export const WS_CLOSE_CODE_SESSION_DEAD = 4000
@@ -34,11 +28,6 @@ export type GridLayoutMode = 'grid-2x2'
 /** Minimum viewport widths required for each grid layout mode (in pixels) */
 export const GRID_MIN_WIDTHS: Record<GridLayoutMode, number> = {
   'grid-2x2': 1280,
-} as const
-
-/** Number of cells for each grid layout mode */
-export const GRID_CELL_COUNTS: Record<GridLayoutMode, number> = {
-  'grid-2x2': 4,
 } as const
 
 /** Maximum number of panes allowed */
