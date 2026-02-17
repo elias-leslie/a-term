@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import os
-from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
 
@@ -20,9 +19,6 @@ from .websocket_messages import handle_websocket_message
 from .websocket_resize import wait_for_initial_resize
 
 logger = get_logger(__name__)
-
-# Active sessions tracking
-_sessions: dict[str, dict[str, Any]] = {}
 
 
 async def handle_terminal_connection(
@@ -64,13 +60,6 @@ async def handle_terminal_connection(
         # Spawn PTY for tmux (pass stored target session for auto-reconnect)
         stored_target_session = session.get("last_claude_session")
         master_fd, pid = spawn_pty_for_tmux(tmux_session_name, stored_target_session)
-
-        # Store session info
-        _sessions[session_id] = {
-            "master_fd": master_fd,
-            "pid": pid,
-            "session_name": tmux_session_name,
-        }
 
         # Wait for initial resize to sync dimensions
         await wait_for_initial_resize(
@@ -125,5 +114,4 @@ async def handle_terminal_connection(
         if pid is not None and master_fd is not None:
             await cleanup_pty_process(pid, master_fd)
 
-        _sessions.pop(session_id, None)
         logger.info("terminal_cleanup_complete", session_id=session_id)

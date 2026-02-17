@@ -11,9 +11,6 @@ Submodules:
 
 from __future__ import annotations
 
-# Re-export TmuxError for convenience
-from ..utils.tmux import TmuxError  # noqa: F401
-
 # Batch multi-session operations
 from .lifecycle_batch import (
     disable_project_terminal,

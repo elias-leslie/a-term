@@ -56,15 +56,6 @@ class TerminalSessionListResponse(BaseModel):
     total: int
 
 
-class CreateSessionRequest(BaseModel):
-    """Request to create a terminal session."""
-
-    name: str
-    project_id: str | None = None
-    working_dir: str | None = None
-    mode: str = "shell"  # "shell" or "claude"
-
-
 class UpdateSessionRequest(BaseModel):
     """Request to update a terminal session."""
 
@@ -89,23 +80,6 @@ async def list_sessions() -> TerminalSessionListResponse:
     return TerminalSessionListResponse(
         items=[TerminalSessionResponse.model_validate(s) for s in sessions],
         total=len(sessions),
-    )
-
-
-@router.post("/api/terminal/sessions", response_model=TerminalSessionResponse)
-async def create_session(request: CreateSessionRequest) -> TerminalSessionResponse:
-    """Create a new terminal session.
-
-    DEPRECATED: Direct session creation is blocked.
-    Use POST /api/terminal/panes to create panes (which atomically create sessions).
-    This ensures proper pane limit enforcement (max 4 panes).
-    """
-    # Block direct session creation - must go through pane API
-    # This prevents orphaned sessions and enforces the 4-pane limit
-    raise HTTPException(
-        status_code=400,
-        detail="Direct session creation is disabled. Use POST /api/terminal/panes instead. "
-        "Sessions are now managed through panes (max 4 panes allowed).",
     )
 
 

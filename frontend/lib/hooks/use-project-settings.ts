@@ -17,11 +17,6 @@ export interface ProjectSetting {
   display_order: number
 }
 
-// Alias for backward compatibility
-export type ProjectSettingWithMode = ProjectSetting & {
-  active_mode: 'shell' | 'claude'
-}
-
 interface ProjectSettingsUpdate {
   enabled?: boolean
   active_mode?: 'shell' | 'claude'
