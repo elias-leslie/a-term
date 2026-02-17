@@ -2,7 +2,6 @@
 
 This module provides:
 - List terminal sessions
-- Create new session (server generates UUID)
 - Update session metadata (name, order)
 - Delete session (also kills tmux)
 

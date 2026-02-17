@@ -127,23 +127,6 @@ def test_get_session_invalid_uuid_returns_400(test_app: TestClient) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Create session (deprecated)
-# ---------------------------------------------------------------------------
-
-def test_create_session_deprecated_returns_400(test_app: TestClient) -> None:
-    """POST /api/terminal/sessions -- direct creation is blocked."""
-    # Act
-    response = test_app.post(
-        "/api/terminal/sessions",
-        json={"name": "new session"},
-    )
-
-    # Assert
-    assert response.status_code == 400
-    assert "disabled" in response.json()["detail"].lower()
-
-
-# ---------------------------------------------------------------------------
 # Update session
 # ---------------------------------------------------------------------------
 
