@@ -24,13 +24,6 @@ interface SessionListResponse {
   total: number
 }
 
-interface CreateSessionRequest {
-  name: string
-  project_id?: string
-  working_dir?: string
-  mode?: 'shell' | 'claude'
-}
-
 interface UpdateSessionRequest {
   name?: string
   display_order?: number
@@ -40,13 +33,6 @@ const jsonHeaders = { 'Content-Type': 'application/json' }
 
 const fetchSessions = async (): Promise<TerminalSession[]> =>
   (await apiFetch<SessionListResponse>('/api/terminal/sessions')).items
-
-const createSession = (req: CreateSessionRequest) =>
-  apiFetch<TerminalSession>('/api/terminal/sessions', {
-    method: 'POST',
-    headers: jsonHeaders,
-    body: JSON.stringify(req),
-  })
 
 const updateSession = (sessionId: string, req: UpdateSessionRequest) =>
   apiFetch<TerminalSession>(`/api/terminal/sessions/${sessionId}`, {
@@ -69,7 +55,7 @@ const resetAllSessions = () =>
   apiFetch<{ count: number }>('/api/terminal/reset-all', { method: 'POST' })
 
 /** Hook for managing terminal sessions with backend sync */
-export function useTerminalSessions(projectId?: string) {
+export function useTerminalSessions() {
   const queryClient = useQueryClient()
   const [activeId, setActiveId] = useState<string | null>(null)
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['terminal-sessions'] })
@@ -90,14 +76,6 @@ export function useTerminalSessions(projectId?: string) {
       setActiveId(sessions[0].id)
     }
   }, [activeId, sessions])
-
-  const createMutation = useMutation({
-    mutationFn: createSession,
-    onSuccess: (newSession) => {
-      invalidate()
-      setActiveId(newSession.id)
-    },
-  })
 
   const updateMutation = useMutation({
     mutationFn: ({ sessionId, ...request }: UpdateSessionRequest & { sessionId: string }) =>
@@ -143,17 +121,6 @@ export function useTerminalSessions(projectId?: string) {
     onSuccess: invalidate,
   })
 
-  const create = useCallback(
-    (name: string, workingDir?: string, mode?: 'shell' | 'claude', isGeneric?: boolean) =>
-      createMutation.mutateAsync({
-        name,
-        project_id: isGeneric ? undefined : projectId,
-        working_dir: workingDir,
-        mode,
-      }),
-    [createMutation, projectId],
-  )
-
   const update = useCallback(
     (sessionId: string, updates: UpdateSessionRequest) =>
       updateMutation.mutateAsync({ sessionId, ...updates }),
@@ -176,7 +143,6 @@ export function useTerminalSessions(projectId?: string) {
     sessions,
     activeId,
     setActiveId,
-    create,
     update,
     remove,
     reset,
@@ -184,7 +150,6 @@ export function useTerminalSessions(projectId?: string) {
     isLoading,
     isError,
     error,
-    isCreating: createMutation.isPending,
     isDeleting: deleteMutation.isPending,
     isResetting: resetMutation.isPending || resetAllMutation.isPending,
   }

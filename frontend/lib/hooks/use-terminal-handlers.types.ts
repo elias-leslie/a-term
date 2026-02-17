@@ -57,7 +57,6 @@ export interface UseTerminalHandlersReturn {
   handleCloseAll: () => Promise<void>
   setTerminalRef: (sessionId: string, handle: TerminalHandle | null) => void
   navigateToSession: (sessionId: string) => void
-  create: ReturnType<typeof useTerminalSessions>['create']
   update: ReturnType<typeof useTerminalSessions>['update']
   remove: ReturnType<typeof useTerminalSessions>['remove']
   reset: ReturnType<typeof useTerminalSessions>['reset']
@@ -65,7 +64,6 @@ export interface UseTerminalHandlersReturn {
   resetProject: ReturnType<typeof useProjectTerminals>['resetProject']
   disableProject: ReturnType<typeof useProjectTerminals>['disableProject']
   switchMode: ReturnType<typeof useProjectTerminals>['switchMode']
-  isCreating: boolean
   sessionsLoading: boolean
   projectsLoading: boolean
 }

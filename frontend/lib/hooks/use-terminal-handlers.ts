@@ -23,7 +23,7 @@ import type {
 } from './use-terminal-handlers.types'
 
 export function useTerminalHandlers({
-  projectId,
+  projectId: _projectId,
   projectPath: _projectPath,
   sessions,
   adHocSessions: _adHocSessions,
@@ -44,14 +44,12 @@ export function useTerminalHandlers({
   const router = useRouter()
   const searchParams = useSearchParams()
   const {
-    create,
     update,
     remove,
     reset,
     resetAll,
     isLoading: sessionsLoading,
-    isCreating,
-  } = useTerminalSessions(projectId)
+  } = useTerminalSessions()
   const {
     switchMode,
     resetProject,
@@ -172,7 +170,6 @@ export function useTerminalHandlers({
     handleCloseAll,
     setTerminalRef,
     navigateToSession,
-    create,
     update,
     remove,
     reset,
@@ -180,7 +177,6 @@ export function useTerminalHandlers({
     resetProject,
     disableProject,
     switchMode,
-    isCreating,
     sessionsLoading,
     projectsLoading,
   }
