@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, Query, Request, WebSocket
+from fastapi.responses import JSONResponse
 
 from .handlers.session_switch import handle_session_switch
 from .handlers.websocket_connection import handle_terminal_connection
@@ -24,7 +25,7 @@ async def session_switch_hook(
     from_session: str = Query(..., alias="from"),
     to_session: str = Query(..., alias="to"),
     token: str = Query(""),
-) -> dict[str, Any]:
+) -> dict[str, Any] | JSONResponse:
     """Handle tmux session switch notifications.
 
     Called by tmux hook when a client switches sessions.
