@@ -1,5 +1,5 @@
 project: terminal
-generated_at: 2026-02-17 18:02 UTC
+generated_at: 2026-02-18 00:48 UTC
 environment:
   python_version: '>=3.13'
   venv_path: .venv
@@ -33,6 +33,8 @@ tables:
 - qa_issues
 - quality_check_results
 - refactor_sessions
+- scan_history
+- scan_states
 - sitemap_entries
 - subtask_citations
 - subtask_dependencies
@@ -51,11 +53,11 @@ tables:
 folders:
   (root): 20 files - tests
   .claude: 6 files - tests
-  .dev-tools: 13 files - tests
+  .dev-tools: 14 files - tests
   .st: 1 files
   alembic: 4 files
-  frontend: 155 files - api, components, tests
+  frontend: 147 files - api, components, tests
   scripts: 14 files
   spec: 5 files - tests
-  terminal: 56 files - api, services
+  terminal: 55 files - api, services
   tests: 6 files - api, tests
