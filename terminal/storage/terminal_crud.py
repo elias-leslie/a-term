@@ -6,7 +6,7 @@ for terminal session persistence.
 
 from __future__ import annotations
 
-from typing import Any, Literal, overload
+from typing import Any, Literal, LiteralString, cast, overload
 
 import psycopg.sql
 
@@ -51,7 +51,7 @@ def _execute_session_query(
         Single session dict, list of dicts, or None
     """
     with get_connection() as conn, conn.cursor() as cur:
-        cur.execute(query, params)
+        cur.execute(cast(LiteralString, query), params)
         if fetch_mode == "one":
             row = cur.fetchone()
             return _row_to_dict(row) if row else None

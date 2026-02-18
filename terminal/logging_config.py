@@ -63,7 +63,7 @@ def _create_file_handler(
     log_path = Path(log_dir)
     log_path.mkdir(exist_ok=True)
 
-    json_formatter = jsonlogger.JsonFormatter(  # type: ignore[attr-defined]
+    json_formatter = jsonlogger.JsonFormatter(
         "%(timestamp)s %(level)s %(name)s %(message)s %(pathname)s %(lineno)d",
         rename_fields={
             "levelname": "level",
@@ -143,4 +143,4 @@ def configure_logging(
 
 def get_logger(name: str) -> structlog.stdlib.BoundLogger:
     """Get a structured logger by name (typically __name__)."""
-    return structlog.get_logger(name)  # type: ignore[no-any-return]
+    return structlog.get_logger(name)

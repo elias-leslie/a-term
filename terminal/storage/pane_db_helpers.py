@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal, overload
+from typing import Any, Literal, LiteralString, cast, overload
 from uuid import UUID
 
 from .connection import get_connection
@@ -54,7 +54,7 @@ def execute_pane_query(
 ) -> dict[str, Any] | list[dict[str, Any]] | None:
     """Execute a pane query and return converted result(s)."""
     with get_connection() as conn, conn.cursor() as cur:
-        cur.execute(query, params)
+        cur.execute(cast(LiteralString, query), params)
         if fetch_mode == "one":
             row = cur.fetchone()
             return row_to_pane_dict(row) if row else None
