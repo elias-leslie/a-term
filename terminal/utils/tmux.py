@@ -89,12 +89,18 @@ def tmux_session_exists(session_id: str) -> bool:
 
 
 def _apply_session_options(session_name: str, disable_mouse: bool = True) -> None:
-    """Apply session options: mouse off, status off, filter secret env vars."""
+    """Apply session options: mouse off, status off, filter secret env vars.
+
+    Batches all options into a single tmux command using ';' chaining
+    to avoid 14+ separate subprocess.run() calls.
+    """
+    args: list[str] = []
     if disable_mouse:
-        run_tmux_command(["set-option", "-t", session_name, "mouse", "off"])
-    run_tmux_command(["set-option", "-t", session_name, "status", "off"])
+        args.extend(["set-option", "-t", session_name, "mouse", "off", ";"])
+    args.extend(["set-option", "-t", session_name, "status", "off"])
     for var in FILTERED_ENV_VARS:
-        run_tmux_command(["set-environment", "-t", session_name, "-u", var])
+        args.extend([";", "set-environment", "-t", session_name, "-u", var])
+    run_tmux_command(args)
     logger.debug("session_configured", session=session_name, filtered_vars=len(FILTERED_ENV_VARS))
 
 

@@ -57,6 +57,13 @@ export interface TerminalInstanceRefs {
 /**
  * Hook to manage xterm.js terminal instance initialization and lifecycle.
  * Handles terminal creation, addon loading, and cleanup.
+ *
+ * Architecture: Two separate effects handle init vs. settings updates:
+ * - Init effect: Runs once to create the terminal, load addons, set up event
+ *   listeners. Reads current settings from a ref to avoid re-running when
+ *   settings change (which would destroy and recreate the entire terminal).
+ * - Settings effect: Applies incremental settings changes (font, theme, etc.)
+ *   directly to the existing terminal instance via xterm.js options API.
  */
 export function useTerminalInstance(
   options: TerminalInstanceOptions,
@@ -72,30 +79,36 @@ export function useTerminalInstance(
   const focusCleanupRef = useRef<(() => void) | null>(null)
   const scrollbarCleanupRef = useRef<(() => void) | null>(null)
 
+  // Store options in refs so init effect reads current values without
+  // depending on them (prevents terminal destruction on settings change)
+  const optionsRef = useRef(options)
+  useEffect(() => {
+    optionsRef.current = options
+  }, [options])
+
   // Store setup function in ref to avoid re-init on changes
   const setupScrollingRef = useRef(options.setupScrolling)
   useEffect(() => {
     setupScrollingRef.current = options.setupScrolling
   }, [options.setupScrolling])
 
-  // Initialize terminal
+  // Initialize terminal — runs once when container is available.
+  // Settings values are read from optionsRef so this effect does NOT
+  // re-run when font/theme/scrollback change.
   useEffect(() => {
     let mounted = true
 
     async function initTerminal() {
       if (!containerRef.current) return
 
-      // Dynamic import xterm modules
-      const xtermModule = await import('@xterm/xterm')
-      if (!mounted) return
-
-      const fitModule = await import('@xterm/addon-fit')
-      if (!mounted) return
-
-      const webLinksModule = await import('@xterm/addon-web-links')
-      if (!mounted) return
-
-      const clipboardModule = await import('@xterm/addon-clipboard')
+      // Load all xterm modules in parallel
+      const [xtermModule, fitModule, webLinksModule, clipboardModule] =
+        await Promise.all([
+          import('@xterm/xterm'),
+          import('@xterm/addon-fit'),
+          import('@xterm/addon-web-links'),
+          import('@xterm/addon-clipboard'),
+        ])
       if (!mounted) return
 
       TerminalClass = xtermModule.Terminal
@@ -103,18 +116,21 @@ export function useTerminalInstance(
       WebLinksAddon = webLinksModule.WebLinksAddon
       ClipboardAddon = clipboardModule.ClipboardAddon
 
+      // Read current settings from ref (stable — no effect re-trigger)
+      const opts = optionsRef.current
+
       // Create terminal with configured theme and settings
       const term = new TerminalClass({
-        cursorBlink: options.cursorBlink,
-        cursorStyle: options.cursorStyle,
-        fontSize: options.fontSize,
-        fontFamily: options.fontFamily,
-        scrollback: options.scrollback,
+        cursorBlink: opts.cursorBlink,
+        cursorStyle: opts.cursorStyle,
+        fontSize: opts.fontSize,
+        fontFamily: opts.fontFamily,
+        scrollback: opts.scrollback,
         allowProposedApi: true,
         rightClickSelectsWord: true,
         macOptionClickForcesSelection: true,
         altClickMovesCursor: false,
-        theme: options.theme,
+        theme: opts.theme,
       })
 
       if (!mounted) return
@@ -205,7 +221,7 @@ export function useTerminalInstance(
       }
 
       // Set up terminal input handler - forward via callback
-      onDataDisposableRef.current = term.onData(options.onData)
+      onDataDisposableRef.current = term.onData(opts.onData)
     }
 
     initTerminal()
@@ -243,19 +259,7 @@ export function useTerminalInstance(
         terminalRef.current = null
       }
     }
-  }, [
-    options.cursorBlink,
-    options.cursorStyle,
-    options.fontFamily,
-    options.fontSize,
-    options.scrollback,
-    options.theme,
-    options.onData,
-    containerRef,
-    terminalRef,
-    fitAddonRef,
-    isFocusedRef,
-  ])
+  }, [containerRef, terminalRef, fitAddonRef, isFocusedRef])
 
   // Update terminal settings when they change
   useEffect(() => {
