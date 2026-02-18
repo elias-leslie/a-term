@@ -22,6 +22,103 @@ from .websocket_resize import wait_for_initial_resize
 logger = get_logger(__name__)
 
 
+async def _setup_connection(
+    websocket: WebSocket,
+    session_id: str,
+) -> tuple[dict, str, int, int]:
+    """Validate session, spawn PTY, sync dimensions and send scrollback.
+
+    Returns:
+        (session, tmux_session_name, master_fd, pid)
+
+    Raises:
+        ValueError: if the session is invalid/dead (caller closes websocket)
+    """
+    session, tmux_session_name = await asyncio.to_thread(
+        validate_and_prepare_session, session_id
+    )
+    stored_target_session = session.get("last_claude_session")
+    master_fd, pid = spawn_pty_for_tmux(tmux_session_name, stored_target_session)
+    await wait_for_initial_resize(websocket, master_fd, session_id, tmux_session_name)
+
+    scrollback = get_scrollback(tmux_session_name)
+    if scrollback:
+        # tmux capture-pane -p outputs bare \n between lines.
+        # xterm.js treats \n as LF-only (cursor down, same column) without \r,
+        # causing diagonal/staircase text. Convert to \r\n so each line starts
+        # at column 0. Normalize first to avoid \r\r\n from existing \r\n pairs.
+        scrollback = scrollback.replace("\r\n", "\n").replace("\n", "\r\n")
+        await websocket.send_text(scrollback)
+        logger.info("scrollback_sent", session_id=session_id, bytes=len(scrollback))
+
+    return session, tmux_session_name, master_fd, pid
+
+
+async def _maybe_autostart_claude(
+    session: dict,
+    master_fd: int,
+    tmux_session_name: str,
+    session_id: str,
+) -> None:
+    """Auto-start Claude if the session is in claude mode and Claude is not running."""
+    if session.get("mode") != "claude":
+        return
+    await asyncio.sleep(0.3)  # Wait for shell prompt
+    if not is_claude_running_in_session(tmux_session_name):
+        os.write(master_fd, f"{CLAUDE_COMMAND}\n".encode())
+        logger.info("auto_started_claude", session_id=session_id)
+
+
+async def _run_message_loop(
+    websocket: WebSocket,
+    master_fd: int,
+    session_id: str,
+    tmux_session_name: str,
+    output_task: asyncio.Task,
+    heartbeat_task: asyncio.Task,
+) -> None:
+    """Process incoming WebSocket messages until disconnect."""
+    last_resize = [0, 0]
+    try:
+        while True:
+            message = await websocket.receive()
+            if message["type"] == "websocket.disconnect":
+                break
+            await handle_websocket_message(
+                message, master_fd, session_id, tmux_session_name, last_resize
+            )
+    except WebSocketDisconnect:
+        logger.info("terminal_disconnected", session_id=session_id)
+    finally:
+        await cleanup_tasks(heartbeat_task, output_task)
+
+
+async def _run_session(
+    websocket: WebSocket,
+    session_id: str,
+) -> tuple[int | None, int | None]:
+    """Set up and run the full terminal session. Returns (pid, master_fd) for cleanup."""
+    try:
+        session, tmux_session_name, master_fd, pid = await _setup_connection(
+            websocket, session_id
+        )
+    except ValueError as e:
+        await websocket.close(
+            code=4000,
+            reason=json.dumps({"error": "session_dead", "message": str(e)}),
+        )
+        return None, None
+
+    output_task = asyncio.create_task(read_pty_output(websocket, master_fd))
+    heartbeat_task = asyncio.create_task(heartbeat_loop(websocket))
+    await _maybe_autostart_claude(session, master_fd, tmux_session_name, session_id)
+    await _run_message_loop(
+        websocket, master_fd, session_id, tmux_session_name,
+        output_task, heartbeat_task,
+    )
+    return pid, master_fd
+
+
 async def handle_terminal_connection(
     websocket: WebSocket,
     session_id: str,
@@ -29,91 +126,19 @@ async def handle_terminal_connection(
 ) -> None:
     """Handle a terminal WebSocket connection.
 
-    Protocol:
-    - Text messages: Input to terminal
-    - Binary messages starting with 'r': Resize event (JSON: {cols, rows})
-    - Server sends output as text messages
-
-    Args:
-        websocket: WebSocket connection
-        session_id: Terminal session identifier
-        working_dir: Optional working directory for new sessions
+    Protocol: text input, binary resize (JSON {cols, rows}), text output.
     """
     await websocket.accept()
     logger.info("terminal_connected", session_id=session_id, working_dir=working_dir)
-
-    master_fd: int | None = None
     pid: int | None = None
-
+    master_fd: int | None = None
     try:
-        # Validate session and prepare tmux (run in thread to avoid blocking event loop)
-        try:
-            session, tmux_session_name = await asyncio.to_thread(
-                validate_and_prepare_session, session_id
-            )
-        except ValueError as e:
-            await websocket.close(
-                code=4000,
-                reason=json.dumps({"error": "session_dead", "message": str(e)}),
-            )
-            return
-
-        # Spawn PTY for tmux (pass stored target session for auto-reconnect)
-        stored_target_session = session.get("last_claude_session")
-        master_fd, pid = spawn_pty_for_tmux(tmux_session_name, stored_target_session)
-
-        # Wait for initial resize to sync dimensions
-        await wait_for_initial_resize(
-            websocket, master_fd, session_id, tmux_session_name
-        )
-
-        # Send scrollback history after resize
-        scrollback = get_scrollback(tmux_session_name)
-        if scrollback:
-            # tmux capture-pane -p outputs bare \n between lines.
-            # xterm.js treats \n as LF-only (cursor down, same column) without \r,
-            # causing diagonal/staircase text. Convert to \r\n so each line starts
-            # at column 0. Normalize first to avoid \r\r\n from existing \r\n pairs.
-            scrollback = scrollback.replace("\r\n", "\n").replace("\n", "\r\n")
-            await websocket.send_text(scrollback)
-            logger.info("scrollback_sent", session_id=session_id, bytes=len(scrollback))
-
-        # Start background tasks
-        output_task = asyncio.create_task(read_pty_output(websocket, master_fd))
-        heartbeat_task = asyncio.create_task(heartbeat_loop(websocket))
-
-        # Auto-start Claude for claude-mode sessions
-        if session.get("mode") == "claude":
-            await asyncio.sleep(0.3)  # Wait for shell prompt
-            if not is_claude_running_in_session(tmux_session_name):
-                os.write(master_fd, f"{CLAUDE_COMMAND}\n".encode())
-                logger.info("auto_started_claude", session_id=session_id)
-
-        # Track last resize dimensions to skip duplicate resize events
-        last_resize = [0, 0]
-
-        # Process incoming WebSocket messages
-        try:
-            while True:
-                message = await websocket.receive()
-                if message["type"] == "websocket.disconnect":
-                    break
-                await handle_websocket_message(
-                    message, master_fd, session_id, tmux_session_name, last_resize
-                )
-        except WebSocketDisconnect:
-            logger.info("terminal_disconnected", session_id=session_id)
-        finally:
-            await cleanup_tasks(heartbeat_task, output_task)
-
+        pid, master_fd = await _run_session(websocket, session_id)
     except Exception as e:
         logger.error("terminal_error", session_id=session_id, error=str(e))
         with contextlib.suppress(Exception):
             await websocket.close(code=1011, reason="Internal server error")
-
     finally:
-        # Clean up PTY child process and fd, but keep tmux session
         if pid is not None and master_fd is not None:
             await cleanup_pty_process(pid, master_fd)
-
         logger.info("terminal_cleanup_complete", session_id=session_id)
