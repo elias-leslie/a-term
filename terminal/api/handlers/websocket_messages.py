@@ -22,6 +22,63 @@ from ...utils.tmux import resize_tmux_window
 logger = get_logger(__name__)
 
 
+def _clamp_dimension(value: int, min_val: int, max_val: int) -> int:
+    """Clamp a dimension value between min and max."""
+    return min(max(value, min_val), max_val)
+
+
+async def _handle_resize_command(
+    data: dict[str, Any],
+    master_fd: int,
+    session_id: str,
+    tmux_session_name: str | None,
+    last_resize: list[int] | None,
+) -> tuple[int, int]:
+    """Handle a resize JSON command."""
+    resize = data.get("resize", {})
+    cols = _clamp_dimension(int(resize.get("cols", TMUX_DEFAULT_COLS)), TMUX_MIN_COLS, TMUX_MAX_COLS)
+    rows = _clamp_dimension(int(resize.get("rows", TMUX_DEFAULT_ROWS)), TMUX_MIN_ROWS, TMUX_MAX_ROWS)
+
+    # Skip PTY/tmux resize if dimensions unchanged (dedup)
+    if not last_resize or cols != last_resize[0] or rows != last_resize[1]:
+        resize_pty(master_fd, cols, rows)
+        if tmux_session_name:
+            await asyncio.to_thread(resize_tmux_window, tmux_session_name, cols, rows)
+        if last_resize is not None:
+            last_resize[0] = cols
+            last_resize[1] = rows
+        logger.info("terminal_resized", session_id=session_id, cols=cols, rows=rows)
+
+    return (cols, rows)
+
+
+async def _handle_text_message(
+    text: str,
+    master_fd: int,
+    session_id: str,
+    tmux_session_name: str | None,
+    last_resize: list[int] | None,
+) -> tuple[int, int] | None:
+    """Handle a text WebSocket message, dispatching JSON control or raw input."""
+    if text.startswith("{"):
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError:
+            os.write(master_fd, text.encode("utf-8"))
+            return None
+
+        if "resize" in data:
+            return await _handle_resize_command(data, master_fd, session_id, tmux_session_name, last_resize)
+
+        if data.get("refresh"):
+            os.write(master_fd, b"\x0c")
+            logger.debug("terminal_refreshed", session_id=session_id)
+            return None
+
+    os.write(master_fd, text.encode("utf-8"))
+    return None
+
+
 async def handle_websocket_message(
     message: Any,
     master_fd: int,
@@ -47,59 +104,11 @@ async def handle_websocket_message(
     - Text input (forwarded to PTY)
     - Binary input (forwarded to PTY)
     """
-    # Handle text messages
     if "text" in message:
-        text = message["text"]
+        return await _handle_text_message(
+            message["text"], master_fd, session_id, tmux_session_name, last_resize
+        )
 
-        # Check for JSON control commands
-        if text.startswith("{"):
-            try:
-                data = json.loads(text)
-
-                # Handle resize command
-                if "resize" in data:
-                    resize = data.get("resize", {})
-                    cols = min(max(int(resize.get("cols", TMUX_DEFAULT_COLS)), TMUX_MIN_COLS), TMUX_MAX_COLS)
-                    rows = min(max(int(resize.get("rows", TMUX_DEFAULT_ROWS)), TMUX_MIN_ROWS), TMUX_MAX_ROWS)
-
-                    # Skip if dimensions unchanged (dedup)
-                    if last_resize and cols == last_resize[0] and rows == last_resize[1]:
-                        return (cols, rows)
-
-                    resize_pty(master_fd, cols, rows)
-                    # Resize tmux window in a thread to avoid blocking the event loop
-                    if tmux_session_name:
-                        await asyncio.to_thread(resize_tmux_window, tmux_session_name, cols, rows)
-
-                    # Update tracker
-                    if last_resize is not None:
-                        last_resize[0] = cols
-                        last_resize[1] = rows
-
-                    logger.info(
-                        "terminal_resized",
-                        session_id=session_id,
-                        cols=cols,
-                        rows=rows,
-                    )
-                    return (cols, rows)
-
-                # Handle refresh command (redraw terminal after connect)
-                if data.get("refresh"):
-                    # Send Ctrl+L to trigger terminal redraw
-                    os.write(master_fd, b"\x0c")
-                    logger.debug("terminal_refreshed", session_id=session_id)
-                    return None
-
-            except json.JSONDecodeError:
-                # Not valid JSON, treat as input
-                pass
-
-        # Regular input - write to PTY
-        os.write(master_fd, text.encode("utf-8"))
-        return None
-
-    # Handle binary messages
     if "bytes" in message:
         os.write(master_fd, message["bytes"])
         return None
