@@ -1,5 +1,5 @@
 project: terminal
-generated_at: 2026-02-18 02:03 UTC
+generated_at: 2026-02-18 13:35 UTC
 environment:
   python_version: '>=3.13'
   venv_path: .venv
@@ -18,6 +18,8 @@ tables:
 - artifacts
 - backup_schedules
 - backups
+- celery_taskmeta
+- celery_tasksetmeta
 - design_rules
 - design_standards
 - events
@@ -56,8 +58,8 @@ folders:
   .dev-tools: 15 files - tests
   .st: 1 files
   alembic: 4 files
-  frontend: 147 files - api, components, tests
+  frontend: 151 files - api, components, tests
   scripts: 14 files
   spec: 5 files - tests
-  terminal: 55 files - api, services
+  terminal: 59 files - api, services
   tests: 6 files - api, tests

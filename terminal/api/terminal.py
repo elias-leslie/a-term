@@ -19,7 +19,7 @@ from .handlers.websocket_connection import handle_terminal_connection
 router = APIRouter()
 
 
-@router.get("/api/internal/session-switch")
+@router.get("/api/internal/session-switch", response_model=None)
 async def session_switch_hook(
     request: Request,
     from_session: str = Query(..., alias="from"),
