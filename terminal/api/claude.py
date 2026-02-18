@@ -7,15 +7,18 @@ This module provides:
 
 from __future__ import annotations
 
-import asyncio
-import subprocess
-from typing import Literal, cast
+from typing import Literal
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 
-from ..constants import CLAUDE_COMMAND
 from ..logging_config import get_logger
+from ..services.claude_service import (
+    atomically_set_starting,
+    background_verify_claude_start,
+    is_claude_running,
+    send_claude_command,
+)
 from ..storage import terminal as terminal_store
 from ..utils.tmux import get_tmux_session_name, tmux_session_exists_by_name
 
@@ -24,9 +27,6 @@ logger = get_logger(__name__)
 
 # Type alias for Claude state
 ClaudeState = Literal["not_started", "starting", "running", "stopped", "error"]
-
-# Delay before verifying Claude started (Claude needs time to initialize)
-CLAUDE_STARTUP_VERIFY_DELAY_SECONDS = 3
 
 
 # ============================================================================
@@ -48,94 +48,6 @@ class StartClaudeResponse(BaseModel):
     started: bool
     message: str
     claude_state: ClaudeState
-
-
-# ============================================================================
-# Helpers
-# ============================================================================
-
-
-def _is_claude_running_in_session_sync(tmux_session: str) -> bool:
-    """Check if Claude Code is already running in a tmux session (sync).
-
-    Uses tmux's pane_current_command to check if 'claude' is the foreground process.
-    """
-    result = subprocess.run(
-        ["tmux", "list-panes", "-t", tmux_session, "-F", "#{pane_current_command}"],
-        capture_output=True,
-        text=True,
-        timeout=10,
-    )
-
-    if result.returncode != 0:
-        logger.warning(
-            "tmux_list_panes_failed",
-            tmux_session=tmux_session,
-            stderr=result.stderr,
-            returncode=result.returncode,
-        )
-        return False
-
-    current_command = result.stdout.strip()
-    return current_command == "claude"
-
-
-async def _is_claude_running_in_session(tmux_session: str) -> bool:
-    """Check if Claude Code is already running in a tmux session."""
-    return await asyncio.to_thread(_is_claude_running_in_session_sync, tmux_session)
-
-
-async def _verify_claude_started(tmux_session: str) -> bool:
-    """Verify Claude Code has started.
-
-    Returns:
-        True if Claude process is running, False otherwise
-    """
-    return await _is_claude_running_in_session(tmux_session)
-
-
-async def _background_verify_claude_start(session_id: str, tmux_session: str) -> None:
-    """Background task to verify Claude started.
-
-    Updates the claude_state to 'running' or 'error' based on verification.
-    """
-    try:
-        await asyncio.sleep(CLAUDE_STARTUP_VERIFY_DELAY_SECONDS)
-
-        # Verify Claude started
-        if await _verify_claude_started(tmux_session):
-            # Only update if still in 'starting' state (handles race conditions)
-            updated = terminal_store.update_claude_state(
-                session_id, "running", expected_state="starting"
-            )
-            if updated:
-                logger.info(
-                    "claude_verified_running",
-                    session_id=session_id,
-                    tmux_session=tmux_session,
-                )
-            else:
-                logger.info(
-                    "claude_state_already_changed",
-                    session_id=session_id,
-                    tmux_session=tmux_session,
-                )
-        else:
-            # Claude didn't start - set to error
-            updated = terminal_store.update_claude_state(session_id, "error", expected_state="starting")
-            if updated:
-                logger.warning(
-                    "claude_start_failed",
-                    session_id=session_id,
-                    tmux_session=tmux_session,
-                )
-    except Exception as e:
-        logger.error(
-            "background_verify_failed",
-            session_id=session_id,
-            tmux_session=tmux_session,
-            error=str(e),
-        )
 
 
 # ============================================================================
@@ -162,11 +74,11 @@ async def get_claude_state_endpoint(session_id: str) -> ClaudeStateResponse:
         raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
 
     claude_state: ClaudeState = session.get("claude_state", "not_started")
+    return ClaudeStateResponse(session_id=session_id, claude_state=claude_state)
 
-    return ClaudeStateResponse(
-        session_id=session_id,
-        claude_state=claude_state,
-    )
+
+def _early_return(session_id: str, state: ClaudeState, msg: str) -> StartClaudeResponse:
+    return StartClaudeResponse(session_id=session_id, started=False, message=msg, claude_state=state)
 
 
 @router.post(
@@ -174,122 +86,39 @@ async def get_claude_state_endpoint(session_id: str) -> ClaudeStateResponse:
     response_model=StartClaudeResponse,
 )
 async def start_claude(session_id: str, background_tasks: BackgroundTasks) -> StartClaudeResponse:
-    """Start Claude Code in a terminal session.
-
-    Uses state machine to prevent duplicate starts:
-    - If claude_state is 'starting' or 'running', returns early
-    - Sets claude_state to 'starting' before sending command
-    - Background task verifies startup after 2 seconds
-
-    Uses --dangerously-skip-permissions flag for auto-approval.
-    """
+    """Start Claude Code in a terminal session using state-machine guards."""
     session = terminal_store.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
 
-    # Check current state - prevent duplicate starts
     current_state: ClaudeState = session.get("claude_state", "not_started")
 
     if current_state == "starting":
-        return StartClaudeResponse(
-            session_id=session_id,
-            started=False,
-            message="Claude is already starting",
-            claude_state="starting",
-        )
-
+        return _early_return(session_id, "starting", "Claude is already starting")
     if current_state == "running":
-        return StartClaudeResponse(
-            session_id=session_id,
-            started=False,
-            message="Claude is already running",
-            claude_state="running",
-        )
+        return _early_return(session_id, "running", "Claude is already running")
 
-    # Get the tmux session name
     tmux_session = get_tmux_session_name(session_id)
-
-    # Check if tmux session exists
     if not tmux_session_exists_by_name(tmux_session):
-        raise HTTPException(
-            status_code=400,
-            detail=f"tmux session {tmux_session} does not exist",
-        )
+        raise HTTPException(status_code=400, detail=f"tmux session {tmux_session} does not exist")
 
-    # Fallback: Check if Claude is already running via pane content
-    # This handles cases where state got out of sync
-    if await _is_claude_running_in_session(tmux_session):
-        # Update state to match reality (use expected_state to avoid overwriting concurrent changes)
+    # Sync state if Claude is already running but DB is stale
+    if await is_claude_running(tmux_session):
         terminal_store.update_claude_state(session_id, "running", expected_state=current_state)
-        return StartClaudeResponse(
-            session_id=session_id,
-            started=False,
-            message="Claude is already running in this session",
-            claude_state="running",
-        )
+        return _early_return(session_id, "running", "Claude is already running in this session")
 
-    # Atomically set state to 'starting' (handles race conditions)
-    # Only update if state is not already 'starting' or 'running'
-    if current_state in ("not_started", "stopped", "error"):
-        updated = terminal_store.update_claude_state(
-            session_id, "starting", expected_state=current_state
-        )
-        if not updated:
-            # State changed between check and update - another request won the race
-            new_state = cast(
-                ClaudeState,
-                terminal_store.get_claude_state(session_id) or "not_started",
-            )
-            return StartClaudeResponse(
-                session_id=session_id,
-                started=False,
-                message=f"Claude state changed to {new_state}",
-                claude_state=new_state,
-            )
+    # Atomically claim 'starting' (handles concurrent requests)
+    conflicting_state = atomically_set_starting(session_id, current_state)
+    if conflicting_state is not None:
+        return _early_return(session_id, conflicting_state, f"Claude state changed to {conflicting_state}")
 
-    # Send the claude command via send-keys
-    # The command will be visible but the overlay hides it during startup
-    result = await asyncio.to_thread(
-        subprocess.run,
-        [
-            "tmux",
-            "send-keys",
-            "-t",
-            tmux_session,
-            CLAUDE_COMMAND,
-            "Enter",
-        ],
-        capture_output=True,
-        text=True,
-    )
+    send_error = await send_claude_command(session_id, tmux_session)
+    if send_error:
+        return _early_return(session_id, "error", f"Failed to send command: {send_error}")
 
-    if result.returncode != 0:
-        # Command failed - set state to error (only if still "starting" from our update)
-        terminal_store.update_claude_state(session_id, "error", expected_state="starting")
-        logger.error(
-            "claude_send_keys_failed",
-            session_id=session_id,
-            error=result.stderr,
-        )
-        return StartClaudeResponse(
-            session_id=session_id,
-            started=False,
-            message=f"Failed to send command: {result.stderr}",
-            claude_state="error",
-        )
-
-    # Schedule background verification task
-    background_tasks.add_task(_background_verify_claude_start, session_id, tmux_session)
-
-    logger.info(
-        "claude_start_initiated",
-        session_id=session_id,
-        tmux_session=tmux_session,
-    )
-
+    background_tasks.add_task(background_verify_claude_start, session_id, tmux_session)
+    logger.info("claude_start_initiated", session_id=session_id, tmux_session=tmux_session)
     return StartClaudeResponse(
-        session_id=session_id,
-        started=True,
-        message="Claude command sent, verifying startup...",
-        claude_state="starting",
+        session_id=session_id, started=True,
+        message="Claude command sent, verifying startup...", claude_state="starting",
     )
