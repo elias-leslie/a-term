@@ -27,7 +27,7 @@ dependencies = [
 dev = [
     "pytest>=8.0.0",
     "ruff>=0.8.0",
-    "mypy>=1.13.0",
+    "ty>=0.0.17",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -44,16 +44,10 @@ ignore = ["E501"]
 [tool.ruff.lint.isort]
 known-first-party = ["terminal"]
 
-[tool.mypy]
-python_version = "3.13"
-strict = true
-warn_unused_ignores = true
-
-[[tool.mypy.overrides]]
-module = ["psycopg", "psycopg.*", "psycopg_pool", "psycopg_pool.*"]
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = ["slowapi", "slowapi.*"]
-ignore_missing_imports = true
+[tool.ty.rules]
+# Suppress beta-quality rules (ty 0.0.x false positives)
+# Remove these as ty matures past 0.1
+invalid-argument-type = "ignore"
+unknown-argument = "ignore"
+unresolved-import = "ignore"
 
