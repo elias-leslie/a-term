@@ -125,7 +125,8 @@ async def update_session(session_id: str, request: UpdateSessionRequest) -> Term
 
 
 @router.delete("/api/terminal/sessions/{session_id}")
-async def delete_session(session_id: str) -> dict[str, Any]:
+@limiter.limit("10/minute")
+async def delete_session(request: Request, session_id: str) -> dict[str, Any]:
     """Delete a terminal session.
 
     Kills the tmux session and deletes the database record.
@@ -138,7 +139,8 @@ async def delete_session(session_id: str) -> dict[str, Any]:
 
 
 @router.post("/api/terminal/sessions/{session_id}/reset", response_model=TerminalSessionResponse)
-async def reset_session(session_id: str) -> TerminalSessionResponse:
+@limiter.limit("10/minute")
+async def reset_session(request: Request, session_id: str) -> TerminalSessionResponse:
     """Reset a terminal session.
 
     Deletes the session and creates a new one with the same parameters.

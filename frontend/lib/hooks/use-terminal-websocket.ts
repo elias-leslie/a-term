@@ -73,6 +73,7 @@ export function useTerminalWebSocket({
   const mountedRef = useRef(true)
   const connectRef = useRef<(() => void) | undefined>(undefined)
   const connectingRef = useRef(false)
+  const hasConnectedRef = useRef(false)
 
   // Store callbacks in refs to avoid re-render loops
   const onStatusChangeRef = useRef(onStatusChange)
@@ -129,7 +130,17 @@ export function useTerminalWebSocket({
       wsPath += `?working_dir=${encodeURIComponent(workingDir)}`
     }
 
-    const ws = new WebSocket(getWsUrl(wsPath))
+    let ws: WebSocket
+    try {
+      ws = new WebSocket(getWsUrl(wsPath))
+    } catch {
+      connectingRef.current = false
+      setStatus('error')
+      onTerminalMessageRef.current?.(
+        '\r\n\x1b[31mFailed to create WebSocket connection\x1b[0m',
+      )
+      return
+    }
     wsRef.current = ws
 
     // Set up connection timeout
@@ -170,10 +181,13 @@ export function useTerminalWebSocket({
       retryCountRef.current = 0
 
       setStatus('connected')
-      onTerminalMessageRef.current?.(
-        `Connected to terminal session: ${sessionId}`,
-      )
-      onTerminalMessageRef.current?.('')
+      if (!hasConnectedRef.current) {
+        hasConnectedRef.current = true
+        onTerminalMessageRef.current?.(
+          `Connected to terminal session: ${sessionId}`,
+        )
+        onTerminalMessageRef.current?.('')
+      }
 
       // Send initial size
       const dims = getDimensionsRef.current?.()

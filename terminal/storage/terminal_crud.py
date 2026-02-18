@@ -10,8 +10,11 @@ from typing import Any, Literal, overload
 
 import psycopg.sql
 
+from ..logging_config import get_logger
 from .connection import get_connection
 from .terminal_utils import SessionId, _to_str
+
+logger = get_logger(__name__)
 
 # Standard SELECT field list for terminal_sessions queries
 # Keep in sync with _row_to_dict() field order
@@ -201,6 +204,9 @@ def update_session(session_id: SessionId, **fields: Any) -> dict[str, Any] | Non
         Updated session dict or None if not found
     """
     allowed_fields = {"name", "display_order", "is_alive", "working_dir"}
+    unknown_fields = set(fields.keys()) - allowed_fields
+    if unknown_fields:
+        logger.warning("update_session_unknown_fields", session_id=str(session_id), fields=list(unknown_fields))
     update_fields = {k: v for k, v in fields.items() if k in allowed_fields}
 
     if not update_fields:

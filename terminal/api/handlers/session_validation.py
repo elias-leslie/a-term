@@ -7,7 +7,7 @@ from typing import Any
 from ...logging_config import get_logger
 from ...services import lifecycle
 from ...storage import terminal as terminal_store
-from ...utils.tmux import create_tmux_session
+from ...utils.tmux import get_tmux_session_name
 
 logger = get_logger(__name__)
 
@@ -46,8 +46,6 @@ def validate_and_prepare_session(session_id: str) -> tuple[dict[str, Any], str]:
     if not session:
         raise ValueError(f"Session not found after validation: {session_id}")
 
-    # Get tmux session name (should exist now due to ensure_session_alive)
-    session_working_dir = session.get("working_dir")
-    tmux_session_name = create_tmux_session(session_id, session_working_dir)
+    tmux_session_name = get_tmux_session_name(session_id)
 
     return session, tmux_session_name

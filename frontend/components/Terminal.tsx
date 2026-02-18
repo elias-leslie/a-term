@@ -146,11 +146,13 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
         reconnect,
         getContent: () => {
           if (!terminalRef.current) return ''
-          // Select all text and get the selection
-          terminalRef.current.selectAll()
-          const content = terminalRef.current.getSelection()
-          terminalRef.current.clearSelection()
-          return content
+          const buffer = terminalRef.current.buffer.active
+          const lines: string[] = []
+          for (let i = 0; i <= buffer.baseY + buffer.cursorY; i++) {
+            const line = buffer.getLine(i)
+            if (line) lines.push(line.translateToString(true))
+          }
+          return lines.join('\n')
         },
         getLastLine: () => {
           if (!terminalRef.current) return ''

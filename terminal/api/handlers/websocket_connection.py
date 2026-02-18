@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import json
 import os
 
 from fastapi import WebSocket, WebSocketDisconnect
@@ -53,7 +54,7 @@ async def handle_terminal_connection(
         except ValueError as e:
             await websocket.close(
                 code=4000,
-                reason=f'{{"error": "session_dead", "message": "{e!s}"}}',
+                reason=json.dumps({"error": "session_dead", "message": str(e)}),
             )
             return
 
@@ -82,10 +83,11 @@ async def handle_terminal_connection(
         heartbeat_task = asyncio.create_task(heartbeat_loop(websocket))
 
         # Auto-start Claude for claude-mode sessions
-        if session.get("mode") == "claude" and not is_claude_running_in_session(tmux_session_name):
+        if session.get("mode") == "claude":
             await asyncio.sleep(0.3)  # Wait for shell prompt
-            os.write(master_fd, f"{CLAUDE_COMMAND}\n".encode())
-            logger.info("auto_started_claude", session_id=session_id)
+            if not is_claude_running_in_session(tmux_session_name):
+                os.write(master_fd, f"{CLAUDE_COMMAND}\n".encode())
+                logger.info("auto_started_claude", session_id=session_id)
 
         # Track last resize dimensions to skip duplicate resize events
         last_resize = [0, 0]
@@ -107,7 +109,7 @@ async def handle_terminal_connection(
     except Exception as e:
         logger.error("terminal_error", session_id=session_id, error=str(e))
         with contextlib.suppress(Exception):
-            await websocket.close(code=1011, reason=str(e))
+            await websocket.close(code=1011, reason="Internal server error")
 
     finally:
         # Clean up PTY child process and fd, but keep tmux session

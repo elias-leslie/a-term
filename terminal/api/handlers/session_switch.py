@@ -22,31 +22,29 @@ def handle_session_switch(
     request: Request,
     from_session: str,
     to_session: str,
-) -> dict[str, Any]:
+    token: str = "",
+) -> dict[str, Any] | JSONResponse:
     """Handle tmux session switch notifications.
 
     Called by tmux hook when a client switches sessions.
     Extracts terminal session ID from the base session name and stores the target.
 
-    Security: Only accepts requests from localhost (tmux hooks).
+    Security: Verifies internal token generated at startup.
 
     Args:
         request: FastAPI request object
         from_session: Session switching from
         to_session: Session switching to
+        token: Internal authentication token
 
     Returns:
         Status dict indicating action taken
     """
-    # Security: Only allow localhost
     client_host = request.client.host if request.client else None
-    if client_host not in ("127.0.0.1", "::1", "localhost"):
-        logger.warning(
-            "session_switch_rejected",
-            reason="not_localhost",
-            client=client_host,
-        )
-        return {"status": "rejected", "reason": "unauthorized"}
+    expected_token = request.app.state.internal_token if hasattr(request.app.state, "internal_token") else ""
+    if not expected_token or not hmac.compare_digest(token, expected_token):
+        logger.warning("session_switch_rejected", reason="invalid_token", client=client_host)
+        return JSONResponse(status_code=403, content={"status": "rejected", "reason": "unauthorized"})
 
     # Validate session names to prevent injection
     # Empty from_session is valid (first connection to a session)

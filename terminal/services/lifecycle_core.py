@@ -154,11 +154,20 @@ def create_session(
     Raises:
         TmuxError: If tmux session creation fails (after rollback)
     """
-    # Step 0: Check for dead session to resurrect (unique constraint workaround)
+    # Step 0: Atomically claim a dead session to resurrect (prevents TOCTOU races)
     if project_id:
-        dead_session = terminal_store.get_dead_session_by_project(project_id, mode)
-        if dead_session:
-            return _resurrect_dead_session(dead_session, mode, name, working_dir)
+        claimed = terminal_store.claim_dead_session_by_project(project_id, mode)
+        if claimed:
+            session_id = claimed["id"]
+            terminal_store.update_session(session_id, name=name, working_dir=working_dir)
+            try:
+                create_tmux_session(session_id, working_dir)
+            except TmuxError as e:
+                logger.error("tmux_create_failed_rolling_back_resurrection", session_id=session_id, error=str(e))
+                terminal_store.mark_dead(session_id)
+                raise
+            logger.info("session_resurrected", session_id=session_id, name=name, project_id=project_id, mode=mode)
+            return session_id
 
     # Step 1: Create DB record
     session_id = terminal_store.create_session(

@@ -39,12 +39,14 @@ from .terminal_lifecycle import (
 
 # Project-specific queries
 from .terminal_project import (
+    claim_dead_session_by_project,
     get_dead_session_by_project,
     get_project_sessions,
     get_session_by_project,
 )
 
 __all__ = [
+    "claim_dead_session_by_project",
     "create_session",
     "delete_session",
     "get_claude_state",

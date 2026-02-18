@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from .terminal_crud import TERMINAL_SESSION_FIELDS, _execute_session_query
+from .connection import get_connection
+from .terminal_crud import TERMINAL_SESSION_FIELDS, _execute_session_query, _row_to_dict
 
 
 def get_session_by_project(project_id: str, mode: str = "shell") -> dict[str, Any] | None:
@@ -102,7 +103,37 @@ def get_all_project_sessions(project_id: str) -> list[dict[str, Any]]:
     return _execute_session_query(query, (project_id,), fetch_mode="all")
 
 
+def claim_dead_session_by_project(project_id: str, mode: str) -> dict[str, Any] | None:
+    """Atomically claim a dead session for resurrection.
+
+    Uses UPDATE...WHERE is_alive=false to prevent TOCTOU races.
+    Only one concurrent caller can claim a given dead session.
+    """
+    with get_connection() as conn, conn.cursor() as cur:
+        cur.execute(
+            f"""
+            UPDATE terminal_sessions
+            SET is_alive = true
+            WHERE id = (
+                SELECT id FROM terminal_sessions
+                WHERE project_id = %s AND mode = %s AND is_alive = false
+                ORDER BY last_accessed_at DESC
+                LIMIT 1
+                FOR UPDATE SKIP LOCKED
+            )
+            RETURNING {TERMINAL_SESSION_FIELDS}
+            """,
+            (project_id, mode),
+        )
+        row = cur.fetchone()
+        conn.commit()
+    if not row:
+        return None
+    return _row_to_dict(row)
+
+
 __all__ = [
+    "claim_dead_session_by_project",
     "get_all_project_sessions",
     "get_dead_session_by_project",
     "get_project_sessions",

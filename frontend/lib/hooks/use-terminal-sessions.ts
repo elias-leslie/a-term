@@ -52,7 +52,7 @@ const resetSession = (sessionId: string) =>
   apiFetch<TerminalSession>(`/api/terminal/sessions/${sessionId}/reset`, { method: 'POST' })
 
 const resetAllSessions = () =>
-  apiFetch<{ count: number }>('/api/terminal/reset-all', { method: 'POST' })
+  apiFetch<{ reset_count: number }>('/api/terminal/reset-all', { method: 'POST' })
 
 /** Hook for managing terminal sessions with backend sync */
 export function useTerminalSessions() {
