@@ -9,6 +9,8 @@ Handles reconciliation of database state with tmux session state:
 
 from __future__ import annotations
 
+from typing import Any
+
 from ..logging_config import get_logger
 from ..storage import terminal as terminal_store
 from ..utils.tmux import get_tmux_session_name, list_tmux_sessions, run_tmux_command
@@ -45,6 +47,49 @@ def _kill_orphan_tmux_sessions(db_session_ids: set[str]) -> int:
     return killed
 
 
+def _sync_sessions(db_sessions: list[dict[str, Any]], tmux_sessions: set[str]) -> dict[str, int]:
+    """Sync each DB session against the live tmux session set.
+
+    Returns a dict with 'marked_alive' and 'marked_dead' counts.
+    """
+    counts = {"marked_alive": 0, "marked_dead": 0}
+
+    for session in db_sessions:
+        session_id = session["id"]
+        if session_id in tmux_sessions:
+            if not session["is_alive"]:
+                terminal_store.update_session(session_id, is_alive=True)
+                counts["marked_alive"] += 1
+                logger.info("reconcile_marked_alive", session_id=session_id)
+        else:
+            if session["is_alive"]:
+                terminal_store.mark_dead(session_id)
+                counts["marked_dead"] += 1
+                logger.info("reconcile_marked_dead", session_id=session_id)
+
+    return counts
+
+
+def _purge_dead_and_kill_orphans(purge_after_days: int) -> dict[str, int]:
+    """Purge old dead sessions and kill orphan tmux sessions.
+
+    Returns a dict with 'purged' and 'orphans_killed' counts.
+    Must be called after the main sync loop so purged IDs are excluded
+    from the orphan check.
+    """
+    purged = terminal_store.purge_dead_sessions(older_than_days=purge_after_days)
+    if purged > 0:
+        logger.info("reconcile_purged_dead_sessions", count=purged)
+
+    # Fetch remaining DB IDs after purge for accurate orphan detection
+    remaining_ids = {s["id"] for s in terminal_store.list_sessions(include_dead=True)}
+    orphans_killed = _kill_orphan_tmux_sessions(remaining_ids)
+    if orphans_killed > 0:
+        logger.info("reconcile_orphans_killed", count=orphans_killed)
+
+    return {"purged": purged, "orphans_killed": orphans_killed}
+
+
 def reconcile_on_startup(purge_after_days: int = 7) -> dict[str, int]:
     """Reconcile DB with tmux state on server startup.
 
@@ -62,50 +107,16 @@ def reconcile_on_startup(purge_after_days: int = 7) -> dict[str, int]:
     """
     logger.info("reconciliation_starting")
 
-    # Get all DB sessions (including dead ones)
     db_sessions = terminal_store.list_sessions(include_dead=True)
-
-    # Get all tmux sessions
     tmux_sessions = list_tmux_sessions()
 
-    stats = {
+    stats: dict[str, int] = {
         "total_db_sessions": len(db_sessions),
         "total_tmux_sessions": len(tmux_sessions),
-        "marked_alive": 0,
-        "marked_dead": 0,
-        "purged": 0,
     }
 
-    for session in db_sessions:
-        session_id = session["id"]
-
-        if session_id in tmux_sessions:
-            # Session exists in both - ensure marked alive
-            if not session["is_alive"]:
-                terminal_store.update_session(session_id, is_alive=True)
-                stats["marked_alive"] += 1
-                logger.info("reconcile_marked_alive", session_id=session_id)
-        else:
-            # Session in DB but not tmux - mark dead
-            if session["is_alive"]:
-                terminal_store.mark_dead(session_id)
-                stats["marked_dead"] += 1
-                logger.info("reconcile_marked_dead", session_id=session_id)
-
-    # Purge old dead sessions to prevent unbounded growth
-    purged = terminal_store.purge_dead_sessions(older_than_days=purge_after_days)
-    stats["purged"] = purged
-    if purged > 0:
-        logger.info("reconcile_purged_dead_sessions", count=purged)
-
-    # Kill orphan tmux sessions (no DB record at all)
-    # Must run AFTER purge so we have the final set of DB session IDs
-    remaining_db_ids = {s["id"] for s in terminal_store.list_sessions(include_dead=True)}
-    orphans_killed = _kill_orphan_tmux_sessions(remaining_db_ids)
-    stats["orphans_killed"] = orphans_killed
-    if orphans_killed > 0:
-        logger.info("reconcile_orphans_killed", count=orphans_killed)
+    stats.update(_sync_sessions(db_sessions, tmux_sessions))
+    stats.update(_purge_dead_and_kill_orphans(purge_after_days))
 
     logger.info("reconciliation_complete", **stats)
-
     return stats
