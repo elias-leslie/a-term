@@ -5,6 +5,7 @@ Runs on port 8002, separate from main SummitFlow backend.
 """
 
 import os
+import secrets
 import subprocess
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -46,7 +47,7 @@ if not os.getenv("PYTEST_CURRENT_TEST"):
 logger = get_logger(__name__)
 
 
-def _setup_tmux_options() -> None:
+def _setup_tmux_options(token: str) -> None:
     """Set up tmux options and hooks for terminal service.
 
     Configures:
@@ -56,11 +57,9 @@ def _setup_tmux_options() -> None:
     to avoid affecting non-web-terminal sessions (e.g., MobaXterm, other clients).
     Each summitflow-* session manages its own options in create_tmux_session().
     """
-    # The hook calls our internal endpoint with from/to session info
-    # We run curl in background (&) to not block tmux
     hook_cmd = (
         f"run-shell \"curl -s 'http://localhost:{TERMINAL_PORT}/api/internal/session-switch"
-        "?from=#{client_last_session}&to=#{client_session}' >/dev/null 2>&1 &\""
+        f"?from=#{{client_last_session}}&to=#{{client_session}}&token={token}' >/dev/null 2>&1 &\""
     )
 
     # Set global hook (applies to all sessions)
@@ -89,7 +88,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.error("startup_reconciliation_failed", error=str(e))
 
     # Set up tmux options and hooks
-    _setup_tmux_options()
+    app.state.internal_token = secrets.token_urlsafe(32)
+    _setup_tmux_options(app.state.internal_token)
 
     yield
 

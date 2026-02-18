@@ -23,6 +23,7 @@ async def session_switch_hook(
     request: Request,
     from_session: str = Query(..., alias="from"),
     to_session: str = Query(..., alias="to"),
+    token: str = Query(""),
 ) -> dict[str, Any]:
     """Handle tmux session switch notifications.
 
@@ -31,7 +32,7 @@ async def session_switch_hook(
 
     Security: Only accepts requests from localhost (tmux hooks).
     """
-    return handle_session_switch(request, from_session, to_session)
+    return handle_session_switch(request, from_session, to_session, token)
 
 
 @router.websocket("/ws/terminal/{session_id}")
