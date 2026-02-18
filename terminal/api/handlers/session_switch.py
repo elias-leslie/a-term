@@ -17,6 +17,64 @@ logger = get_logger(__name__)
 # Prefix for terminal base sessions
 BASE_SESSION_PREFIX = "summitflow-"
 
+# Status and reason constants
+STATUS_REJECTED = "rejected"
+STATUS_IGNORED = "ignored"
+STATUS_CLEARED = "cleared"
+STATUS_STORED = "stored"
+
+REASON_UNAUTHORIZED = "unauthorized"
+REASON_INVALID_SESSION_NAME = "invalid session name"
+REASON_NOT_FROM_BASE = "not from base session"
+
+# Log event name constants
+LOG_SWITCH_REJECTED = "session_switch_rejected"
+LOG_SWITCH_TO_BASE = "session_switch_to_base"
+LOG_SWITCH_DETECTED = "session_switch_detected"
+
+# App state attribute name
+APP_STATE_TOKEN_ATTR = "internal_token"
+
+
+def _verify_token(request: Request, token: str) -> bool:
+    """Verify the internal authentication token.
+
+    Returns True if the token is valid, False otherwise.
+    """
+    expected_token = (
+        request.app.state.internal_token
+        if hasattr(request.app.state, APP_STATE_TOKEN_ATTR)
+        else ""
+    )
+    return bool(expected_token) and hmac.compare_digest(token, expected_token)
+
+
+def _validate_session_names(from_session: str, to_session: str) -> bool:
+    """Validate that session names are safe.
+
+    Empty from_session is valid (first connection to a session).
+    Returns True if both names are valid, False otherwise.
+    """
+    if from_session and not validate_session_name(from_session):
+        return False
+    return bool(validate_session_name(to_session))
+
+
+def _track_session_switch(terminal_session_id: str, to_session: str) -> dict[str, Any]:
+    """Update stored session target for the given terminal session.
+
+    Clears the target if switching back to a base session,
+    otherwise stores the new target session name.
+    """
+    if to_session.startswith(BASE_SESSION_PREFIX):
+        logger.info(LOG_SWITCH_TO_BASE, terminal=terminal_session_id)
+        terminal_store.update_claude_session(terminal_session_id, None)
+        return {"status": STATUS_CLEARED}
+
+    logger.info(LOG_SWITCH_DETECTED, terminal=terminal_session_id, target=to_session)
+    terminal_store.update_claude_session(terminal_session_id, to_session)
+    return {"status": STATUS_STORED, "target": to_session}
+
 
 def handle_session_switch(
     request: Request,
@@ -41,40 +99,27 @@ def handle_session_switch(
         Status dict indicating action taken
     """
     client_host = request.client.host if request.client else None
-    expected_token = request.app.state.internal_token if hasattr(request.app.state, "internal_token") else ""
-    if not expected_token or not hmac.compare_digest(token, expected_token):
-        logger.warning("session_switch_rejected", reason="invalid_token", client=client_host)
-        return JSONResponse(status_code=403, content={"status": "rejected", "reason": "unauthorized"})
 
-    # Validate session names to prevent injection
-    # Empty from_session is valid (first connection to a session)
-    if (from_session and not validate_session_name(from_session)) or not validate_session_name(
-        to_session
-    ):
+    if not _verify_token(request, token):
+        logger.warning(LOG_SWITCH_REJECTED, reason="invalid_token", client=client_host)
+        return JSONResponse(
+            status_code=403,
+            content={"status": STATUS_REJECTED, "reason": REASON_UNAUTHORIZED},
+        )
+
+    if not _validate_session_names(from_session, to_session):
         logger.warning(
-            "session_switch_rejected",
+            LOG_SWITCH_REJECTED,
             reason="invalid_session_name",
             from_session=from_session[:50] if from_session else "",
             to_session=to_session[:50],
         )
-        return {"status": "rejected", "reason": "invalid session name"}
+        return {"status": STATUS_REJECTED, "reason": REASON_INVALID_SESSION_NAME}
 
     # Only track switches FROM a terminal base session
     # Empty from_session means initial connection, not a switch
     if not from_session or not from_session.startswith(BASE_SESSION_PREFIX):
-        return {"status": "ignored", "reason": "not from base session"}
+        return {"status": STATUS_IGNORED, "reason": REASON_NOT_FROM_BASE}
 
-    # Extract terminal session ID from "summitflow-{uuid}"
-    terminal_session_id = from_session[len(BASE_SESSION_PREFIX) :]
-
-    # Don't store if switching back to base session
-    if to_session.startswith(BASE_SESSION_PREFIX):
-        logger.info("session_switch_to_base", terminal=terminal_session_id)
-        terminal_store.update_claude_session(terminal_session_id, None)
-        return {"status": "cleared"}
-
-    # Store the target session
-    logger.info("session_switch_detected", terminal=terminal_session_id, target=to_session)
-    terminal_store.update_claude_session(terminal_session_id, to_session)
-
-    return {"status": "stored", "target": to_session}
+    terminal_session_id = from_session[len(BASE_SESSION_PREFIX):]
+    return _track_session_switch(terminal_session_id, to_session)
