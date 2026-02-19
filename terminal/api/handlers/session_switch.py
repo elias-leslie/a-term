@@ -32,9 +32,13 @@ REASON_NOT_FROM_BASE = "not from base session"
 LOG_SWITCH_REJECTED = "session_switch_rejected"
 LOG_SWITCH_TO_BASE = "session_switch_to_base"
 LOG_SWITCH_DETECTED = "session_switch_detected"
+LOG_INVALID_SESSION_ID = "invalid_session_id"
 
 # App state attribute name
 APP_STATE_TOKEN_ATTR = "internal_token"
+
+# Error messages
+ERROR_INVALID_SESSION_ID = "Invalid session ID format"
 
 
 def _extract_token(request: Request, query_token: str) -> str:
@@ -89,6 +93,52 @@ def _track_session_switch(terminal_session_id: str, to_session: str) -> dict[str
     return {"status": STATUS_STORED, "target": to_session}
 
 
+def _reject_unauthorized(client_host: str | None) -> JSONResponse:
+    """Return a 403 response for unauthorized requests."""
+    logger.warning(LOG_SWITCH_REJECTED, reason="invalid_token", client=client_host)
+    return JSONResponse(
+        status_code=403,
+        content={"status": STATUS_REJECTED, "reason": REASON_UNAUTHORIZED},
+    )
+
+
+def _reject_invalid_session_names(
+    from_session: str, to_session: str
+) -> JSONResponse:
+    """Return a 400 response for invalid session names."""
+    logger.warning(
+        LOG_SWITCH_REJECTED,
+        reason="invalid_session_name",
+        from_session=from_session[:50] if from_session else "",
+        to_session=to_session[:50],
+    )
+    return JSONResponse(
+        status_code=400,
+        content={"status": STATUS_REJECTED, "reason": REASON_INVALID_SESSION_NAME},
+    )
+
+
+def _extract_terminal_session_id(
+    from_session: str,
+) -> tuple[str, JSONResponse | None]:
+    """Extract and validate the terminal session UUID from the base session name.
+
+    Returns a tuple of (session_id, error_response).
+    If extraction succeeds, error_response is None.
+    If extraction fails, session_id is empty and error_response holds a 400 JSONResponse.
+    """
+    terminal_session_id = from_session[len(BASE_SESSION_PREFIX):]
+    try:
+        uuid.UUID(terminal_session_id)
+    except ValueError:
+        logger.warning(LOG_INVALID_SESSION_ID, raw=terminal_session_id)
+        return "", JSONResponse(
+            status_code=400,
+            content={"error": ERROR_INVALID_SESSION_ID},
+        )
+    return terminal_session_id, None
+
+
 def handle_session_switch(
     request: Request,
     from_session: str,
@@ -115,33 +165,18 @@ def handle_session_switch(
 
     resolved_token = _extract_token(request, token)
     if not _verify_token(request, resolved_token):
-        logger.warning(LOG_SWITCH_REJECTED, reason="invalid_token", client=client_host)
-        return JSONResponse(
-            status_code=403,
-            content={"status": STATUS_REJECTED, "reason": REASON_UNAUTHORIZED},
-        )
+        return _reject_unauthorized(client_host)
 
     if not _validate_session_names(from_session, to_session):
-        logger.warning(
-            LOG_SWITCH_REJECTED,
-            reason="invalid_session_name",
-            from_session=from_session[:50] if from_session else "",
-            to_session=to_session[:50],
-        )
-        return JSONResponse(
-            status_code=400,
-            content={"status": STATUS_REJECTED, "reason": REASON_INVALID_SESSION_NAME},
-        )
+        return _reject_invalid_session_names(from_session, to_session)
 
     # Only track switches FROM a terminal base session
     # Empty from_session means initial connection, not a switch
     if not from_session or not from_session.startswith(BASE_SESSION_PREFIX):
         return {"status": STATUS_IGNORED, "reason": REASON_NOT_FROM_BASE}
 
-    terminal_session_id = from_session[len(BASE_SESSION_PREFIX):]
-    try:
-        uuid.UUID(terminal_session_id)
-    except ValueError:
-        logger.warning("invalid_session_id", raw=terminal_session_id)
-        return JSONResponse(status_code=400, content={"error": "Invalid session ID format"})
+    terminal_session_id, error = _extract_terminal_session_id(from_session)
+    if error is not None:
+        return error
+
     return _track_session_switch(terminal_session_id, to_session)
