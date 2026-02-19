@@ -171,11 +171,10 @@ def is_claude_running_in_session(session_name: str) -> bool:
 
 
 def get_scrollback(session_name: str, max_lines: int = 5000) -> str | None:
-    """Capture recent tmux scrollback as plain text with joined wrapped lines.
+    """Capture recent tmux scrollback with color attributes and joined wrapped lines.
 
-    Plain text (no -e flag) avoids replaying escape sequences (alternate screen
-    transitions, cursor positioning, scroll regions) that can corrupt xterm.js
-    terminal state on reconnect.
+    The -e flag adds only SGR (color/attribute) escape sequences — no cursor
+    positioning, scroll regions, or mode changes — so it's safe for xterm.js.
 
     Args:
         session_name: tmux session to capture from
@@ -183,7 +182,7 @@ def get_scrollback(session_name: str, max_lines: int = 5000) -> str | None:
             while providing enough context for meaningful scroll-back on reconnect.
     """
     success, output = run_tmux_command(
-        ["capture-pane", "-t", session_name, "-S", f"-{max_lines}", "-J", "-p"]
+        ["capture-pane", "-t", session_name, "-S", f"-{max_lines}", "-e", "-J", "-p"]
     )
 
     if not success:
