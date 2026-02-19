@@ -2,11 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ConnectionStatus } from '../../components/Terminal'
-import { getWsUrl } from '../api-config'
-import {
-  CONNECTION_TIMEOUT,
-  WS_CLOSE_CODE_SESSION_DEAD,
-} from '../constants/terminal'
+import { openWebSocketConnection } from './use-websocket-connection'
 
 interface UseTerminalWebSocketOptions {
   sessionId: string
@@ -44,10 +40,11 @@ interface UseTerminalWebSocketReturn {
  * Hook for managing WebSocket connection to terminal backend.
  *
  * Handles:
- * - Connection with timeout and single retry
+ * - Connection with timeout and exponential-backoff retry (up to 10 attempts)
  * - Status tracking (connecting, connected, disconnected, error, session_dead, timeout)
- * - Automatic reconnection on timeout
  * - Message forwarding
+ *
+ * Connection logic lives in use-websocket-connection.ts.
  *
  * @example
  * ```tsx
@@ -87,7 +84,7 @@ export function useTerminalWebSocket({
   const onBeforeReconnectDataRef = useRef(onBeforeReconnectData)
   const getDimensionsRef = useRef(getDimensions)
 
-  // Update refs when callbacks change
+  // Update callback refs when they change
   useEffect(() => {
     onStatusChangeRef.current = onStatusChange
     onDisconnectRef.current = onDisconnect
@@ -95,14 +92,7 @@ export function useTerminalWebSocket({
     onTerminalMessageRef.current = onTerminalMessage
     onBeforeReconnectDataRef.current = onBeforeReconnectData
     getDimensionsRef.current = getDimensions
-  }, [
-    onStatusChange,
-    onDisconnect,
-    onMessage,
-    onTerminalMessage,
-    onBeforeReconnectData,
-    getDimensions,
-  ])
+  }, [onStatusChange, onDisconnect, onMessage, onTerminalMessage, onBeforeReconnectData, getDimensions])
 
   // Notify parent of status changes
   useEffect(() => {
@@ -112,144 +102,30 @@ export function useTerminalWebSocket({
   // Track mounted state for cleanup
   useEffect(() => {
     mountedRef.current = true
-    return () => {
-      mountedRef.current = false
-    }
+    return () => { mountedRef.current = false }
   }, [])
 
   const connect = useCallback(() => {
-    // Prevent stacking concurrent connection attempts
     if (connectingRef.current) return
     connectingRef.current = true
 
-    // Close existing connection to prevent duplicates
-    if (wsRef.current) {
-      wsRef.current.close()
-      wsRef.current = null
-    }
-    if (timeoutIdRef.current) {
-      clearTimeout(timeoutIdRef.current)
-      timeoutIdRef.current = null
-    }
-
-    let wsPath = `/ws/terminal/${sessionId}`
-    if (workingDir) {
-      wsPath += `?working_dir=${encodeURIComponent(workingDir)}`
-    }
-
-    let ws: WebSocket
-    try {
-      ws = new WebSocket(getWsUrl(wsPath))
-    } catch {
-      connectingRef.current = false
-      setStatus('error')
-      onTerminalMessageRef.current?.(
-        '\r\n\x1b[31mFailed to create WebSocket connection\x1b[0m',
-      )
-      return
-    }
-    wsRef.current = ws
-
-    // Set up connection timeout
-    timeoutIdRef.current = setTimeout(() => {
-      if (ws.readyState === WebSocket.CONNECTING) {
-        ws.close()
-        if (!mountedRef.current) return
-
-        const maxRetries = 10
-        if (retryCountRef.current < maxRetries) {
-          // Exponential backoff: 1s, 2s, 4s, 8s, 16s, max 30s
-          const delay = Math.min(1000 * 2 ** retryCountRef.current, 30000)
-          retryCountRef.current += 1
-
-          onTerminalMessageRef.current?.(
-            `\x1b[33mConnection timeout, retrying (${retryCountRef.current}/${maxRetries})...\x1b[0m`,
-          )
-          setStatus('connecting')
-          retryTimeoutRef.current = setTimeout(() => {
-            if (mountedRef.current) connectRef.current?.()
-          }, delay)
-        } else {
-          setStatus('timeout')
-          onTerminalMessageRef.current?.(
-            '\r\n\x1b[31mConnection timeout after maximum retries\x1b[0m',
-          )
-          onDisconnectRef.current?.()
-        }
-      }
-    }, CONNECTION_TIMEOUT)
-
-    ws.onopen = () => {
-      connectingRef.current = false
-      if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current)
-      if (!mountedRef.current) return
-
-      // Reset retry count on successful connection
-      retryCountRef.current = 0
-
-      setStatus('connected')
-      if (!hasConnectedRef.current) {
-        hasConnectedRef.current = true
-        onTerminalMessageRef.current?.(
-          `Connected to terminal session: ${sessionId}`,
-        )
-        onTerminalMessageRef.current?.('')
-      } else {
-        // Reconnection: clear terminal buffer before server sends fresh scrollback
-        onBeforeReconnectDataRef.current?.()
-      }
-
-      // Send initial size
-      const dims = getDimensionsRef.current?.()
-      if (dims) {
-        ws.send(
-          JSON.stringify({ __ctrl: true, resize: { cols: dims.cols, rows: dims.rows } }),
-        )
-      }
-
-    }
-
-    ws.onmessage = (event) => {
-      if (!mountedRef.current) return
-      try {
-        onMessageRef.current?.(event.data)
-      } catch (error) {
-        console.error('Error handling WebSocket message:', error)
-      }
-    }
-
-    ws.onclose = (event) => {
-      connectingRef.current = false
-      if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current)
-      if (!mountedRef.current) return
-
-      if (event.code === WS_CLOSE_CODE_SESSION_DEAD) {
-        setStatus('session_dead')
-        try {
-          const reason = JSON.parse(event.reason)
-          onTerminalMessageRef.current?.(
-            `\r\n\x1b[31m${reason.message || 'Session not found'}\x1b[0m`,
-          )
-        } catch {
-          onTerminalMessageRef.current?.(
-            '\r\n\x1b[31mSession not found or could not be restored\x1b[0m',
-          )
-        }
-      } else {
-        setStatus('disconnected')
-        onTerminalMessageRef.current?.(
-          '\r\n\x1b[31mDisconnected from terminal\x1b[0m',
-        )
-      }
-      onDisconnectRef.current?.()
-    }
-
-    ws.onerror = () => {
-      if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current)
-      if (!mountedRef.current) return
-      setStatus('error')
-      onTerminalMessageRef.current?.('\r\n\x1b[31mConnection error\x1b[0m')
-    }
+    openWebSocketConnection(sessionId, workingDir, {
+      wsRef,
+      mountedRef,
+      connectingRef,
+      hasConnectedRef,
+      retryCountRef,
+      timeoutIdRef,
+      retryTimeoutRef,
+      connectRef,
+    }, {
+      onTerminalMessage: (msg) => onTerminalMessageRef.current?.(msg),
+      onMessage: (data) => onMessageRef.current?.(data),
+      onBeforeReconnectData: () => onBeforeReconnectDataRef.current?.(),
+      onDisconnect: () => onDisconnectRef.current?.(),
+      getDimensions: () => getDimensionsRef.current?.() ?? null,
+      setStatus: (s) => setStatus(s as ConnectionStatus),
+    })
   }, [sessionId, workingDir])
 
   // Keep ref in sync for recursive timeout calls
@@ -259,18 +135,9 @@ export function useTerminalWebSocket({
 
   const disconnect = useCallback(() => {
     connectingRef.current = false
-    if (timeoutIdRef.current) {
-      clearTimeout(timeoutIdRef.current)
-      timeoutIdRef.current = null
-    }
-    if (retryTimeoutRef.current) {
-      clearTimeout(retryTimeoutRef.current)
-      retryTimeoutRef.current = null
-    }
-    if (wsRef.current) {
-      wsRef.current.close()
-      wsRef.current = null
-    }
+    if (timeoutIdRef.current) { clearTimeout(timeoutIdRef.current); timeoutIdRef.current = null }
+    if (retryTimeoutRef.current) { clearTimeout(retryTimeoutRef.current); retryTimeoutRef.current = null }
+    if (wsRef.current) { wsRef.current.close(); wsRef.current = null }
   }, [])
 
   const reconnect = useCallback(() => {
@@ -288,18 +155,7 @@ export function useTerminalWebSocket({
   }, [])
 
   // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      disconnect()
-    }
-  }, [disconnect])
+  useEffect(() => { return () => { disconnect() } }, [disconnect])
 
-  return {
-    status,
-    wsRef,
-    reconnect,
-    sendInput,
-    connect,
-    disconnect,
-  }
+  return { status, wsRef, reconnect, sendInput, connect, disconnect }
 }
