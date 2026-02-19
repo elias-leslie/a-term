@@ -13,4 +13,4 @@ SESSION_MODES = ["shell", "claude"]
 SessionMode = Literal["shell", "claude"]
 
 # Claude CLI command with auto-approval flag
-CLAUDE_COMMAND = "claude --dangerously-skip-permissions"
+CLAUDE_COMMAND = "claude --model opusplan --dangerously-skip-permissions"
