@@ -63,7 +63,7 @@ info "SSH access confirmed"
 
 info "Configuring dnsmasq on router..."
 
-ssh "$ROUTER" bash -s "$LAN_IP" << 'REMOTE'
+ssh "$ROUTER" sh -s "$LAN_IP" << 'REMOTE'
 LAN_IP="$1"
 CONF="/etc/dnsmasq.d/summitflow-lan.conf"
 
@@ -109,7 +109,7 @@ if echo "$DHCP_OPTION" | grep -qE '6,.*208\.67|6,.*1\.1\.1|6,.*8\.8\.8'; then
     echo ""
     read -rp "  Fix DHCP DNS config now? [y/N] " FIX
     if [[ "$FIX" =~ ^[Yy] ]]; then
-        ssh "$ROUTER" bash << 'FIXDNS'
+        ssh "$ROUTER" sh << 'FIXDNS'
 # Remove DHCP option that pushes external DNS to clients
 uci delete dhcp.lan.dhcp_option 2>/dev/null || true
 uci commit dhcp
