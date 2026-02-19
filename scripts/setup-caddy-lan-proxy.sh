@@ -35,12 +35,38 @@ REAL_HOME=$(eval echo "~$REAL_USER")
 
 # ─── Step 1: Install Go ─────────────────────────────────────────────────────
 
+GO_REQUIRED="1.25"
+GO_TARBALL="go1.25.7.linux-amd64.tar.gz"
+GO_URL="https://go.dev/dl/$GO_TARBALL"
+
+# Check if Go is installed and new enough
+NEED_GO=true
 if command -v go &>/dev/null; then
-    info "Go already installed: $(go version)"
-else
-    info "Installing Go..."
-    apt-get update -qq
-    apt-get install -y -qq golang-go
+    GO_VER=$(go version | grep -oP 'go\K[0-9]+\.[0-9]+')
+    if printf '%s\n%s\n' "$GO_REQUIRED" "$GO_VER" | sort -V | head -1 | grep -q "$GO_REQUIRED"; then
+        info "Go already installed and sufficient: $(go version)"
+        NEED_GO=false
+    else
+        warn "Go $GO_VER is too old (need >= $GO_REQUIRED), upgrading..."
+    fi
+fi
+
+if $NEED_GO; then
+    info "Installing Go $GO_TARBALL from go.dev..."
+    # Remove apt Go if present (conflicts with /usr/local/go)
+    apt-get remove -y -qq golang-go golang-1.22-go 2>/dev/null || true
+    # Download and install
+    curl -fsSL "$GO_URL" -o "/tmp/$GO_TARBALL"
+    rm -rf /usr/local/go
+    tar -C /usr/local -xzf "/tmp/$GO_TARBALL"
+    rm "/tmp/$GO_TARBALL"
+    # Ensure /usr/local/go/bin is in PATH for this script
+    export PATH="/usr/local/go/bin:$PATH"
+    # Add to user profile if not already there
+    if ! grep -q '/usr/local/go/bin' "$REAL_HOME/.profile" 2>/dev/null; then
+        echo 'export PATH="/usr/local/go/bin:$PATH"' >> "$REAL_HOME/.profile"
+        chown "$REAL_USER:$REAL_USER" "$REAL_HOME/.profile"
+    fi
     info "Go installed: $(go version)"
 fi
 
@@ -50,11 +76,11 @@ if [[ -f /usr/local/bin/caddy ]] && /usr/local/bin/caddy list-modules 2>/dev/nul
     info "Caddy with Cloudflare plugin already installed"
 else
     info "Installing xcaddy..."
-    sudo -u "$REAL_USER" bash -c 'export GOPATH=$HOME/go && export PATH=$PATH:$GOPATH/bin && go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest'
+    sudo -u "$REAL_USER" bash -c "export PATH=/usr/local/go/bin:\$HOME/go/bin:\$PATH && export GOPATH=\$HOME/go && go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest"
 
     info "Building Caddy with Cloudflare DNS plugin (this takes ~1-2 minutes)..."
     BUILD_DIR=$(sudo -u "$REAL_USER" mktemp -d)
-    sudo -u "$REAL_USER" bash -c "export GOPATH=$REAL_HOME/go && export PATH=\$PATH:\$GOPATH/bin && cd $BUILD_DIR && xcaddy build --with github.com/caddy-dns/cloudflare"
+    sudo -u "$REAL_USER" bash -c "export PATH=/usr/local/go/bin:\$HOME/go/bin:\$PATH && export GOPATH=\$HOME/go && cd $BUILD_DIR && xcaddy build --with github.com/caddy-dns/cloudflare"
 
     mv "$BUILD_DIR/caddy" /usr/local/bin/caddy
     chmod 755 /usr/local/bin/caddy
