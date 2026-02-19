@@ -60,9 +60,11 @@ describe('useTerminalSessions', () => {
   })
 
   it('lists sessions from the API', async () => {
+    const body = JSON.stringify({ items: mockSessions, total: 2 })
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ items: mockSessions, total: 2 }),
+      text: async () => body,
+      json: async () => JSON.parse(body),
     })
 
     const { result } = renderHook(() => useTerminalSessions(), {
@@ -88,9 +90,11 @@ describe('useTerminalSessions', () => {
   })
 
   it('sets activeId to first session automatically', async () => {
+    const body = JSON.stringify({ items: mockSessions, total: 2 })
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ items: mockSessions, total: 2 }),
+      text: async () => body,
+      json: async () => JSON.parse(body),
     })
 
     const { result } = renderHook(() => useTerminalSessions(), {
@@ -107,9 +111,11 @@ describe('useTerminalSessions', () => {
   })
 
   it('handles API errors gracefully', async () => {
+    const errorBody = JSON.stringify({ detail: 'Server error' })
     mockFetch.mockResolvedValueOnce({
       ok: false,
-      json: async () => ({ detail: 'Server error' }),
+      text: async () => errorBody,
+      json: async () => JSON.parse(errorBody),
     })
 
     const { result } = renderHook(() => useTerminalSessions(), {

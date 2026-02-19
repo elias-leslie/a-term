@@ -69,8 +69,11 @@ export function useClaudePolling(): UseClaudePollingReturn {
   // Poll for Claude state using async/await loop
   const pollForClaudeState = useCallback(
     async (sessionId: string): Promise<void> => {
-      // Clear any existing polling
-      stopPolling()
+      // Clear any existing polling without setting isPolling to false (avoids flash)
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+        abortControllerRef.current = null
+      }
 
       const controller = new AbortController()
       abortControllerRef.current = controller
@@ -122,7 +125,7 @@ export function useClaudePolling(): UseClaudePollingReturn {
       setIsPolling(false)
       abortControllerRef.current = null
     },
-    [queryClient, stopPolling],
+    [queryClient],
   )
 
   // Start Claude in a session and poll for confirmation

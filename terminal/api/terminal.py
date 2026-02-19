@@ -40,7 +40,6 @@ async def session_switch_hook(
 async def terminal_websocket(
     websocket: WebSocket,
     session_id: str,
-    working_dir: str | None = Query(None),
 ) -> None:
     """WebSocket endpoint for terminal sessions.
 
@@ -52,6 +51,5 @@ async def terminal_websocket(
     Args:
         websocket: WebSocket connection
         session_id: Terminal session identifier
-        working_dir: Optional working directory for new sessions
     """
-    await handle_terminal_connection(websocket, session_id, working_dir)
+    await handle_terminal_connection(websocket, session_id)

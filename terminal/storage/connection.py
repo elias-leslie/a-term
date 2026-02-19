@@ -1,5 +1,6 @@
 """Database connection management for Terminal Service."""
 
+import threading
 from collections.abc import Generator
 from contextlib import contextmanager
 
@@ -8,21 +9,24 @@ from psycopg_pool import ConnectionPool
 
 from ..config import DATABASE_URL
 
-# Module-level pool
+# Module-level pool with thread-safe initialization
 _pool: ConnectionPool | None = None
+_pool_lock = threading.Lock()
 
 
 def _get_pool() -> ConnectionPool:
     """Lazily initialize and return the connection pool."""
     global _pool
     if _pool is None:
-        assert DATABASE_URL, "DATABASE_URL must be set"
-        _pool = ConnectionPool(
-            conninfo=DATABASE_URL,
-            min_size=2,
-            max_size=10,
-            open=True,
-        )
+        with _pool_lock:
+            if _pool is None:
+                assert DATABASE_URL, "DATABASE_URL must be set"
+                _pool = ConnectionPool(
+                    conninfo=DATABASE_URL,
+                    min_size=2,
+                    max_size=10,
+                    open=True,
+                )
     return _pool
 
 

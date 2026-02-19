@@ -63,9 +63,9 @@ async def _maybe_autostart_claude(
     """Auto-start Claude if the session is in claude mode and Claude is not running."""
     if session.get("mode") != "claude":
         return
-    await asyncio.sleep(0.3)  # Wait for shell prompt
+    await asyncio.sleep(0.5)  # Wait for shell prompt
     if not is_claude_running_in_session(tmux_session_name):
-        os.write(master_fd, f"{CLAUDE_COMMAND}\n".encode())
+        await asyncio.to_thread(os.write, master_fd, f"{CLAUDE_COMMAND}\n".encode())
         logger.info("auto_started_claude", session_id=session_id)
 
 
@@ -122,14 +122,13 @@ async def _run_session(
 async def handle_terminal_connection(
     websocket: WebSocket,
     session_id: str,
-    working_dir: str | None = None,
 ) -> None:
     """Handle a terminal WebSocket connection.
 
     Protocol: text input, binary resize (JSON {cols, rows}), text output.
     """
     await websocket.accept()
-    logger.info("terminal_connected", session_id=session_id, working_dir=working_dir)
+    logger.info("terminal_connected", session_id=session_id)
     pid: int | None = None
     master_fd: int | None = None
     try:

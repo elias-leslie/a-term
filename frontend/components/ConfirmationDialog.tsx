@@ -59,9 +59,10 @@ export function ConfirmationDialog({
   )
 
   useEffect(() => {
+    if (!isOpen) return
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [handleKeyDown])
+  }, [isOpen, handleKeyDown])
 
   if (!isOpen) return null
 

@@ -123,6 +123,8 @@ export function PromptCleaner({ rawPrompt, onSend, onCancel, cleanPrompt, showDi
   const [scanProgress, setScanProgress] = useState(0)
   const [isVisible, setIsVisible] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const hasInitialized = useRef(false)
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleClean = useCallback(
     async (refinement?: string) => {
@@ -141,7 +143,11 @@ export function PromptCleaner({ rawPrompt, onSend, onCancel, cleanPrompt, showDi
   )
 
   useEffect(() => { const timer = setTimeout(() => setIsVisible(true), 50); return () => clearTimeout(timer) }, [])
-  useEffect(() => { handleClean() }, [handleClean])
+  useEffect(() => {
+    if (hasInitialized.current) return
+    hasInitialized.current = true
+    handleClean()
+  }, [handleClean])
   useEffect(() => {
     if (state !== 'preview' || !cleanedPrompt) return
     let index = 0; setDisplayedText('')
@@ -158,7 +164,8 @@ export function PromptCleaner({ rawPrompt, onSend, onCancel, cleanPrompt, showDi
   }, [state])
 
   const handleSend = () => onSend(isEditing ? editedPrompt : cleanedPrompt)
-  const handleClose = useCallback(() => { setIsVisible(false); setTimeout(onCancel, 300) }, [onCancel])
+  const handleClose = useCallback(() => { setIsVisible(false); closeTimerRef.current = setTimeout(onCancel, 300) }, [onCancel])
+  useEffect(() => () => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current) }, [])
   const handleRefine = () => { if (refinementInput.trim()) { handleClean(refinementInput); setRefinementInput('') } }
   const toggleEditMode = () => { setIsEditing(!isEditing); if (!isEditing) setTimeout(() => textareaRef.current?.focus(), 100) }
 

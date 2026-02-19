@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import type { PaneLayout } from '@/components/ResizablePaneLayout'
 
 interface UseLayoutPersistenceOptions {
@@ -82,6 +82,9 @@ export function useLayoutPersistence({
     },
     [debounceMs, maxRetries, saveLayouts],
   )
+
+  // Clear debounce timer on unmount to prevent state updates after unmount
+  useEffect(() => () => { if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current) }, [])
 
   return {
     handleLayoutChange,

@@ -17,6 +17,24 @@ logger = logging.getLogger(__name__)
 # SummitFlow API base URL - can be overridden via environment
 SUMMITFLOW_API_BASE = os.getenv("SUMMITFLOW_API_BASE", "http://localhost:8001/api")
 
+_client: httpx.AsyncClient | None = None
+
+
+def _get_client() -> httpx.AsyncClient:
+    """Return the module-level AsyncClient, creating it on first call."""
+    global _client
+    if _client is None:
+        _client = httpx.AsyncClient(timeout=10.0)
+    return _client
+
+
+async def close_client() -> None:
+    """Close and discard the module-level AsyncClient. Call on shutdown."""
+    global _client
+    if _client is not None:
+        await _client.aclose()
+        _client = None
+
 
 async def list_projects() -> list[dict[str, Any]]:
     """Fetch all projects from SummitFlow API.
@@ -27,11 +45,11 @@ async def list_projects() -> list[dict[str, Any]]:
     """
     url = f"{SUMMITFLOW_API_BASE}/projects"
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(url)
-            response.raise_for_status()
-            result: list[dict[str, Any]] = response.json()
-            return result
+        client = _get_client()
+        response = await client.get(url)
+        response.raise_for_status()
+        result: list[dict[str, Any]] = response.json()
+        return result
     except httpx.ConnectError:
         logger.warning("Could not connect to SummitFlow API at %s", url)
         return []

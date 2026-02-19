@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import subprocess
 from typing import Literal, cast
 
@@ -72,6 +73,8 @@ async def background_verify_claude_start(session_id: str, tmux_session: str) -> 
             tmux_session=tmux_session,
             error=str(e),
         )
+        with contextlib.suppress(Exception):
+            terminal_store.update_claude_state(session_id, "error", expected_state="starting")
 
 
 async def send_claude_command(session_id: str, tmux_session: str) -> str | None:

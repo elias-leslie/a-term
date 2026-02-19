@@ -6,6 +6,7 @@ Stores uploaded files server-side; returns path for use in terminal commands.
 from __future__ import annotations
 
 import uuid
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request, UploadFile
 from pydantic import BaseModel
@@ -102,12 +103,22 @@ def _validate_mime_type(content: bytes, claimed_type: str) -> str:
 
 
 def _save_upload(content: bytes, content_type: str) -> tuple[str, str]:
-    """Persist content to UPLOAD_DIR with a UUID filename; return (filename, path)."""
+    """Persist content to UPLOAD_DIR with a UUID filename; return (filename, shell_path).
+
+    Returns a tilde-prefixed path (e.g., ~/terminal-uploads/abc.png) to avoid
+    leaking the full server filesystem path to the client.
+    """
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     filename = f"{uuid.uuid4()}{MIME_TO_EXTENSION.get(content_type, '')}"
     file_path = UPLOAD_DIR / filename
     file_path.write_bytes(content)
-    return filename, str(file_path)
+    # Return ~/relative path instead of absolute to avoid leaking home dir
+    try:
+        relative = file_path.relative_to(Path.home())
+        shell_path = f"~/{relative}"
+    except ValueError:
+        shell_path = str(file_path)
+    return filename, shell_path
 
 
 @router.post("/api/terminal/files", response_model=FileUploadResponse)
@@ -119,6 +130,8 @@ async def upload_file(request: Request, file: UploadFile) -> FileUploadResponse:
     Allowed: png, jpg, gif, webp, md, txt, json, pdf. Max: 10 MB.
     """
     content = await _read_file_content(file)
+    if not content:
+        raise HTTPException(status_code=400, detail="Empty file not allowed")
     content_type = _validate_mime_type(content, file.content_type or "application/octet-stream")
     filename, file_path = _save_upload(content, content_type)
     logger.info(

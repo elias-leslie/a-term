@@ -1,4 +1,4 @@
-import { type MutableRefObject, useCallback, useState } from 'react'
+import { type MutableRefObject, useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { TerminalMode } from '@/components/ModeToggle'
 import type { TerminalHandle } from '@/components/Terminal'
@@ -53,6 +53,9 @@ export function useTerminalSlotHandlers({
   const queryClient = useQueryClient()
   // Track mode switch loading state
   const [isModeSwitching, setIsModeSwitching] = useState(false)
+  // Ref to avoid stale closure on sessions in handleSlotModeSwitch
+  const sessionsRef = useRef(sessions)
+  useEffect(() => { sessionsRef.current = sessions }, [sessions])
   // Handler for switching to a slot's terminal
   const handleSlotSwitch = useCallback(
     (slot: TerminalSlot) => {
@@ -144,7 +147,7 @@ export function useTerminalSlotHandlers({
       setIsModeSwitching(true)
       try {
         // Get all sessions for this project
-        const projectSessions = sessions.filter(
+        const projectSessions = sessionsRef.current.filter(
           (s) => s.project_id === slot.projectId,
         )
         // Pass paneId if available (for direct pane mode switching)
@@ -160,7 +163,7 @@ export function useTerminalSlotHandlers({
         setIsModeSwitching(false)
       }
     },
-    [sessions, handleProjectModeChange],
+    [handleProjectModeChange],
   )
 
   return {

@@ -70,6 +70,7 @@ export function useTerminalWebSocket({
   const [status, setStatus] = useState<ConnectionStatus>('connecting')
   const retryCountRef = useRef(0)
   const timeoutIdRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const mountedRef = useRef(true)
   const connectRef = useRef<(() => void) | undefined>(undefined)
   const connectingRef = useRef(false)
@@ -159,7 +160,7 @@ export function useTerminalWebSocket({
             `\x1b[33mConnection timeout, retrying (${retryCountRef.current}/${maxRetries})...\x1b[0m`,
           )
           setStatus('connecting')
-          setTimeout(() => {
+          retryTimeoutRef.current = setTimeout(() => {
             if (mountedRef.current) connectRef.current?.()
           }, delay)
         } else {
@@ -193,7 +194,7 @@ export function useTerminalWebSocket({
       const dims = getDimensionsRef.current?.()
       if (dims) {
         ws.send(
-          JSON.stringify({ resize: { cols: dims.cols, rows: dims.rows } }),
+          JSON.stringify({ __ctrl: true, resize: { cols: dims.cols, rows: dims.rows } }),
         )
       }
 
@@ -201,7 +202,7 @@ export function useTerminalWebSocket({
       // This ensures the shell prompt is displayed even for reconnections
       setTimeout(() => {
         if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ refresh: true }))
+          ws.send(JSON.stringify({ __ctrl: true, refresh: true }))
         }
       }, 100)
     }
@@ -259,6 +260,10 @@ export function useTerminalWebSocket({
     if (timeoutIdRef.current) {
       clearTimeout(timeoutIdRef.current)
       timeoutIdRef.current = null
+    }
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current)
+      retryTimeoutRef.current = null
     }
     if (wsRef.current) {
       wsRef.current.close()

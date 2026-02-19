@@ -28,6 +28,7 @@ export function useTerminalResize(options: TerminalResizeOptions) {
         if (dims) {
           wsRef.current.send(
             JSON.stringify({
+              __ctrl: true,
               resize: { cols: dims.cols, rows: dims.rows },
             }),
           )

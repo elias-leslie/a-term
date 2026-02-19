@@ -18,6 +18,7 @@ def test_config_database_url_required_raises_on_missing() -> None:
     with patch.dict("os.environ", {"DATABASE_URL": ""}, clear=False):
         with pytest.raises(ValueError, match="DATABASE_URL"):
             import terminal.config as cfg
+            cfg.get_settings.cache_clear()
             importlib.reload(cfg)
 
 
@@ -30,6 +31,7 @@ def test_config_terminal_port_default_is_8002() -> None:
         clear=False,
     ):
         import terminal.config as cfg
+        cfg.get_settings.cache_clear()
         importlib.reload(cfg)
 
     # Assert
@@ -48,6 +50,7 @@ def test_config_terminal_port_custom_from_env() -> None:
         clear=False,
     ):
         import terminal.config as cfg
+        cfg.get_settings.cache_clear()
         importlib.reload(cfg)
 
     # Assert
@@ -63,6 +66,7 @@ def test_config_tmux_dimension_constants() -> None:
         clear=False,
     ):
         import terminal.config as cfg
+        cfg.get_settings.cache_clear()
         importlib.reload(cfg)
 
     # Assert
@@ -75,17 +79,18 @@ def test_config_tmux_dimension_constants() -> None:
 
 
 def test_config_cors_origins_splits_comma_separated() -> None:
-    """Config module -- CORS_ORIGINS splits comma-separated values."""
-    # Arrange & Act
+    """Config module -- CORS_ORIGINS accepts JSON array from env."""
+    # Arrange & Act — pydantic-settings expects JSON for list[str] fields
     with patch.dict(
         "os.environ",
         {
             "DATABASE_URL": "postgresql://test:test@localhost/test",
-            "CORS_ORIGINS": "http://localhost:3000,http://localhost:3002",
+            "CORS_ORIGINS": '["http://localhost:3000","http://localhost:3002"]',
         },
         clear=False,
     ):
         import terminal.config as cfg
+        cfg.get_settings.cache_clear()
         importlib.reload(cfg)
 
     # Assert

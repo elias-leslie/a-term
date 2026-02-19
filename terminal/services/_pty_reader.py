@@ -20,6 +20,8 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+_drop_count = 0
+
 # Output batching constants (from ghostty/AutoMaker analysis)
 FLUSH_INTERVAL_MS = 16  # milliseconds - ~60fps
 BATCH_SIZE_LIMIT = 4096  # bytes - 4KB
@@ -47,12 +49,17 @@ def _make_on_readable(
     """Return a callback for when the PTY fd becomes readable."""
 
     def on_readable() -> None:
+        global _drop_count
         data = _read_pty_data(master_fd)
         if data is not None:
             # Drop data when consumer can't keep up — prevents memory runaway.
             # Terminal output is best-effort; the user still has tmux scrollback.
-            with contextlib.suppress(asyncio.QueueFull):
+            try:
                 queue.put_nowait(data)
+            except asyncio.QueueFull:
+                _drop_count += 1
+                if _drop_count % 100 == 1:  # Log first drop, then every 100th
+                    logger.warning("pty_output_dropped", drop_count=_drop_count, session=master_fd)
         else:
             queue.put_nowait(None)  # EOF
 

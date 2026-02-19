@@ -54,7 +54,7 @@ async def cleanup_pty_process(pid: int, master_fd: int) -> None:
 
         if not await _wait_for_process(pid, max_iterations=20):
             with contextlib.suppress(OSError, ChildProcessError):
-                os.waitpid(pid, 0)
+                await asyncio.to_thread(os.waitpid, pid, 0)
 
     # Close the master file descriptor
     with contextlib.suppress(OSError):

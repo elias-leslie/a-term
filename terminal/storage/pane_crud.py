@@ -216,6 +216,8 @@ def update_pane_order(pane_orders: list[tuple[str, int]]) -> None:
 
 def swap_pane_positions(pane_id_a: PaneId, pane_id_b: PaneId) -> bool:
     """Swap positions of two panes."""
+    if str(normalize_pane_id(pane_id_a)) == str(normalize_pane_id(pane_id_b)):
+        return True  # no-op: same pane
     with get_connection() as conn, conn.cursor() as cur:
         cur.execute(
             "SELECT id, pane_order FROM terminal_panes WHERE id IN (%s, %s)",

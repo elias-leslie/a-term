@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { buildApiUrl } from '../api-config'
 
 interface UploadResult {
@@ -39,6 +39,7 @@ export function useFileUpload(): UseFileUploadReturn {
   const [progress, setProgress] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<UploadError | null>(null)
+  const xhrRef = useRef<XMLHttpRequest | null>(null)
 
   const uploadFile = useCallback(
     async (file: File): Promise<UploadResult | null> => {
@@ -55,6 +56,7 @@ export function useFileUpload(): UseFileUploadReturn {
 
       return new Promise((resolve) => {
         const xhr = new XMLHttpRequest()
+        xhrRef.current = xhr
         const formData = new FormData()
         formData.append('file', file)
 
@@ -67,6 +69,7 @@ export function useFileUpload(): UseFileUploadReturn {
         })
 
         xhr.addEventListener('load', () => {
+          xhrRef.current = null
           setIsUploading(false)
 
           if (xhr.status >= 200 && xhr.status < 300) {
@@ -94,12 +97,14 @@ export function useFileUpload(): UseFileUploadReturn {
         })
 
         xhr.addEventListener('error', () => {
+          xhrRef.current = null
           setIsUploading(false)
           setError({ message: 'Network error during upload' })
           resolve(null)
         })
 
         xhr.addEventListener('abort', () => {
+          xhrRef.current = null
           setIsUploading(false)
           setError({ message: 'Upload cancelled' })
           resolve(null)
@@ -111,6 +116,9 @@ export function useFileUpload(): UseFileUploadReturn {
     },
     [],
   )
+
+  // Abort any in-flight upload on unmount
+  useEffect(() => () => { xhrRef.current?.abort() }, [])
 
   const clearError = useCallback(() => {
     setError(null)

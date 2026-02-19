@@ -50,8 +50,15 @@ export function useAutoCreatePane({
         isAutoCreatingRef.current = true
         const adHocCount = panes.filter((p) => p.pane_type === 'adhoc').length
         fetch(buildApiUrl('/api/terminal/panes/count'))
-          .then((res) => res.json())
+          .then((res) => {
+            if (!res.ok) {
+              console.error('Pane count check failed:', res.status)
+              return
+            }
+            return res.json()
+          })
           .then((data) => {
+            if (!data) return
             if (data.count === 0) {
               return createAdHocPane(generatePaneName('Ad-Hoc Terminal', adHocCount)).then(
                 (newPane) => {

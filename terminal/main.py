@@ -22,6 +22,7 @@ from .config import CORS_ORIGINS, TERMINAL_PORT
 from .logging_config import SyslogPrefixFormatter, configure_logging, get_logger
 from .rate_limit import limiter
 from .services import lifecycle
+from .services.summitflow_client import close_client
 from .storage.connection import close_pool, get_connection
 
 # Configure structured logging (skip in test mode - tests configure their own logging)
@@ -56,10 +57,22 @@ def _setup_tmux_options(token: str) -> None:
     NOTE: We intentionally do NOT set global tmux options like detach-on-destroy
     to avoid affecting non-web-terminal sessions (e.g., MobaXterm, other clients).
     Each summitflow-* session manages its own options in create_tmux_session().
+
+    Security: Token is written to a file (mode 0600) instead of embedded in the
+    hook command, so it is not visible via `tmux show-hooks -g` or `ps`.
     """
+    # Write token to a file readable only by the service user
+    from pathlib import Path
+
+    token_file = Path.home() / ".cache" / "summitflow-terminal" / "hook-token"
+    token_file.parent.mkdir(parents=True, exist_ok=True)
+    token_file.write_text(token)
+    token_file.chmod(0o600)
+
     hook_cmd = (
-        f"run-shell \"curl -s 'http://localhost:{TERMINAL_PORT}/api/internal/session-switch"
-        f"?from=#{{client_last_session}}&to=#{{client_session}}&token={token}' >/dev/null 2>&1 &\""
+        f'run-shell "curl -s -H \'Authorization: Bearer \'$(cat {token_file})'
+        f" 'http://localhost:{TERMINAL_PORT}/api/internal/session-switch"
+        f"?from=#{{client_last_session}}&to=#{{client_session}}' >/dev/null 2>&1 &\""
     )
 
     # Set global hook (applies to all sessions)
@@ -95,6 +108,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # Shutdown
     logger.info("terminal_service_stopping")
+    await close_client()
     close_pool()
     logger.info("terminal_service_shutdown_complete")
 
@@ -165,7 +179,7 @@ def main() -> None:
     """Run the terminal service."""
     uvicorn.run(
         "terminal.main:app",
-        host="0.0.0.0",
+        host="127.0.0.1",
         port=TERMINAL_PORT,
         log_level="info",
     )

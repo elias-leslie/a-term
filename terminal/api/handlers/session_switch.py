@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hmac
+import uuid
 from typing import Any
 
 from fastapi import Request
@@ -34,6 +35,18 @@ LOG_SWITCH_DETECTED = "session_switch_detected"
 
 # App state attribute name
 APP_STATE_TOKEN_ATTR = "internal_token"
+
+
+def _extract_token(request: Request, query_token: str) -> str:
+    """Extract auth token from Authorization header (preferred) or query param (legacy).
+
+    The Authorization header is preferred because the token is not visible
+    in tmux hooks or process listings.
+    """
+    auth_header = request.headers.get("authorization", "")
+    if auth_header.startswith("Bearer "):
+        return auth_header[7:]
+    return query_token
 
 
 def _verify_token(request: Request, token: str) -> bool:
@@ -100,7 +113,8 @@ def handle_session_switch(
     """
     client_host = request.client.host if request.client else None
 
-    if not _verify_token(request, token):
+    resolved_token = _extract_token(request, token)
+    if not _verify_token(request, resolved_token):
         logger.warning(LOG_SWITCH_REJECTED, reason="invalid_token", client=client_host)
         return JSONResponse(
             status_code=403,
@@ -122,4 +136,9 @@ def handle_session_switch(
         return {"status": STATUS_IGNORED, "reason": REASON_NOT_FROM_BASE}
 
     terminal_session_id = from_session[len(BASE_SESSION_PREFIX):]
+    try:
+        uuid.UUID(terminal_session_id)
+    except ValueError:
+        logger.warning("invalid_session_id", raw=terminal_session_id)
+        return JSONResponse(status_code=400, content={"error": "Invalid session ID format"})
     return _track_session_switch(terminal_session_id, to_session)

@@ -59,23 +59,28 @@ async def _handle_text_message(
     tmux_session_name: str | None,
     last_resize: list[int] | None,
 ) -> tuple[int, int] | None:
-    """Handle a text WebSocket message, dispatching JSON control or raw input."""
+    """Handle a text WebSocket message, dispatching JSON control or raw input.
+
+    Control messages must include '__ctrl': true to distinguish them from
+    user-typed JSON that happens to match control message structure.
+    """
     if text.startswith("{"):
         try:
             data = json.loads(text)
         except json.JSONDecodeError:
-            os.write(master_fd, text.encode("utf-8"))
+            await asyncio.to_thread(os.write, master_fd, text.encode("utf-8"))
             return None
 
-        if "resize" in data:
-            return await _handle_resize_command(data, master_fd, session_id, tmux_session_name, last_resize)
+        if data.get("__ctrl"):
+            if "resize" in data:
+                return await _handle_resize_command(data, master_fd, session_id, tmux_session_name, last_resize)
 
-        if data.get("refresh"):
-            os.write(master_fd, b"\x0c")
-            logger.debug("terminal_refreshed", session_id=session_id)
-            return None
+            if data.get("refresh"):
+                await asyncio.to_thread(os.write, master_fd, b"\x0c")
+                logger.debug("terminal_refreshed", session_id=session_id)
+                return None
 
-    os.write(master_fd, text.encode("utf-8"))
+    await asyncio.to_thread(os.write, master_fd, text.encode("utf-8"))
     return None
 
 
@@ -110,7 +115,7 @@ async def handle_websocket_message(
         )
 
     if "bytes" in message:
-        os.write(master_fd, message["bytes"])
+        await asyncio.to_thread(os.write, master_fd, message["bytes"])
         return None
 
     return None

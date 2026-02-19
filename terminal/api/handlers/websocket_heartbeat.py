@@ -19,6 +19,6 @@ async def heartbeat_loop(websocket: WebSocket) -> None:
     while True:
         await asyncio.sleep(30)
         try:
-            await websocket.send_bytes(b"")
+            await websocket.send_bytes(b"\x00")
         except Exception:
             break
