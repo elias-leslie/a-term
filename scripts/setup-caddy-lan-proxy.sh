@@ -35,8 +35,8 @@ REAL_HOME=$(eval echo "~$REAL_USER")
 
 # ─── Step 1: Install Go ─────────────────────────────────────────────────────
 
-GO_REQUIRED="1.25"
-GO_TARBALL="go1.25.7.linux-amd64.tar.gz"
+GO_REQUIRED="1.26"
+GO_TARBALL="go1.26.0.linux-amd64.tar.gz"
 GO_URL="https://go.dev/dl/$GO_TARBALL"
 
 # Check if Go is installed and new enough
@@ -54,7 +54,8 @@ fi
 if $NEED_GO; then
     info "Installing Go $GO_TARBALL from go.dev..."
     # Remove apt Go if present (conflicts with /usr/local/go)
-    apt-get remove -y -qq golang-go golang-1.22-go 2>/dev/null || true
+    apt-get remove -y -qq golang-go golang-src golang-1.22-go golang-1.22-src 2>/dev/null || true
+    apt-get autoremove -y -qq 2>/dev/null || true
     # Download and install
     curl -fsSL "$GO_URL" -o "/tmp/$GO_TARBALL"
     rm -rf /usr/local/go
@@ -80,7 +81,7 @@ else
 
     info "Building Caddy with Cloudflare DNS plugin (this takes ~1-2 minutes)..."
     BUILD_DIR=$(sudo -u "$REAL_USER" mktemp -d)
-    sudo -u "$REAL_USER" bash -c "export PATH=/usr/local/go/bin:\$HOME/go/bin:\$PATH && export GOPATH=\$HOME/go && cd $BUILD_DIR && xcaddy build --with github.com/caddy-dns/cloudflare"
+    sudo -u "$REAL_USER" bash -c "export PATH=/usr/local/go/bin:\$HOME/go/bin:\$PATH && export GOPATH=\$HOME/go && cd $BUILD_DIR && xcaddy build v2.10.2 --with github.com/caddy-dns/cloudflare"
 
     mv "$BUILD_DIR/caddy" /usr/local/bin/caddy
     chmod 755 /usr/local/bin/caddy
