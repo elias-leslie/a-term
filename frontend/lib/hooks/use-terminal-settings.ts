@@ -51,13 +51,13 @@ export const TERMINAL_FONTS = [
 
 export const TERMINAL_FONT_SIZES = [10, 11, 12, 13, 14, 15, 16, 18, 20] as const
 
-// Scrollback buffer sizes (lines) - 100K matches tmux history-limit
+// Scrollback buffer sizes (lines) - capped at 50K to avoid progressive slowdown
 export const TERMINAL_SCROLLBACK_OPTIONS = [
   { value: 1000, label: '1K lines' },
+  { value: 5000, label: '5K lines' },
   { value: 10000, label: '10K lines' },
+  { value: 25000, label: '25K lines' },
   { value: 50000, label: '50K lines' },
-  { value: 100000, label: '100K lines' },
-  { value: 999999, label: 'Unlimited' },
 ] as const
 
 // Cursor styles supported by xterm.js

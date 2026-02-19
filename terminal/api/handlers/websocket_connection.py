@@ -48,7 +48,11 @@ async def _setup_connection(
         # causing diagonal/staircase text. Convert to \r\n so each line starts
         # at column 0. Normalize first to avoid \r\r\n from existing \r\n pairs.
         scrollback = scrollback.replace("\r\n", "\n").replace("\n", "\r\n")
-        await websocket.send_text(scrollback)
+        # Clear xterm.js screen + scrollback buffer before replaying history.
+        # Prevents duplicate content when the frontend reconnects without a
+        # full page refresh (the existing buffer would otherwise be preserved).
+        clear_sequence = "\x1b[2J\x1b[H\x1b[3J"
+        await websocket.send_text(clear_sequence + scrollback)
         logger.info("scrollback_sent", session_id=session_id, bytes=len(scrollback))
 
     return session, tmux_session_name, master_fd, pid

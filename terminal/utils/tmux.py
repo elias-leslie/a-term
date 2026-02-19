@@ -97,7 +97,8 @@ def _apply_session_options(session_name: str, disable_mouse: bool = True) -> Non
     args: list[str] = []
     if disable_mouse:
         args.extend(["set-option", "-t", session_name, "mouse", "off", ";"])
-    args.extend(["set-option", "-t", session_name, "status", "off"])
+    args.extend(["set-option", "-t", session_name, "status", "off", ";"])
+    args.extend(["set-option", "-t", session_name, "history-limit", "50000"])
     for var in FILTERED_ENV_VARS:
         args.extend([";", "set-environment", "-t", session_name, "-u", var])
     run_tmux_command(args)
@@ -169,13 +170,13 @@ def is_claude_running_in_session(session_name: str) -> bool:
     return success and any("claude" in line.lower() for line in output.split("\n"))
 
 
-def get_scrollback(session_name: str, max_lines: int = 500) -> str | None:
+def get_scrollback(session_name: str, max_lines: int = 5000) -> str | None:
     """Capture recent tmux scrollback with escape sequences and joined wrapped lines.
 
     Args:
         session_name: tmux session to capture from
         max_lines: Max lines of history to capture. Limits reconnect payload size
-            and prevents sending megabytes of output on long-running sessions.
+            while providing enough context for meaningful scroll-back on reconnect.
     """
     success, output = run_tmux_command(
         ["capture-pane", "-t", session_name, "-S", f"-{max_lines}", "-e", "-J", "-p"]
