@@ -26,6 +26,20 @@ BATCH_SIZE_LIMIT = 4096  # bytes - 4KB
 MAX_UTF8_BUFFER = 4  # UTF-8 chars are max 4 bytes
 
 
+def _read_pty_data(master_fd: int) -> bytes | None:
+    """Read data from PTY fd. Returns None on EOF or error."""
+    try:
+        data = os.read(master_fd, 8192)
+        return data or None
+    except OSError as e:
+        if e.errno != errno.EIO:
+            logger.warning("pty_read_error", error=str(e), errno=e.errno)
+        return None
+    except Exception as e:
+        logger.error("pty_read_unexpected_error", error=str(e))
+        return None
+
+
 def _make_on_readable(
     master_fd: int,
     queue: asyncio.Queue[bytes | None],
@@ -33,23 +47,14 @@ def _make_on_readable(
     """Return a callback for when the PTY fd becomes readable."""
 
     def on_readable() -> None:
-        try:
-            data = os.read(master_fd, 8192)
-            if data:
-                # Drop data when consumer can't keep up — prevents memory runaway.
-                # Terminal output is best-effort; the user still has tmux scrollback.
-                with contextlib.suppress(asyncio.QueueFull):
-                    queue.put_nowait(data)
-            else:
-                queue.put_nowait(None)  # EOF
-        except OSError as e:
-            # EIO is expected when terminal closes
-            if e.errno != errno.EIO:
-                logger.warning("pty_read_error", error=str(e), errno=e.errno)
-            queue.put_nowait(None)
-        except Exception as e:
-            logger.error("pty_read_unexpected_error", error=str(e))
-            queue.put_nowait(None)
+        data = _read_pty_data(master_fd)
+        if data is not None:
+            # Drop data when consumer can't keep up — prevents memory runaway.
+            # Terminal output is best-effort; the user still has tmux scrollback.
+            with contextlib.suppress(asyncio.QueueFull):
+                queue.put_nowait(data)
+        else:
+            queue.put_nowait(None)  # EOF
 
     return on_readable
 
@@ -77,57 +82,79 @@ def _decode_output(
         return output.decode("utf-8", errors="replace"), b""
 
 
+async def _flush_batch(
+    websocket: WebSocket,
+    batch_buffer: str,
+    loop: asyncio.AbstractEventLoop,
+) -> tuple[str, float, bool]:
+    """Send buffered output to the websocket.
+
+    Returns:
+        (cleared_batch_buffer, new_flush_time, should_continue)
+    """
+    if batch_buffer:
+        await websocket.send_text(batch_buffer)
+        if "[exited]" in batch_buffer:
+            logger.info("tmux_session_exited_detected")
+            return "", loop.time(), False
+    return "", loop.time(), True
+
+
+async def _run_one_iteration(
+    websocket: WebSocket,
+    queue: asyncio.Queue[bytes | None],
+    loop: asyncio.AbstractEventLoop,
+    state: dict,
+    wait_time: float,
+) -> None:
+    """Run one iteration: wait for data, decode, and flush when ready."""
+    try:
+        output = await asyncio.wait_for(queue.get(), timeout=wait_time)
+    except TimeoutError:
+        state["batch"], state["flush_time"], ok = await _flush_batch(
+            websocket, state["batch"], loop
+        )
+        if not ok:
+            state["running"] = False
+        return
+
+    if output is None:
+        await _flush_batch(websocket, state["batch"], loop)
+        state["running"] = False
+        return
+
+    decoded, state["utf8"] = _decode_output(output, state["utf8"])
+    if decoded:
+        state["batch"] += decoded
+        size_limit_hit = len(state["batch"]) >= BATCH_SIZE_LIMIT
+        if size_limit_hit or queue.empty():
+            state["batch"], state["flush_time"], ok = await _flush_batch(
+                websocket, state["batch"], loop
+            )
+            if not ok:
+                state["running"] = False
+
+
 async def _run_batch_loop(
     websocket: WebSocket,
     queue: asyncio.Queue[bytes | None],
     loop: asyncio.AbstractEventLoop,
 ) -> None:
     """Drive the batching loop: read from queue, decode, flush to websocket."""
-    utf8_buffer = b""
-    batch_buffer = ""
-    last_flush_time = loop.time()
-
-    async def flush() -> bool:
-        nonlocal batch_buffer, last_flush_time
-        if batch_buffer:
-            await websocket.send_text(batch_buffer)
-            if "[exited]" in batch_buffer:
-                logger.info("tmux_session_exited_detected")
-                batch_buffer = ""
-                return False
-            batch_buffer = ""
-        last_flush_time = loop.time()
-        return True
+    state: dict = {
+        "utf8": b"",
+        "batch": "",
+        "flush_time": loop.time(),
+        "running": True,
+    }
 
     try:
-        while True:
-            time_since_flush = (loop.time() - last_flush_time) * 1000  # ms
-            wait_time = max(0.001, (FLUSH_INTERVAL_MS - time_since_flush) / 1000)
-
-            try:
-                output = await asyncio.wait_for(queue.get(), timeout=wait_time)
-            except TimeoutError:
-                if not await flush():
-                    break
-                continue
-
-            if output is None:
-                await flush()
-                break
-
-            decoded, utf8_buffer = _decode_output(output, utf8_buffer)
-
-            if decoded:
-                batch_buffer += decoded
-                size_limit_hit = len(batch_buffer) >= BATCH_SIZE_LIMIT
-                if (size_limit_hit and not await flush()) or (
-                    queue.empty() and not await flush()
-                ):
-                    break
-
+        while state["running"]:
+            elapsed_ms = (loop.time() - state["flush_time"]) * 1000
+            wait_time = max(0.001, (FLUSH_INTERVAL_MS - elapsed_ms) / 1000)
+            await _run_one_iteration(websocket, queue, loop, state, wait_time)
     except asyncio.CancelledError:
-        if batch_buffer:
-            with contextlib.suppress(Exception):
-                await websocket.send_text(batch_buffer)
+        with contextlib.suppress(Exception):
+            await websocket.send_text(state["batch"])
     except Exception as e:
         logger.error("terminal_output_error", error=str(e))
