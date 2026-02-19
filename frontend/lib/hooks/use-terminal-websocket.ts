@@ -19,6 +19,8 @@ interface UseTerminalWebSocketOptions {
   onMessage?: (data: string) => void
   /** Called when terminal should display a message */
   onTerminalMessage?: (message: string) => void
+  /** Called before reconnect data arrives — clear terminal buffer to prevent duplicates */
+  onBeforeReconnectData?: () => void
   /** Get current terminal dimensions for resize message */
   getDimensions?: () => { cols: number; rows: number } | null
 }
@@ -64,6 +66,7 @@ export function useTerminalWebSocket({
   onDisconnect,
   onMessage,
   onTerminalMessage,
+  onBeforeReconnectData,
   getDimensions,
 }: UseTerminalWebSocketOptions): UseTerminalWebSocketReturn {
   const wsRef = useRef<WebSocket | null>(null)
@@ -81,6 +84,7 @@ export function useTerminalWebSocket({
   const onDisconnectRef = useRef(onDisconnect)
   const onMessageRef = useRef(onMessage)
   const onTerminalMessageRef = useRef(onTerminalMessage)
+  const onBeforeReconnectDataRef = useRef(onBeforeReconnectData)
   const getDimensionsRef = useRef(getDimensions)
 
   // Update refs when callbacks change
@@ -89,12 +93,14 @@ export function useTerminalWebSocket({
     onDisconnectRef.current = onDisconnect
     onMessageRef.current = onMessage
     onTerminalMessageRef.current = onTerminalMessage
+    onBeforeReconnectDataRef.current = onBeforeReconnectData
     getDimensionsRef.current = getDimensions
   }, [
     onStatusChange,
     onDisconnect,
     onMessage,
     onTerminalMessage,
+    onBeforeReconnectData,
     getDimensions,
   ])
 
@@ -188,6 +194,9 @@ export function useTerminalWebSocket({
           `Connected to terminal session: ${sessionId}`,
         )
         onTerminalMessageRef.current?.('')
+      } else {
+        // Reconnection: clear terminal buffer before server sends fresh scrollback
+        onBeforeReconnectDataRef.current?.()
       }
 
       // Send initial size

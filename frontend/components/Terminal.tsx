@@ -67,6 +67,11 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
         workingDir,
         onStatusChange,
         onDisconnect,
+        onBeforeReconnectData: () => {
+          // Clear xterm.js buffer before server sends fresh scrollback on reconnect.
+          // Prevents duplicate content from stacking old buffer + new scrollback.
+          terminalRef.current?.reset()
+        },
         onMessage: (data) => {
           if (!terminalRef.current) return
           // Skip write if terminal is not visible (prevents corruption in multi-pane)

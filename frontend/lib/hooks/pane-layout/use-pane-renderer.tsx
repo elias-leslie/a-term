@@ -122,6 +122,7 @@ export function usePaneRenderer({
           >
             {sessionId ? (
               <TerminalComponent
+                key={sessionId}
                 ref={(handle) => onTerminalRef?.(sessionId, handle)}
                 sessionId={sessionId}
                 workingDir={workingDir || undefined}
