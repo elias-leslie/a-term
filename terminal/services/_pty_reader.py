@@ -10,6 +10,7 @@ import asyncio
 import contextlib
 import errno
 import os
+import re
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
@@ -20,7 +21,9 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-_drop_count = 0
+# Matches tmux client exit message at end of buffer (plain ASCII, no ANSI styling).
+# Anchored to end to avoid false positives from user output containing "[exited]".
+_TMUX_EXITED_RE = re.compile(r"\[exited\]\r?\n?\s*$")
 
 # Output batching constants (from ghostty/AutoMaker analysis)
 FLUSH_INTERVAL_MS = 16  # milliseconds - ~60fps
@@ -45,11 +48,13 @@ def _read_pty_data(master_fd: int) -> bytes | None:
 def _make_on_readable(
     master_fd: int,
     queue: asyncio.Queue[bytes | None],
+    session_id: str = "",
 ) -> Callable[[], None]:
     """Return a callback for when the PTY fd becomes readable."""
+    drop_count = 0
 
     def on_readable() -> None:
-        global _drop_count
+        nonlocal drop_count
         data = _read_pty_data(master_fd)
         if data is not None:
             # Drop data when consumer can't keep up — prevents memory runaway.
@@ -57,11 +62,12 @@ def _make_on_readable(
             try:
                 queue.put_nowait(data)
             except asyncio.QueueFull:
-                _drop_count += 1
-                if _drop_count % 100 == 1:  # Log first drop, then every 100th
-                    logger.warning("pty_output_dropped", drop_count=_drop_count, session=master_fd)
+                drop_count += 1
+                if drop_count % 100 == 1:  # Log first drop, then every 100th
+                    logger.warning("pty_output_dropped", drop_count=drop_count, session=session_id)
         else:
-            queue.put_nowait(None)  # EOF
+            with contextlib.suppress(asyncio.QueueFull):
+                queue.put_nowait(None)  # EOF
 
     return on_readable
 
@@ -101,7 +107,7 @@ async def _flush_batch(
     """
     if batch_buffer:
         await websocket.send_text(batch_buffer)
-        if "[exited]" in batch_buffer:
+        if _TMUX_EXITED_RE.search(batch_buffer):
             logger.info("tmux_session_exited_detected")
             return "", loop.time(), False
     return "", loop.time(), True

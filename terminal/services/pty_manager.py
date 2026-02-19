@@ -116,7 +116,7 @@ def resize_pty(master_fd: int, cols: int, rows: int) -> None:
     fcntl.ioctl(master_fd, termios.TIOCSWINSZ, winsize)
 
 
-async def read_pty_output(websocket: WebSocket, master_fd: int) -> None:
+async def read_pty_output(websocket: WebSocket, master_fd: int, session_id: str = "") -> None:
     """Read output from PTY and send to WebSocket with batching.
 
     Uses asyncio native FD watching with loop.add_reader() for true zero CPU
@@ -127,12 +127,13 @@ async def read_pty_output(websocket: WebSocket, master_fd: int) -> None:
     Args:
         websocket: WebSocket connection to send output to
         master_fd: Master file descriptor to read from
+        session_id: Terminal session ID for logging context
     """
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     # Bounded queue prevents unbounded memory growth when WS is slower than PTY
     queue: asyncio.Queue[bytes | None] = asyncio.Queue(maxsize=256)
 
-    loop.add_reader(master_fd, _make_on_readable(master_fd, queue))
+    loop.add_reader(master_fd, _make_on_readable(master_fd, queue, session_id=session_id))
     try:
         await _run_batch_loop(websocket, queue, loop)
     finally:

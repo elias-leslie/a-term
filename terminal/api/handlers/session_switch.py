@@ -128,7 +128,10 @@ def handle_session_switch(
             from_session=from_session[:50] if from_session else "",
             to_session=to_session[:50],
         )
-        return {"status": STATUS_REJECTED, "reason": REASON_INVALID_SESSION_NAME}
+        return JSONResponse(
+            status_code=400,
+            content={"status": STATUS_REJECTED, "reason": REASON_INVALID_SESSION_NAME},
+        )
 
     # Only track switches FROM a terminal base session
     # Empty from_session means initial connection, not a switch

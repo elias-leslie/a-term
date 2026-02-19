@@ -20,7 +20,8 @@ def _get_pool() -> ConnectionPool:
     if _pool is None:
         with _pool_lock:
             if _pool is None:
-                assert DATABASE_URL, "DATABASE_URL must be set"
+                if not DATABASE_URL:
+                    raise RuntimeError("DATABASE_URL must be set")
                 _pool = ConnectionPool(
                     conninfo=DATABASE_URL,
                     min_size=2,

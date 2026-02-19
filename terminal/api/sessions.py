@@ -14,7 +14,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from ..rate_limit import limiter
 from ..services import lifecycle
@@ -58,7 +58,7 @@ class TerminalSessionListResponse(BaseModel):
 class UpdateSessionRequest(BaseModel):
     """Request to update a terminal session."""
 
-    name: str | None = None
+    name: str | None = Field(default=None, max_length=255)
     display_order: int | None = None
 
 

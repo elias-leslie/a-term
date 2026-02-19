@@ -109,7 +109,7 @@ async def _run_session(
         )
         return None, None
 
-    output_task = asyncio.create_task(read_pty_output(websocket, master_fd))
+    output_task = asyncio.create_task(read_pty_output(websocket, master_fd, session_id=session_id))
     heartbeat_task = asyncio.create_task(heartbeat_loop(websocket))
     await _maybe_autostart_claude(session, master_fd, tmux_session_name, session_id)
     await _run_message_loop(
