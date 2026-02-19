@@ -14,20 +14,26 @@ _pool: ConnectionPool | None = None
 _pool_lock = threading.Lock()
 
 
+def _create_pool() -> ConnectionPool:
+    """Create a new connection pool. Caller must hold _pool_lock."""
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL must be set")
+    return ConnectionPool(
+        conninfo=DATABASE_URL,
+        min_size=2,
+        max_size=10,
+        open=True,
+    )
+
+
 def _get_pool() -> ConnectionPool:
     """Lazily initialize and return the connection pool."""
     global _pool
-    if _pool is None:
-        with _pool_lock:
-            if _pool is None:
-                if not DATABASE_URL:
-                    raise RuntimeError("DATABASE_URL must be set")
-                _pool = ConnectionPool(
-                    conninfo=DATABASE_URL,
-                    min_size=2,
-                    max_size=10,
-                    open=True,
-                )
+    if _pool is not None:
+        return _pool
+    with _pool_lock:
+        if _pool is None:
+            _pool = _create_pool()
     return _pool
 
 
