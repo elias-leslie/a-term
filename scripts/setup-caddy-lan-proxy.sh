@@ -53,8 +53,7 @@ else
     sudo -u "$REAL_USER" bash -c 'export GOPATH=$HOME/go && export PATH=$PATH:$GOPATH/bin && go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest'
 
     info "Building Caddy with Cloudflare DNS plugin (this takes ~1-2 minutes)..."
-    BUILD_DIR=$(mktemp -d)
-    cd "$BUILD_DIR"
+    BUILD_DIR=$(sudo -u "$REAL_USER" mktemp -d)
     sudo -u "$REAL_USER" bash -c "export GOPATH=$REAL_HOME/go && export PATH=\$PATH:\$GOPATH/bin && cd $BUILD_DIR && xcaddy build --with github.com/caddy-dns/cloudflare"
 
     mv "$BUILD_DIR/caddy" /usr/local/bin/caddy
