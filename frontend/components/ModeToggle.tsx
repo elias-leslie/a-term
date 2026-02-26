@@ -1,7 +1,7 @@
 'use client'
 
 import { Loader2, Sparkles, Terminal } from 'lucide-react'
-import { memo, useCallback, useState } from 'react'
+import { memo, useCallback, useRef, useState } from 'react'
 import type { AgentTool } from '@/lib/hooks/use-agent-tools'
 
 export type TerminalMode = 'shell' | string
@@ -33,6 +33,7 @@ export const ModeToggle = memo(function ModeToggle({
   const [internalLoading, setInternalLoading] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const [showPopover, setShowPopover] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
 
   const isCurrentlyLoading = isLoading || internalLoading
   const isDisabled = disabled || isCurrentlyLoading
@@ -101,6 +102,7 @@ export const ModeToggle = memo(function ModeToggle({
     <>
       <div style={{ position: 'relative', display: 'inline-block' }}>
         <button
+          ref={buttonRef}
           data-testid="mode-toggle"
           onClick={handleClick}
           disabled={isDisabled}
@@ -212,7 +214,7 @@ export const ModeToggle = memo(function ModeToggle({
           />
         </button>
 
-        {/* Multi-tool popover */}
+        {/* Multi-tool popover — fixed positioning to escape overflow clipping */}
         {showPopover && hasMultipleTools && (
           <>
             <div
@@ -220,8 +222,16 @@ export const ModeToggle = memo(function ModeToggle({
               onClick={() => setShowPopover(false)}
             />
             <div
-              className="absolute z-[10000] mt-1 right-0 rounded-lg overflow-hidden animate-in fade-in slide-in-from-top-1 duration-100"
+              className="fixed z-[10000] rounded-lg overflow-hidden animate-in fade-in slide-in-from-top-1 duration-100"
               style={{
+                ...(() => {
+                  const rect = buttonRef.current?.getBoundingClientRect()
+                  if (!rect) return { top: 0, left: 0 }
+                  return {
+                    top: rect.bottom + 4,
+                    left: rect.left,
+                  }
+                })(),
                 backgroundColor: 'rgba(21, 27, 35, 0.95)',
                 backdropFilter: 'blur(12px)',
                 border: '1px solid var(--term-border-active)',
