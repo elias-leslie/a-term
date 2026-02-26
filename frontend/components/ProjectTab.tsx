@@ -1,6 +1,7 @@
 'use client'
 
 import { clsx } from 'clsx'
+import { useAgentTools } from '@/lib/hooks/use-agent-tools'
 import type { ProjectTerminal } from '@/lib/hooks/use-project-terminals'
 import type { TerminalSession } from '@/lib/hooks/use-terminal-sessions'
 import { AgentIndicator } from './AgentIndicator'
@@ -65,6 +66,8 @@ export function ProjectTab({
   tabRef,
   isMobile,
 }: ProjectTabProps) {
+  const { enabledTools } = useAgentTools()
+
   return (
     <div
       ref={tabRef}
@@ -95,6 +98,7 @@ export function ProjectTab({
             )
           }
           isMobile={isMobile}
+          agentTools={enabledTools}
         />
       </div>
       {/* Action menu - stop propagation to prevent tab click */}

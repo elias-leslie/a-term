@@ -3,6 +3,7 @@
 import { clsx } from 'clsx'
 import { Mic, Paperclip, RefreshCw, Settings, Sparkles, X } from 'lucide-react'
 import { memo } from 'react'
+import { useAgentTools } from '@/lib/hooks/use-agent-tools'
 import { ModeToggle } from '../ModeToggle'
 import { PaneOverflowMenu } from '../PaneOverflowMenu'
 import { AddTerminalButton } from './AddTerminalButton'
@@ -33,6 +34,7 @@ export const UnifiedTerminalHeaderContent = memo(
     onResetAll,
     onCloseAll,
   }: UnifiedTerminalHeaderProps) {
+    const { enabledTools } = useAgentTools()
     const isAgentMode = slot.type === 'project' && slot.activeMode !== 'shell'
     const shouldShowClean = showCleanButton && isAgentMode
 
@@ -57,6 +59,7 @@ export const UnifiedTerminalHeaderContent = memo(
             disabled={isModeSwitching}
             isLoading={isModeSwitching}
             isMobile={isMobile}
+            agentTools={enabledTools}
           />
         )}
 

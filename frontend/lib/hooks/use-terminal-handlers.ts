@@ -6,6 +6,7 @@ import type { LayoutMode } from '@/components/LayoutModeButton'
 import type { KeyboardSizePreset } from '@/components/SettingsDropdown'
 import type { ConnectionStatus, TerminalHandle } from '@/components/Terminal'
 import { useAgentPolling } from '@/lib/hooks/use-agent-polling'
+import { useAgentTools } from '@/lib/hooks/use-agent-tools'
 import { useProjectModeSwitch } from '@/lib/hooks/use-project-mode-switch'
 import type { ProjectTerminal } from '@/lib/hooks/use-project-terminals'
 import { useProjectTerminals } from '@/lib/hooks/use-project-terminals'
@@ -57,11 +58,13 @@ export function useTerminalHandlers({
     isLoading: projectsLoading,
   } = useProjectTerminals()
   const { startAgent } = useAgentPolling()
+  const { switchTool } = useAgentTools()
   const { switchProjectMode } = useProjectModeSwitch({
     switchMode,
     projectTabRefs,
     panes,
     setActiveMode,
+    switchAgentTool: switchTool,
   })
 
   const navigateToSession = useCallback(

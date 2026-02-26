@@ -39,6 +39,8 @@ interface UseProjectModeSwitchOptions {
     paneId: string,
     mode: string,
   ) => Promise<TerminalPane>
+  /** Function to switch agent tool on a pane (kills old tmux, creates new session) */
+  switchAgentTool?: (paneId: string, slug: string) => Promise<unknown>
 }
 
 interface UseProjectModeSwitchReturn {
@@ -80,6 +82,7 @@ export function useProjectModeSwitch({
   projectTabRefs,
   panes,
   setActiveMode,
+  switchAgentTool,
 }: UseProjectModeSwitchOptions): UseProjectModeSwitchReturn {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -125,19 +128,38 @@ export function useProjectModeSwitch({
         : freshPanes.find((p) => p.project_id === projectId)
 
       if (pane) {
-        // New pane-based path: sessions already exist in the pane
-        // 2. Update pane's active_mode and get the UPDATED pane back
-        const updatedPane = await setActiveMode(pane.id, mode)
+        // Check if we need to swap agent tool sessions (switching between different agent tools)
+        const currentAgentSession = pane.sessions.find((s) => s.mode !== 'shell')
+        const isAgentToAgentSwitch =
+          mode !== 'shell' &&
+          currentAgentSession &&
+          currentAgentSession.mode !== mode &&
+          switchAgentTool
 
-        // 3. Find the target session in the UPDATED pane (not the stale one)
+        let updatedPane: TerminalPane
+
+        if (isAgentToAgentSwitch) {
+          // Switching between agent tools: need to kill old tmux session, create new one
+          await switchAgentTool(pane.id, mode)
+          // Refetch the pane to get the new session
+          await queryClient.invalidateQueries({ queryKey: ['terminal-panes'] })
+          await queryClient.invalidateQueries({ queryKey: ['terminal-sessions'] })
+          const freshData = queryClient.getQueryData<PaneListResponse>(['terminal-panes'])
+          updatedPane = freshData?.items.find((p) => p.id === pane.id) ?? pane
+        } else {
+          // Simple toggle (shell ↔ agent): just update active_mode
+          updatedPane = await setActiveMode(pane.id, mode)
+        }
+
+        // Find the target session in the updated pane
         const targetSession = updatedPane.sessions.find((s) => s.mode === mode)
         if (!targetSession) {
           console.error('Pane missing session for mode:', mode, updatedPane)
           return
         }
 
-        // 4. Start agent if needed (any non-shell mode)
-        if (mode !== 'shell') {
+        // Start agent if needed (any non-shell mode)
+        if (mode !== 'shell' && !isAgentToAgentSwitch) {
           const agentState = projectSessions.find(
             (s) => s.id === targetSession.id,
           )?.claude_state
@@ -149,7 +171,7 @@ export function useProjectModeSwitch({
           }
         }
 
-        // 5. Navigate to the session
+        // Navigate to the session
         navigateToSession(targetSession.id)
       } else {
         // Legacy path: fallback to old behavior for backwards compatibility
@@ -183,6 +205,7 @@ export function useProjectModeSwitch({
       queryClient,
       panes,
       setActiveMode,
+      switchAgentTool,
       switchMode,
       startAgentInSession,
       navigateToSession,
