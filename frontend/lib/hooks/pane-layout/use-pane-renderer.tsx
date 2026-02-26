@@ -87,7 +87,7 @@ export function usePaneRenderer({
           <UnifiedTerminalHeader
             slot={slot}
             showCleanButton={
-              slot.type === 'project' && slot.activeMode === 'claude'
+              slot.type === 'project' && slot.activeMode !== 'shell'
             }
             onSwitch={onSwitch ? () => onSwitch(slot) : undefined}
             onSettings={onSettings}

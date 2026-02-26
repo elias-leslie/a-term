@@ -16,7 +16,7 @@ interface MobileKeyboardProps {
   keyboardSize?: KeyboardSizePreset
   onVoice?: () => void
   voiceActive?: boolean
-  activeMode?: 'shell' | 'claude'
+  activeMode?: string
 }
 
 export function MobileKeyboard({

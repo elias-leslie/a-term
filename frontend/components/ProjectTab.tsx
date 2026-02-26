@@ -3,7 +3,7 @@
 import { clsx } from 'clsx'
 import type { ProjectTerminal } from '@/lib/hooks/use-project-terminals'
 import type { TerminalSession } from '@/lib/hooks/use-terminal-sessions'
-import { ClaudeIndicator } from './ClaudeIndicator'
+import { AgentIndicator } from './AgentIndicator'
 import { ModeToggle } from './ModeToggle'
 import { TabActionMenu } from './TabActionMenu'
 
@@ -37,7 +37,7 @@ export interface ProjectTabProps {
   onClick: () => void
   onModeChange: (
     projectId: string,
-    mode: 'shell' | 'claude',
+    mode: string,
     projectSessions: TerminalSession[],
     rootPath: string | null,
   ) => void
@@ -71,8 +71,8 @@ export function ProjectTab({
       onClick={onClick}
       className={getTabClassName(isActive, isMobile)}
     >
-      {/* Claude indicator for project tabs */}
-      <ClaudeIndicator state={pt.activeMode === 'claude' ? 'idle' : 'none'} />
+      {/* Agent indicator for project tabs */}
+      <AgentIndicator state={pt.activeMode !== 'shell' ? 'idle' : 'none'} />
       {/* Project name */}
       <span
         className={clsx(

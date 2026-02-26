@@ -12,19 +12,19 @@ interface ResetMutationContext {
 interface ResetProjectResponse {
   project_id: string
   shell_session_id: string
-  claude_session_id: string
-  mode: 'shell' | 'claude'
+  agent_session_id: string
+  mode: string
 }
 
 function createTerminalSession(
   sessionId: string,
   projectId: string,
-  mode: 'shell' | 'claude',
+  mode: string,
   project?: ProjectTerminal,
 ): TerminalSession {
   return {
     id: sessionId,
-    name: project ? `Project: ${project.projectId} (${mode === 'shell' ? 'Shell' : 'Claude'})` : mode === 'shell' ? 'Shell' : 'Claude',
+    name: project ? `Project: ${project.projectId} (${mode.charAt(0).toUpperCase() + mode.slice(1)})` : mode.charAt(0).toUpperCase() + mode.slice(1),
     user_id: null,
     project_id: projectId,
     working_dir: project?.rootPath ?? null,
@@ -86,9 +86,9 @@ export function useResetProjectMutation(
               createTerminalSession(data.shell_session_id, projectId, 'shell', project),
             )
           }
-          if (data.claude_session_id) {
+          if (data.agent_session_id) {
             newSessions.push(
-              createTerminalSession(data.claude_session_id, projectId, 'claude', project),
+              createTerminalSession(data.agent_session_id, projectId, data.mode, project),
             )
           }
 

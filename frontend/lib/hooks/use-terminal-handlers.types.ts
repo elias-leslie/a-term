@@ -29,7 +29,7 @@ export interface UseTerminalHandlersProps {
   createAdHocPane: (paneName: string, workingDir?: string) => Promise<TerminalPane>
   setActiveMode: (
     paneId: string,
-    mode: 'shell' | 'claude',
+    mode: string,
   ) => Promise<TerminalPane>
   removePane: (paneId: string) => Promise<void>
 }
@@ -43,13 +43,13 @@ export interface UseTerminalHandlersReturn {
   handleAddTab: () => Promise<void>
   handleNewTerminalForProject: (
     projectId: string,
-    mode: 'shell' | 'claude',
+    mode: string,
     rootPath?: string | null,
   ) => Promise<void>
   handleProjectTabClick: (pt: ProjectTerminal) => Promise<void>
   handleProjectModeChange: (
     projectId: string,
-    newMode: 'shell' | 'claude',
+    newMode: string,
     projectSessions: TerminalSession[],
     rootPath: string | null,
     paneId?: string,

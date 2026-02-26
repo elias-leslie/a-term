@@ -21,7 +21,7 @@ interface UseTerminalSlotHandlersParams {
   removePane?: (paneId: string) => Promise<void>
   handleNewTerminalForProject: (
     projectId: string,
-    mode: 'shell' | 'claude',
+    mode: string,
   ) => void
   setShowCleaner: (show: boolean) => void
   setCleanerRawPrompt: (prompt: string) => void
@@ -29,7 +29,7 @@ interface UseTerminalSlotHandlersParams {
   sessions: TerminalSession[]
   handleProjectModeChange: (
     projectId: string,
-    newMode: 'shell' | 'claude',
+    newMode: string,
     projectSessions: TerminalSession[],
     rootPath: string | null,
     paneId?: string,

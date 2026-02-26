@@ -13,13 +13,13 @@ export interface ProjectSetting {
   name: string
   root_path: string | null
   terminal_enabled: boolean
-  mode: 'shell' | 'claude' // Active mode (shell or claude)
+  mode: string // Active mode (shell or agent tool slug)
   display_order: number
 }
 
 interface ProjectSettingsUpdate {
   enabled?: boolean
-  active_mode?: 'shell' | 'claude'
+  active_mode?: string
   display_order?: number
 }
 
@@ -76,7 +76,7 @@ async function bulkUpdateOrder(
 
 async function switchProjectMode(
   projectId: string,
-  mode: 'shell' | 'claude',
+  mode: string,
 ): Promise<ProjectSetting> {
   const res = await fetch(
     buildApiUrl(`/api/terminal/projects/${projectId}/mode`),
@@ -167,7 +167,7 @@ export function useProjectSettings() {
       mode,
     }: {
       projectId: string
-      mode: 'shell' | 'claude'
+      mode: string
     }) => switchProjectMode(projectId, mode),
     onMutate: async ({ projectId, mode }) => {
       // Cancel any outgoing refetches
@@ -215,7 +215,7 @@ export function useProjectSettings() {
 
   // Switch project mode (shell <-> claude)
   const switchMode = useCallback(
-    async (projectId: string, mode: 'shell' | 'claude') => {
+    async (projectId: string, mode: string) => {
       return switchModeMutation.mutateAsync({ projectId, mode })
     },
     [switchModeMutation],

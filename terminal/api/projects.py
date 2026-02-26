@@ -13,7 +13,6 @@ from typing import Any
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
-from ..constants import SessionMode
 from ..rate_limit import limiter
 from ..services import lifecycle, summitflow_client
 from ..storage import project_settings as settings_store
@@ -34,7 +33,7 @@ class ProjectResponse(BaseModel):
     root_path: str | None
     # Terminal-specific settings
     terminal_enabled: bool = False
-    mode: SessionMode = "shell"  # Active mode (shell or claude)
+    mode: str = "shell"  # Active mode (shell or claude)
     display_order: int = 0
 
 
@@ -42,14 +41,14 @@ class ProjectSettingsUpdate(BaseModel):
     """Request to update terminal settings for a project."""
 
     enabled: bool | None = None
-    active_mode: SessionMode | None = None
+    active_mode: str | None = None
     display_order: int | None = None
 
 
 class SetModeRequest(BaseModel):
     """Request to set active mode for a project."""
 
-    mode: SessionMode
+    mode: str
 
 
 class BulkOrderUpdate(BaseModel):
@@ -163,10 +162,12 @@ async def reset_project(request: Request, project_id: str) -> dict[str, Any]:
     # Reset mode back to shell
     settings_store.upsert_settings(project_id=project_id, active_mode="shell")
 
+    # Find the agent session ID (non-shell key)
+    agent_session_id = next((v for k, v in result.items() if k != "shell"), None)
     return {
         "project_id": project_id,
-        "shell_session_id": result["shell"],
-        "claude_session_id": result["claude"],
+        "shell_session_id": result.get("shell"),
+        "agent_session_id": agent_session_id,
         "mode": "shell",
     }
 

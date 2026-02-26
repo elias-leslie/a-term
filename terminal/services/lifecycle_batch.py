@@ -8,8 +8,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..constants import SESSION_MODES
+from ..constants import SHELL_MODE
 from ..logging_config import get_logger
+from ..storage import agent_tools as agent_tools_store
 from ..storage import project_settings as settings_store
 from ..storage import terminal as terminal_store
 from .lifecycle_core import create_session, delete_session
@@ -73,9 +74,16 @@ def _recreate_project_sessions(
     session_info: dict[str, dict[str, Any]],
     working_dir: str | None,
 ) -> dict[str, str | None]:
-    """Create fresh sessions for each mode, returning a mode -> session_id map."""
-    result: dict[str, str | None] = {"shell": None, "claude": None}
-    for mode in SESSION_MODES:
+    """Create fresh sessions for each mode, returning a mode -> session_id map.
+
+    Creates a shell session and an agent session using the default agent tool slug.
+    """
+    default_tool = agent_tools_store.get_default()
+    agent_slug = default_tool["slug"] if default_tool else "claude"
+    modes = [SHELL_MODE, agent_slug]
+
+    result: dict[str, str | None] = {SHELL_MODE: None, agent_slug: None}
+    for mode in modes:
         info = session_info.get(mode, {})
         new_id = create_session(
             name=info.get("name") or f"Project: {project_id} ({mode.title()})",
@@ -108,11 +116,13 @@ def reset_project_sessions(
     deleted_count = _delete_project_sessions(all_sessions, project_id)
     result = _recreate_project_sessions(project_id, session_info, working_dir)
 
+    # Find the agent session ID (non-shell key)
+    agent_session = next((v for k, v in result.items() if k != SHELL_MODE), None)
     logger.info(
         "project_sessions_reset",
         project_id=project_id,
-        shell_session=result["shell"],
-        claude_session=result["claude"],
+        shell_session=result.get(SHELL_MODE),
+        agent_session=agent_session,
         cleaned_orphans=max(0, deleted_count - 2),
     )
     return result

@@ -1,4 +1,8 @@
-"""Claude Code service layer: state management and process verification."""
+"""Agent service layer: state management and process verification.
+
+Generalized from claude_service.py to support any CLI agent tool.
+Uses parameterized command and process_name instead of hardcoded constants.
+"""
 
 from __future__ import annotations
 
@@ -7,23 +11,21 @@ import contextlib
 import subprocess
 from typing import Literal, cast
 
-from ..constants import CLAUDE_COMMAND
 from ..logging_config import get_logger
 from ..storage import terminal as terminal_store
 
 logger = get_logger(__name__)
 
-# Type alias for Claude state
-ClaudeState = Literal["not_started", "starting", "running", "stopped", "error"]
+AgentState = Literal["not_started", "starting", "running", "stopped", "error"]
 
-# Delay before verifying Claude started (Claude needs time to initialize)
-CLAUDE_STARTUP_VERIFY_DELAY_SECONDS = 3
+# Delay before verifying agent started (agents need time to initialize)
+AGENT_STARTUP_VERIFY_DELAY_SECONDS = 3
 
 
-def _is_claude_running_in_session_sync(tmux_session: str) -> bool:
-    """Check if Claude Code is running in a tmux session (sync).
+def _is_agent_running_in_session_sync(tmux_session: str, process_name: str) -> bool:
+    """Check if an agent is running in a tmux session (sync).
 
-    Uses tmux's pane_current_command to check if 'claude' is the foreground process.
+    Uses tmux's pane_current_command to check if the given process is the foreground process.
     """
     result = subprocess.run(
         ["tmux", "list-panes", "-t", tmux_session, "-F", "#{pane_current_command}"],
@@ -41,31 +43,33 @@ def _is_claude_running_in_session_sync(tmux_session: str) -> bool:
         )
         return False
 
-    return result.stdout.strip() == "claude"
+    return result.stdout.strip() == process_name
 
 
-async def is_claude_running(tmux_session: str) -> bool:
-    """Check if Claude Code is running in a tmux session (async)."""
-    return await asyncio.to_thread(_is_claude_running_in_session_sync, tmux_session)
+async def is_agent_running(tmux_session: str, process_name: str) -> bool:
+    """Check if an agent is running in a tmux session (async)."""
+    return await asyncio.to_thread(_is_agent_running_in_session_sync, tmux_session, process_name)
 
 
-async def background_verify_claude_start(session_id: str, tmux_session: str) -> None:
-    """Background task: verify Claude started, then update DB state accordingly."""
+async def background_verify_agent_start(
+    session_id: str, tmux_session: str, process_name: str
+) -> None:
+    """Background task: verify agent started, then update DB state accordingly."""
     try:
-        await asyncio.sleep(CLAUDE_STARTUP_VERIFY_DELAY_SECONDS)
+        await asyncio.sleep(AGENT_STARTUP_VERIFY_DELAY_SECONDS)
 
-        if await is_claude_running(tmux_session):
+        if await is_agent_running(tmux_session, process_name):
             updated = terminal_store.update_claude_state(
                 session_id, "running", expected_state="starting"
             )
             if updated:
-                logger.info("claude_verified_running", session_id=session_id, tmux_session=tmux_session)
+                logger.info("agent_verified_running", session_id=session_id, tmux_session=tmux_session)
             else:
-                logger.info("claude_state_already_changed", session_id=session_id, tmux_session=tmux_session)
+                logger.info("agent_state_already_changed", session_id=session_id, tmux_session=tmux_session)
         else:
             updated = terminal_store.update_claude_state(session_id, "error", expected_state="starting")
             if updated:
-                logger.warning("claude_start_failed", session_id=session_id, tmux_session=tmux_session)
+                logger.warning("agent_start_failed", session_id=session_id, tmux_session=tmux_session)
     except Exception as e:
         logger.error(
             "background_verify_failed",
@@ -77,14 +81,14 @@ async def background_verify_claude_start(session_id: str, tmux_session: str) -> 
             terminal_store.update_claude_state(session_id, "error", expected_state="starting")
 
 
-async def send_claude_command(session_id: str, tmux_session: str) -> str | None:
-    """Send the Claude start command via tmux send-keys.
+async def send_agent_command(session_id: str, tmux_session: str, command: str) -> str | None:
+    """Send an agent start command via tmux send-keys.
 
     Returns an error message string on failure, or None on success.
     """
     result = await asyncio.to_thread(
         subprocess.run,
-        ["tmux", "send-keys", "-t", tmux_session, CLAUDE_COMMAND, "Enter"],
+        ["tmux", "send-keys", "-t", tmux_session, command, "Enter"],
         capture_output=True,
         text=True,
     )
@@ -92,13 +96,13 @@ async def send_claude_command(session_id: str, tmux_session: str) -> str | None:
     if result.returncode != 0:
         terminal_store.update_claude_state(session_id, "error", expected_state="starting")
         stderr = cast(str, result.stderr)
-        logger.error("claude_send_keys_failed", session_id=session_id, error=stderr)
+        logger.error("agent_send_keys_failed", session_id=session_id, error=stderr)
         return stderr
 
     return None
 
 
-def atomically_set_starting(session_id: str, current_state: ClaudeState) -> ClaudeState | None:
+def atomically_set_starting(session_id: str, current_state: AgentState) -> AgentState | None:
     """Atomically transition session to 'starting' state.
 
     Returns the new conflicting state if the CAS failed, else None (success).
@@ -107,5 +111,5 @@ def atomically_set_starting(session_id: str, current_state: ClaudeState) -> Clau
         session_id, "starting", expected_state=current_state
     )
     if not updated:
-        return cast(ClaudeState, terminal_store.get_claude_state(session_id) or "not_started")
+        return cast(AgentState, terminal_store.get_claude_state(session_id) or "not_started")
     return None

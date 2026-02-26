@@ -3,7 +3,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { type MutableRefObject, useCallback } from 'react'
-import { useClaudePolling } from './use-claude-polling'
+import { useAgentPolling } from './use-agent-polling'
 import type { TerminalPane } from './use-terminal-panes'
 import type { TerminalSession } from './use-terminal-sessions'
 
@@ -19,7 +19,7 @@ const TAB_SCROLL_DELAY_MS = 100
 
 interface SwitchProjectModeParams {
   projectId: string
-  mode: 'shell' | 'claude'
+  mode: string
   /** All sessions for this project */
   projectSessions: TerminalSession[]
   rootPath: string | null
@@ -29,7 +29,7 @@ interface SwitchProjectModeParams {
 
 interface UseProjectModeSwitchOptions {
   /** Function to switch mode in backend (from useProjectTerminals) */
-  switchMode: (projectId: string, mode: 'shell' | 'claude') => Promise<void>
+  switchMode: (projectId: string, mode: string) => Promise<void>
   /** Refs to project tabs for scroll-into-view */
   projectTabRefs: MutableRefObject<Map<string, HTMLDivElement>>
   /** Panes array (new architecture) */
@@ -37,7 +37,7 @@ interface UseProjectModeSwitchOptions {
   /** Function to set active mode on a pane */
   setActiveMode: (
     paneId: string,
-    mode: 'shell' | 'claude',
+    mode: string,
   ) => Promise<TerminalPane>
 }
 
@@ -85,8 +85,8 @@ export function useProjectModeSwitch({
   const searchParams = useSearchParams()
   const queryClient = useQueryClient()
 
-  // Claude polling hook for starting Claude and polling for state changes
-  const { startClaude, isPolling } = useClaudePolling()
+  // Agent polling hook for starting agents and polling for state changes
+  const { startAgent, isPolling } = useAgentPolling()
 
   // Helper to update URL with session param
   const navigateToSession = useCallback(
@@ -99,11 +99,11 @@ export function useProjectModeSwitch({
   )
 
   // Helper to start Claude in a session and wait for confirmation
-  const startClaudeInSession = useCallback(
+  const startAgentInSession = useCallback(
     async (sessionId: string): Promise<boolean> => {
-      return startClaude(sessionId)
+      return startAgent(sessionId)
     },
-    [startClaude],
+    [startAgent],
   )
 
   // Main orchestration function
@@ -136,17 +136,16 @@ export function useProjectModeSwitch({
           return
         }
 
-        // 4. Start Claude if needed
-        if (mode === 'claude') {
-          // Check if Claude is already running
-          const claudeState = projectSessions.find(
+        // 4. Start agent if needed (any non-shell mode)
+        if (mode !== 'shell') {
+          const agentState = projectSessions.find(
             (s) => s.id === targetSession.id,
           )?.claude_state
-          const needsClaudeStart =
-            claudeState !== 'running' && claudeState !== 'starting'
+          const needsAgentStart =
+            agentState !== 'running' && agentState !== 'starting'
 
-          if (needsClaudeStart) {
-            await startClaudeInSession(targetSession.id)
+          if (needsAgentStart) {
+            await startAgentInSession(targetSession.id)
           }
         }
 
@@ -159,12 +158,12 @@ export function useProjectModeSwitch({
 
         const matchingSession = projectSessions.find((s) => s.mode === mode)
         if (matchingSession) {
-          if (mode === 'claude') {
-            const claudeState = matchingSession.claude_state
-            const needsClaudeStart =
-              claudeState !== 'running' && claudeState !== 'starting'
-            if (needsClaudeStart) {
-              await startClaudeInSession(matchingSession.id)
+          if (mode !== 'shell') {
+            const agentState = matchingSession.claude_state
+            const needsAgentStart =
+              agentState !== 'running' && agentState !== 'starting'
+            if (needsAgentStart) {
+              await startAgentInSession(matchingSession.id)
             }
           }
           navigateToSession(matchingSession.id)
@@ -185,7 +184,7 @@ export function useProjectModeSwitch({
       panes,
       setActiveMode,
       switchMode,
-      startClaudeInSession,
+      startAgentInSession,
       navigateToSession,
       projectTabRefs,
     ],

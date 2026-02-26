@@ -1,6 +1,6 @@
 """Terminal panes storage - CRUD operations.
 
-Panes contain 1-2 sessions (ad-hoc: 1 shell, project: shell + claude).
+Panes contain 1-2 sessions (ad-hoc: 1 shell, project: shell + agent tool).
 """
 
 from __future__ import annotations
@@ -29,6 +29,14 @@ from .pane_db_helpers import (
 )
 from .pane_sessions import fetch_all_sessions_by_pane, fetch_sessions_for_pane
 from .pane_validation import validate_pane_type_and_project
+
+
+# Import lazily to avoid circular imports
+def _get_default_agent_slug() -> str:
+    """Get the default agent tool slug, falling back to 'claude'."""
+    from . import agent_tools
+    default = agent_tools.get_default()
+    return default["slug"] if default else "claude"
 
 
 def list_panes() -> list[dict[str, Any]]:
@@ -91,13 +99,20 @@ def create_pane_with_sessions(
     project_id: str | None = None,
     working_dir: str | None = None,
     pane_order: int | None = None,
+    agent_tool_slug: str | None = None,
 ) -> dict[str, Any]:
-    """Atomically create a pane with its sessions."""
+    """Atomically create a pane with its sessions.
+
+    Args:
+        agent_tool_slug: Override the default agent tool slug for the agent session.
+            If None, uses the default agent tool from the DB.
+    """
     validate_pane_type_and_project(pane_type, project_id)
     with get_connection() as conn, conn.cursor() as cur:
         if pane_order is None:
             pane_order = _get_next_pane_order(cur)
-        default_mode = "claude" if pane_type == "project" else "shell"
+        tool_slug = agent_tool_slug or _get_default_agent_slug()
+        default_mode = tool_slug if pane_type == "project" else "shell"
         cur.execute(
             f"INSERT INTO terminal_panes (pane_type, project_id, pane_order, pane_name, active_mode) VALUES (%s, %s, %s, %s, %s) RETURNING {PANE_FIELDS}",
             (pane_type, project_id, pane_order, pane_name, default_mode),
@@ -116,7 +131,7 @@ def create_pane_with_sessions(
         if pane_type == "project":
             sessions.append(
                 _insert_session(
-                    cur, session_name, project_id, working_dir, "claude", session_number, pane["id"]
+                    cur, session_name, project_id, working_dir, tool_slug, session_number, pane["id"]
                 )
             )
         conn.commit()

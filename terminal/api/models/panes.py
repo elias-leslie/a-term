@@ -9,6 +9,7 @@ from .pane_layout import BulkLayoutUpdateRequest, PaneLayoutItem, UpdatePaneLayo
 from .pane_requests import (
     CreatePaneRequest,
     SwapPanesRequest,
+    SwitchAgentToolRequest,
     UpdatePaneOrderRequest,
     UpdatePaneRequest,
 )
@@ -22,6 +23,7 @@ __all__ = [
     "PaneResponse",
     "SessionInPaneResponse",
     "SwapPanesRequest",
+    "SwitchAgentToolRequest",
     "UpdatePaneLayoutRequest",
     "UpdatePaneOrderRequest",
     "UpdatePaneRequest",

@@ -20,7 +20,7 @@ export interface ProjectSlot {
   projectId: string
   projectName: string
   rootPath: string | null
-  activeMode: 'shell' | 'claude'
+  activeMode: string
   // Current active session (based on mode)
   activeSessionId: string | null
   // Session badge (1-indexed position among project sessions)
@@ -165,7 +165,7 @@ export type PaneSlot = PaneBasedSlot | AdHocPaneSlot
 export function paneToSlot(pane: TerminalPane): PaneSlot {
   if (pane.pane_type === 'project') {
     const activeSession = pane.sessions.find((s) => s.mode === pane.active_mode)
-    const claudeSession = pane.sessions.find((s) => s.mode === 'claude')
+    const agentSession = pane.sessions.find((s) => s.mode !== 'shell')
     return {
       type: 'project',
       paneId: pane.id,
@@ -175,8 +175,8 @@ export function paneToSlot(pane: TerminalPane): PaneSlot {
       activeMode: pane.active_mode,
       activeSessionId: activeSession?.id ?? null,
       sessionBadge: null, // Badge is now part of pane_name
-      claudeState: claudeSession
-        ? (claudeSession.claude_state as ProjectSlot['claudeState'])
+      claudeState: agentSession
+        ? (agentSession.claude_state as ProjectSlot['claudeState'])
         : undefined,
     }
   }

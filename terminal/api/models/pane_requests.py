@@ -20,7 +20,13 @@ class UpdatePaneRequest(BaseModel):
     """Request to update a terminal pane."""
 
     pane_name: str | None = None
-    active_mode: Literal["shell", "claude"] | None = None
+    active_mode: str | None = None  # 'shell' or any agent tool slug
+
+
+class SwitchAgentToolRequest(BaseModel):
+    """Request to switch the agent tool on a pane."""
+
+    agent_tool_slug: str
 
 
 class SwapPanesRequest(BaseModel):

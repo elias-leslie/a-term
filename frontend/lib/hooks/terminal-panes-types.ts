@@ -1,7 +1,7 @@
 export interface PaneSession {
   id: string
   name: string
-  mode: 'shell' | 'claude'
+  mode: string
   session_number: number
   is_alive: boolean
   working_dir: string | null
@@ -14,7 +14,7 @@ export interface TerminalPane {
   project_id: string | null
   pane_order: number
   pane_name: string
-  active_mode: 'shell' | 'claude'
+  active_mode: string
   created_at: string | null
   sessions: PaneSession[]
   width_percent: number
@@ -44,7 +44,7 @@ export interface CreatePaneRequest {
 
 export interface UpdatePaneRequest {
   pane_name?: string
-  active_mode?: 'shell' | 'claude'
+  active_mode?: string
 }
 
 export interface SwapPanesRequest {

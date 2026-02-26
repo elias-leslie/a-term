@@ -11,7 +11,6 @@ from typing import Any
 
 import psycopg.sql
 
-from ..constants import SessionMode
 from .connection import get_connection
 
 
@@ -33,7 +32,7 @@ def get_all_settings() -> dict[str, dict[str, Any]]:
 
 def _build_upsert_query(
     enabled: bool | None,
-    active_mode: SessionMode | None,
+    active_mode: str | None,
     display_order: int | None,
 ) -> psycopg.sql.Composed:
     """Build the upsert query with dynamic SET clause."""
@@ -59,7 +58,7 @@ def _build_upsert_query(
 def upsert_settings(
     project_id: str,
     enabled: bool | None = None,
-    active_mode: SessionMode | None = None,
+    active_mode: str | None = None,
     display_order: int | None = None,
 ) -> dict[str, Any]:
     """Create or update project settings (INSERT ... ON CONFLICT)."""
@@ -100,7 +99,7 @@ def bulk_update_order(project_ids: list[str]) -> None:
         conn.commit()
 
 
-def set_active_mode(project_id: str, mode: SessionMode) -> dict[str, Any] | None:
+def set_active_mode(project_id: str, mode: str) -> dict[str, Any] | None:
     """Set the active mode for a project; returns None if not found."""
     with get_connection() as conn, conn.cursor() as cur:
         cur.execute(

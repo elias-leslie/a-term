@@ -82,7 +82,7 @@ export function useTerminalPanes() {
   )
 
   const setActiveMode = useCallback(
-    (paneId: string, mode: 'shell' | 'claude') =>
+    (paneId: string, mode: string) =>
       updateMutation.mutateAsync({ paneId, active_mode: mode }),
     [updateMutation]
   )
@@ -122,7 +122,7 @@ export function useTerminalPanes() {
   )
 
   const getSessionByMode = useCallback(
-    (pane: TerminalPane, mode: 'shell' | 'claude') =>
+    (pane: TerminalPane, mode: string) =>
       findSessionByMode(pane, mode) ?? null,
     []
   )

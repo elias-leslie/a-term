@@ -45,10 +45,10 @@ def validate_create_pane_request(pane_type: str, project_id: str | None) -> None
 def validate_active_mode(pane_type: str, active_mode: str) -> None:
     """Validate active_mode is compatible with pane_type.
 
-    Raises HTTPException if adhoc pane tries to use claude mode.
+    Raises HTTPException if adhoc pane tries to use agent mode.
     """
-    if pane_type == "adhoc" and active_mode == "claude":
-        raise HTTPException(status_code=400, detail="Ad-hoc panes do not support claude mode") from None
+    if pane_type == "adhoc" and active_mode != "shell":
+        raise HTTPException(status_code=400, detail="Ad-hoc panes only support shell mode") from None
 
 
 def require_pane_exists(pane: dict[str, Any] | None, pane_id: str) -> dict[str, Any]:

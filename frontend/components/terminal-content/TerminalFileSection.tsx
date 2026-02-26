@@ -26,7 +26,7 @@ interface TerminalFileSectionProps {
   handleOpenSettings: () => void
   handleOpenTerminalManager: () => void
   handleUploadClick: () => void
-  onModeSwitch: (slot: TerminalSlot, mode: 'shell' | 'claude') => void
+  onModeSwitch: (slot: TerminalSlot, mode: string) => void
   isModeSwitching: boolean
   onSwapPanes: (slotIdA: string, slotIdB: string) => void
   onLayoutChange?: (layouts: PaneLayout[]) => void

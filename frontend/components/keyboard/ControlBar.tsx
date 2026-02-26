@@ -23,8 +23,8 @@ interface ControlBarProps {
   onToggleMinimize?: () => void
   // Voice input
   onVoice?: () => void
-  // Active pane mode (show model picker when 'claude')
-  activeMode?: 'shell' | 'claude'
+  // Active pane mode (show model picker when agent mode)
+  activeMode?: string
 }
 
 export function ControlBar({
@@ -106,7 +106,7 @@ export function ControlBar({
     border: '1px solid var(--term-border)',
   }
 
-  const isClaudeMode = activeMode === 'claude'
+  const isAgentMode = activeMode !== undefined && activeMode !== 'shell'
 
   return (
     <div
@@ -157,7 +157,7 @@ export function ControlBar({
         <div className="flex-1" />
 
         {/* Model picker — only in claude mode */}
-        {isClaudeMode && (
+        {isAgentMode && (
           <div className="relative" ref={pickerRef}>
             <button
               type="button"

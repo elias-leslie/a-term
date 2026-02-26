@@ -41,7 +41,7 @@ export async function addAdHocPaneAction(
  */
 export async function addProjectPaneAction(
   targetProjectId: string,
-  mode: 'shell' | 'claude',
+  mode: string,
   rootPath: string | null | undefined,
   projectTerminals: ProjectTerminal[],
   panes: TerminalPane[],
@@ -80,7 +80,7 @@ export async function addProjectPaneAction(
 
     navigateToSession(targetSession.id)
 
-    if (mode === 'claude') {
+    if (mode !== 'shell') {
       await waitForTmuxInit()
       await startClaude(targetSession.id)
     }

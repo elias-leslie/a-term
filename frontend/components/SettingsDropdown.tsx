@@ -18,6 +18,7 @@ import { SettingsButton } from './settings/SettingsButton'
 import { SettingsPanel } from './settings/SettingsPanel'
 import { SettingSelect } from './settings/SettingSelect'
 import { SettingButtonGroup } from './settings/SettingButtonGroup'
+import { AgentToolsSettings } from './settings/AgentToolsSettings'
 import { SettingCheckbox } from './settings/SettingCheckbox'
 
 // Keyboard size type
@@ -169,6 +170,8 @@ export function SettingsDropdown({
             onChange={setKeyboardSize}
           />
         )}
+
+        <AgentToolsSettings />
       </SettingsPanel>
     </div>
   )

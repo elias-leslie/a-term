@@ -56,7 +56,7 @@ export function useTerminalHandlers({
     disableProject,
     isLoading: projectsLoading,
   } = useProjectTerminals()
-  const { startClaude } = useClaudePolling()
+  const { startAgent: startClaude } = useClaudePolling()
   const { switchProjectMode } = useProjectModeSwitch({
     switchMode,
     projectTabRefs,
@@ -101,7 +101,7 @@ export function useTerminalHandlers({
   )
 
   const handleNewTerminalForProject = useCallback(
-    (targetProjectId: string, mode: 'shell' | 'claude', rootPath?: string | null) =>
+    (targetProjectId: string, mode: string, rootPath?: string | null) =>
       addProjectPaneAction(
         targetProjectId,
         mode,
@@ -140,7 +140,7 @@ export function useTerminalHandlers({
   const handleProjectModeChange = useCallback(
     async (
       projectIdArg: string,
-      newMode: 'shell' | 'claude',
+      newMode: string,
       projectSessions: TerminalSession[],
       rootPath: string | null,
       paneId?: string,

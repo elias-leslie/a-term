@@ -111,7 +111,7 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
   const { activeStatus, showReconnect } = useConnectionStatus(activeSessionId, terminalStatuses)
 
   // Derive active mode from the active session (for ControlBar model picker)
-  const activeMode = useMemo<'shell' | 'claude' | undefined>(() => {
+  const activeMode = useMemo<string | undefined>(() => {
     if (!activeSessionId) return undefined
     const session = sessions.find((s) => s.id === activeSessionId)
     return session?.mode

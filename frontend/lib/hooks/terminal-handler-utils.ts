@@ -41,7 +41,7 @@ export function generateProjectPaneName(
  */
 export function findSessionByMode(
   pane: TerminalPane,
-  mode: 'shell' | 'claude',
+  mode: string,
 ): PaneSession | undefined {
   return pane.sessions.find((s) => s.mode === mode)
 }
@@ -55,7 +55,7 @@ export function shouldStartClaude(
   sessions: TerminalSession[],
 ): boolean {
   return (
-    pane.active_mode === 'claude' &&
+    pane.active_mode !== 'shell' &&
     targetSession.is_alive &&
     !sessions.find((s) => s.id === targetSession.id && s.claude_state === 'running')
   )

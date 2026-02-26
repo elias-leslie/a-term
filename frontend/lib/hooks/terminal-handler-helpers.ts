@@ -57,7 +57,7 @@ export async function createProjectPaneHelper(
     if (!targetSession) return
 
     navigateToSession(targetSession.id)
-    if (pt.activeMode === 'claude') {
+    if (pt.activeMode !== 'shell') {
       await waitForTmuxInit()
       await startClaude(targetSession.id)
     }

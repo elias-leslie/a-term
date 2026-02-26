@@ -52,7 +52,7 @@ export interface TerminalContentProps {
   handleOpenSettings: () => void
   handleOpenTerminalManager: () => void
   handleUploadClick: () => void
-  onModeSwitch: (slot: TerminalSlot, mode: 'shell' | 'claude') => void
+  onModeSwitch: (slot: TerminalSlot, mode: string) => void
   isModeSwitching: boolean
   onSwapPanes: (slotIdA: string, slotIdB: string) => void
   onLayoutChange?: (layouts: PaneLayout[]) => void
@@ -75,7 +75,7 @@ export interface TerminalContentProps {
   // Mobile keyboard
   sessions: Array<{ id: string }>
   activeSessionId?: string | null
-  activeMode?: 'shell' | 'claude'
+  activeMode?: string
   activeStatus?: ConnectionStatus
   handleKeyboardInput: (input: string) => void
   handleReconnect: () => void

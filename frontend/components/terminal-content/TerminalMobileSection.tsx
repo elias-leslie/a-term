@@ -10,7 +10,7 @@ import { VoiceTranscriptPanel } from '@/components/VoiceTranscriptPanel'
 interface TerminalMobileSectionProps {
   sessions: Array<{ id: string }>
   activeStatus?: ConnectionStatus
-  activeMode?: 'shell' | 'claude'
+  activeMode?: string
   handleKeyboardInput: (input: string) => void
   handleReconnect: () => void
   keyboardSize?: KeyboardSizePreset

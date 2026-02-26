@@ -16,7 +16,7 @@ export interface UnifiedTerminalHeaderProps {
   onOpenModal?: () => void
   /** Whether new panes can be added (at limit = false) */
   canAddPane?: boolean
-  /** Callback for mode switch (shell <-> claude) - only for project slots */
+  /** Callback for mode switch (shell <-> agent) - only for project slots */
   onModeSwitch?: (mode: TerminalMode) => void | Promise<void>
   /** Whether mode switch is in progress */
   isModeSwitching?: boolean

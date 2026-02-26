@@ -1,16 +1,8 @@
 """Terminal constants - shared across services, storage, and APIs.
 
-This module defines the canonical list of session modes and related type aliases.
-Use these definitions instead of hardcoding mode strings or type hints.
+This module defines session mode constants.
+Agent tool commands and process names are now stored in the agent_tools DB table.
 """
 
-from typing import Literal
-
-# List of valid session modes
-SESSION_MODES = ["shell", "claude"]
-
-# Type alias for session mode parameter annotations
-SessionMode = Literal["shell", "claude"]
-
-# Claude CLI command with auto-approval flag
-CLAUDE_COMMAND = "claude --dangerously-skip-permissions"
+# Shell mode constant - agent tool modes are dynamic (agent_tools.slug)
+SHELL_MODE = "shell"

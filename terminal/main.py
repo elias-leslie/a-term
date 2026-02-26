@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from .api import claude, files, panes, projects, sessions, terminal
+from .api import agent, agent_tools, files, panes, projects, sessions, terminal
 from .config import CORS_ORIGINS, TERMINAL_PORT
 from .logging_config import SyslogPrefixFormatter, configure_logging, get_logger
 from .rate_limit import limiter
@@ -166,7 +166,8 @@ app.include_router(terminal.router)
 app.include_router(sessions.router)
 app.include_router(panes.router)
 app.include_router(projects.router)
-app.include_router(claude.router)
+app.include_router(agent.router)
+app.include_router(agent_tools.router)
 app.include_router(files.router)
 
 

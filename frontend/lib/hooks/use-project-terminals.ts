@@ -18,7 +18,7 @@ export interface ProjectTerminal {
   projectId: string
   projectName: string
   rootPath: string | null
-  activeMode: 'shell' | 'claude'
+  activeMode: string
   sessions: ProjectSession[]
   activeSession: TerminalSession | null
   activeSessionId: string | null
@@ -30,13 +30,13 @@ export interface UseProjectTerminalsResult {
   adHocSessions: TerminalSession[]
   isLoading: boolean
   isError: boolean
-  switchMode: (projectId: string, mode: 'shell' | 'claude') => Promise<void>
+  switchMode: (projectId: string, mode: string) => Promise<void>
   resetProject: (projectId: string) => Promise<void>
   disableProject: (projectId: string) => Promise<void>
 }
 
 function buildProjectTerminal(
-  project: { id: string; name: string; root_path: string | null; mode: 'shell' | 'claude' },
+  project: { id: string; name: string; root_path: string | null; mode: string },
   sessions: TerminalSession[],
 ): ProjectTerminal {
   const projectSessions = sessions
@@ -104,7 +104,7 @@ export function useProjectTerminals(): UseProjectTerminalsResult {
   )
 
   const switchMode = useCallback(
-    async (projectId: string, mode: 'shell' | 'claude') => {
+    async (projectId: string, mode: string) => {
       await switchProjectMode(projectId, mode)
     },
     [switchProjectMode],
