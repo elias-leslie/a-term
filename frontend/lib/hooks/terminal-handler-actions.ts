@@ -52,7 +52,7 @@ export async function addProjectPaneAction(
     workingDir?: string,
   ) => Promise<TerminalPane>,
   navigateToSession: (sessionId: string) => void,
-  startClaude: (sessionId: string) => Promise<boolean>,
+  startAgent: (sessionId: string) => Promise<boolean>,
 ): Promise<void> {
   if (panesAtLimit) return
 
@@ -82,7 +82,7 @@ export async function addProjectPaneAction(
 
     if (mode !== 'shell') {
       await waitForTmuxInit()
-      await startClaude(targetSession.id)
+      await startAgent(targetSession.id)
     }
   } catch (error) {
     console.error('Failed to create project pane:', error)
@@ -103,7 +103,7 @@ export async function handleProjectTabClickAction(
     workingDir?: string,
   ) => Promise<TerminalPane>,
   navigateToSession: (sessionId: string) => void,
-  startClaude: (sessionId: string) => Promise<boolean>,
+  startAgent: (sessionId: string) => Promise<boolean>,
 ): Promise<void> {
   // Legacy path (backwards compatibility)
   const legacySessionId = getProjectSessionId(pt)
@@ -115,7 +115,7 @@ export async function handleProjectTabClickAction(
   // Find existing pane or create new one
   const pane = panes.find((p) => p.project_id === pt.projectId)
   if (pane) {
-    await navigateToPaneHelper(pane, sessions, navigateToSession, startClaude)
+    await navigateToPaneHelper(pane, sessions, navigateToSession, startAgent)
   } else {
     await createProjectPaneHelper(
       pt,
@@ -123,7 +123,7 @@ export async function handleProjectTabClickAction(
       panesAtLimit,
       createProjectPane,
       navigateToSession,
-      startClaude,
+      startAgent,
     )
   }
 }

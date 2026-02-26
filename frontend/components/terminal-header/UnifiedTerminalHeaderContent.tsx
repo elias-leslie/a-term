@@ -33,8 +33,8 @@ export const UnifiedTerminalHeaderContent = memo(
     onResetAll,
     onCloseAll,
   }: UnifiedTerminalHeaderProps) {
-    const isClaudeMode = slot.type === 'project' && slot.activeMode !== 'shell'
-    const shouldShowClean = showCleanButton && isClaudeMode
+    const isAgentMode = slot.type === 'project' && slot.activeMode !== 'shell'
+    const shouldShowClean = showCleanButton && isAgentMode
 
     return (
       <div

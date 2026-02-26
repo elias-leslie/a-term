@@ -13,7 +13,7 @@ from ...constants import SHELL_MODE
 from ...logging_config import get_logger
 from ...services.pty_manager import read_pty_output, spawn_pty_for_tmux
 from ...storage import agent_tools as agent_tools_store
-from ...utils.tmux import get_scrollback, is_claude_running_in_session
+from ...utils.tmux import get_scrollback, is_agent_running_in_session
 from .session_validation import validate_and_prepare_session
 from .websocket_cleanup import cleanup_pty_process, cleanup_tasks
 from .websocket_heartbeat import heartbeat_loop
@@ -74,7 +74,7 @@ async def _maybe_autostart_agent(
         return
 
     await asyncio.sleep(0.5)  # Wait for shell prompt
-    if not is_claude_running_in_session(tmux_session_name):
+    if not is_agent_running_in_session(tmux_session_name, tool["process_name"]):
         command = tool["command"]
         await asyncio.to_thread(os.write, master_fd, f"{command}\n".encode())
         logger.info("auto_started_agent", session_id=session_id, tool=tool["slug"])

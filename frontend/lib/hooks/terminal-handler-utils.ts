@@ -47,9 +47,9 @@ export function findSessionByMode(
 }
 
 /**
- * Check if Claude should be started for a session
+ * Check if agent should be started for a session
  */
-export function shouldStartClaude(
+export function shouldStartAgent(
   pane: TerminalPane,
   targetSession: PaneSession,
   sessions: TerminalSession[],

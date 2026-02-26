@@ -5,7 +5,7 @@ import { useCallback } from 'react'
 import type { LayoutMode } from '@/components/LayoutModeButton'
 import type { KeyboardSizePreset } from '@/components/SettingsDropdown'
 import type { ConnectionStatus, TerminalHandle } from '@/components/Terminal'
-import { useClaudePolling } from '@/lib/hooks/use-claude-polling'
+import { useAgentPolling } from '@/lib/hooks/use-agent-polling'
 import { useProjectModeSwitch } from '@/lib/hooks/use-project-mode-switch'
 import type { ProjectTerminal } from '@/lib/hooks/use-project-terminals'
 import { useProjectTerminals } from '@/lib/hooks/use-project-terminals'
@@ -56,7 +56,7 @@ export function useTerminalHandlers({
     disableProject,
     isLoading: projectsLoading,
   } = useProjectTerminals()
-  const { startAgent: startClaude } = useClaudePolling()
+  const { startAgent } = useAgentPolling()
   const { switchProjectMode } = useProjectModeSwitch({
     switchMode,
     projectTabRefs,
@@ -111,7 +111,7 @@ export function useTerminalHandlers({
         panesAtLimit,
         createProjectPane,
         navigateToSession,
-        startClaude,
+        startAgent,
       ),
     [
       projectTerminals,
@@ -119,7 +119,7 @@ export function useTerminalHandlers({
       panesAtLimit,
       createProjectPane,
       navigateToSession,
-      startClaude,
+      startAgent,
     ],
   )
 
@@ -132,9 +132,9 @@ export function useTerminalHandlers({
         panesAtLimit,
         createProjectPane,
         navigateToSession,
-        startClaude,
+        startAgent,
       ),
-    [panes, sessions, panesAtLimit, createProjectPane, navigateToSession, startClaude],
+    [panes, sessions, panesAtLimit, createProjectPane, navigateToSession, startAgent],
   )
 
   const handleProjectModeChange = useCallback(

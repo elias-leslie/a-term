@@ -52,10 +52,14 @@ def upgrade() -> None:
         ON agent_tools(enabled) WHERE enabled = true;
     """)
 
-    # 3. Seed Claude Code as the default agent tool
+    # 3. Seed common agent tools (Claude Code as default)
     op.execute("""
-        INSERT INTO agent_tools (name, slug, command, process_name, is_default, display_order, color)
-        VALUES ('Claude Code', 'claude', 'claude --dangerously-skip-permissions', 'claude', true, 0, '#00FF9F')
+        INSERT INTO agent_tools (name, slug, command, process_name, description, is_default, display_order, color)
+        VALUES
+            ('Claude Code', 'claude', 'claude --dangerously-skip-permissions', 'claude', 'Anthropic Claude coding agent', true, 0, '#00FF9F'),
+            ('OpenCode', 'opencode', 'opencode', 'opencode', 'AI coding assistant with TUI', false, 1, '#7C3AED'),
+            ('Gemini CLI', 'gemini', 'gemini', 'gemini', 'Google Gemini coding agent', false, 2, '#4285F4'),
+            ('Codex', 'codex', 'codex', 'codex', 'OpenAI Codex coding agent', false, 3, '#10A37F')
         ON CONFLICT (slug) DO NOTHING;
     """)
 

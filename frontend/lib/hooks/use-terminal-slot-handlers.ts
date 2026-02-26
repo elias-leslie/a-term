@@ -129,11 +129,11 @@ export function useTerminalSlotHandlers({
     [handleNewTerminalForProject],
   )
 
-  // Handler for creating new Claude terminal in a slot's project
-  const handleSlotNewClaude = useCallback(
-    (slot: TerminalSlot) => {
+  // Handler for creating new agent terminal in a slot's project
+  const handleSlotNewAgent = useCallback(
+    (slot: TerminalSlot, agentSlug = 'claude') => {
       if (slot.type === 'project') {
-        handleNewTerminalForProject(slot.projectId, 'claude')
+        handleNewTerminalForProject(slot.projectId, agentSlug)
       }
     },
     [handleNewTerminalForProject],
@@ -172,7 +172,7 @@ export function useTerminalSlotHandlers({
     handleSlotClose,
     handleSlotClean,
     handleSlotNewShell,
-    handleSlotNewClaude,
+    handleSlotNewAgent,
     handleSlotModeSwitch,
     isModeSwitching,
   }

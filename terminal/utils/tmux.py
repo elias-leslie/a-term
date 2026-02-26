@@ -181,12 +181,21 @@ def list_tmux_sessions() -> set[str]:
     return result
 
 
-def is_claude_running_in_session(session_name: str) -> bool:
-    """Check if Claude is running in a tmux session."""
+def is_agent_running_in_session(session_name: str, process_name: str = "claude") -> bool:
+    """Check if an agent tool process is running in a tmux session.
+
+    Checks both pane_current_command (binary name) and pane_start_command
+    (full command line) to handle Node.js-based tools where pane_current_command
+    reports 'node' instead of the tool name.
+    """
     success, output = run_tmux_command(
-        ["list-panes", "-t", session_name, "-F", "#{pane_current_command}"]
+        ["list-panes", "-t", session_name, "-F", "#{pane_current_command} #{pane_start_command}"]
     )
-    return success and any("claude" in line.lower() for line in output.split("\n"))
+    return success and any(process_name in line.lower() for line in output.split("\n"))
+
+
+# Backward-compat alias
+is_claude_running_in_session = is_agent_running_in_session
 
 
 def get_scrollback(session_name: str, max_lines: int = 5000) -> str | None:

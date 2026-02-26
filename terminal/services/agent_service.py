@@ -25,10 +25,11 @@ AGENT_STARTUP_VERIFY_DELAY_SECONDS = 3
 def _is_agent_running_in_session_sync(tmux_session: str, process_name: str) -> bool:
     """Check if an agent is running in a tmux session (sync).
 
-    Uses tmux's pane_current_command to check if the given process is the foreground process.
+    Checks both pane_current_command and pane_start_command to handle
+    Node.js-based tools where pane_current_command reports 'node'.
     """
     result = subprocess.run(
-        ["tmux", "list-panes", "-t", tmux_session, "-F", "#{pane_current_command}"],
+        ["tmux", "list-panes", "-t", tmux_session, "-F", "#{pane_current_command} #{pane_start_command}"],
         capture_output=True,
         text=True,
         timeout=10,
@@ -43,7 +44,7 @@ def _is_agent_running_in_session_sync(tmux_session: str, process_name: str) -> b
         )
         return False
 
-    return result.stdout.strip() == process_name
+    return process_name in result.stdout.strip().lower()
 
 
 async def is_agent_running(tmux_session: str, process_name: str) -> bool:

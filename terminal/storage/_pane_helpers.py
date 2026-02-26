@@ -6,7 +6,7 @@ extracted from pane_crud.py to keep that module focused on core CRUD.
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any
 
 from .connection import get_connection
 from .pane_db_helpers import PANE_FIELDS, PaneId, normalize_pane_id, row_to_pane_dict
@@ -36,7 +36,7 @@ def _insert_session(
     name: str,
     project_id: str | None,
     working_dir: str | None,
-    mode: Literal["shell", "claude"],
+    mode: str,
     session_number: int,
     pane_id: str,
 ) -> dict[str, Any]:

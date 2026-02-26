@@ -5,7 +5,7 @@ import type { TerminalSession } from '@/lib/hooks/use-terminal-sessions'
 import {
   findSessionByMode,
   generateProjectPaneName,
-  shouldStartClaude,
+  shouldStartAgent,
   waitForTmuxInit,
 } from './terminal-handler-utils'
 
@@ -16,16 +16,16 @@ export async function navigateToPaneHelper(
   pane: TerminalPane,
   sessions: TerminalSession[],
   navigateToSession: (sessionId: string) => void,
-  startClaude: (sessionId: string) => Promise<boolean>,
+  startAgent: (sessionId: string) => Promise<boolean>,
 ): Promise<void> {
   const targetSession = findSessionByMode(pane, pane.active_mode)
   if (!targetSession) return
 
   navigateToSession(targetSession.id)
 
-  if (shouldStartClaude(pane, targetSession, sessions)) {
+  if (shouldStartAgent(pane, targetSession, sessions)) {
     await waitForTmuxInit()
-    await startClaude(targetSession.id)
+    await startAgent(targetSession.id)
   }
 }
 
@@ -42,7 +42,7 @@ export async function createProjectPaneHelper(
     workingDir?: string,
   ) => Promise<TerminalPane>,
   navigateToSession: (sessionId: string) => void,
-  startClaude: (sessionId: string) => Promise<boolean>,
+  startAgent: (sessionId: string) => Promise<boolean>,
 ): Promise<void> {
   if (panesAtLimit) return
 
@@ -59,7 +59,7 @@ export async function createProjectPaneHelper(
     navigateToSession(targetSession.id)
     if (pt.activeMode !== 'shell') {
       await waitForTmuxInit()
-      await startClaude(targetSession.id)
+      await startAgent(targetSession.id)
     }
   } catch (error) {
     console.error('Failed to create project pane:', error)
