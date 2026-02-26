@@ -105,13 +105,9 @@ export function useActiveSession(): UseActiveSessionResult {
       return null
     }
 
-    // Check if URL session ID exists and is valid
+    // Trust the URL session ID — layout layer handles fallback if no matching pane
     if (urlSessionId) {
-      const sessionExists = sessions.some((s) => s.id === urlSessionId)
-      if (sessionExists) {
-        return urlSessionId
-      }
-      // URL has invalid session ID - fall through to project/default
+      return urlSessionId
     }
 
     // If project param is set, find a session for that project
@@ -139,14 +135,11 @@ export function useActiveSession(): UseActiveSessionResult {
   // Switch to a different session by updating the URL
   const switchToSession = useCallback(
     (sessionId: string) => {
-      const sessionExists = sessions.some((s) => s.id === sessionId)
-      if (!sessionExists) return
-
       const params = new URLSearchParams(searchParams.toString())
       params.set('session', sessionId)
       router.push(`?${params.toString()}`, { scroll: false })
     },
-    [sessions, searchParams, router],
+    [searchParams, router],
   )
 
   // Get the active session for a project based on its current mode
