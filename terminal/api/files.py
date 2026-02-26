@@ -131,7 +131,7 @@ async def upload_file(request: Request, file: UploadFile) -> FileUploadResponse:
     """
     content = await _read_file_content(file)
     if not content:
-        raise HTTPException(status_code=400, detail="Empty file not allowed")
+        raise HTTPException(status_code=400, detail="Empty file not allowed") from None
     content_type = _validate_mime_type(content, file.content_type or "application/octet-stream")
     filename, file_path = _save_upload(content, content_type)
     logger.info(

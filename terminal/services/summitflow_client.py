@@ -6,13 +6,14 @@ backend API, primarily for listing projects to populate terminal settings.
 
 from __future__ import annotations
 
-import logging
 import os
 from typing import Any
 
 import httpx
 
-logger = logging.getLogger(__name__)
+from ..logging_config import get_logger
+
+logger = get_logger(__name__)
 
 # SummitFlow API base URL - can be overridden via environment
 SUMMITFLOW_API_BASE = os.getenv("SUMMITFLOW_API_BASE", "http://localhost:8001/api")
@@ -51,14 +52,14 @@ async def list_projects() -> list[dict[str, Any]]:
         result: list[dict[str, Any]] = response.json()
         return result
     except httpx.ConnectError:
-        logger.warning("Could not connect to SummitFlow API at %s", url)
+        logger.warning("summitflow_api_connect_error", url=url)
         return []
     except httpx.TimeoutException:
-        logger.warning("Timeout connecting to SummitFlow API at %s", url)
+        logger.warning("summitflow_api_timeout", url=url)
         return []
     except httpx.HTTPStatusError as e:
-        logger.error("SummitFlow API returned error: %s", e.response.status_code)
+        logger.error("summitflow_api_http_error", status_code=e.response.status_code)
         return []
     except Exception as e:
-        logger.error("Unexpected error fetching projects: %s", e)
+        logger.error("summitflow_api_unexpected_error", error=str(e))
         return []

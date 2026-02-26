@@ -124,7 +124,7 @@ async def update_pane(pane_id: str, request: UpdatePaneRequest) -> PaneResponse:
 
     pane = pane_crud.update_pane(pane_id, **update_fields)
     if not pane:
-        raise HTTPException(status_code=500, detail="Failed to update pane")
+        raise HTTPException(status_code=500, detail="Failed to update pane") from None
 
     pane_with_sessions = pane_crud.get_pane_with_sessions(pane_id)
     return build_pane_response(pane_with_sessions or pane)
@@ -146,7 +146,7 @@ async def delete_pane(pane_id: str) -> dict[str, Any]:
 
     deleted = pane_crud.delete_pane(pane_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail=f"Pane {pane_id} not found")
+        raise HTTPException(status_code=404, detail=f"Pane {pane_id} not found") from None
     return {"deleted": True, "id": pane_id}
 
 
@@ -155,7 +155,7 @@ async def swap_panes(request: SwapPanesRequest) -> dict[str, Any]:
     """Swap positions of two panes."""
     success = pane_crud.swap_pane_positions(request.pane_id_a, request.pane_id_b)
     if not success:
-        raise HTTPException(status_code=404, detail="One or both panes not found")
+        raise HTTPException(status_code=404, detail="One or both panes not found") from None
     return {
         "swapped": True,
         "pane_id_a": request.pane_id_a,
@@ -189,7 +189,7 @@ async def update_pane_layout(pane_id: str, request: UpdatePaneLayoutRequest) -> 
 
     pane = pane_crud.update_pane(pane_id, **update_fields)
     if not pane:
-        raise HTTPException(status_code=500, detail="Failed to update pane layout")
+        raise HTTPException(status_code=500, detail="Failed to update pane layout") from None
 
     pane_with_sessions = pane_crud.get_pane_with_sessions(pane_id)
     return build_pane_response(pane_with_sessions or pane)

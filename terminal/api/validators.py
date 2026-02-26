@@ -37,9 +37,9 @@ def validate_create_pane_request(pane_type: str, project_id: str | None) -> None
     Raises HTTPException if validation fails.
     """
     if pane_type == "project" and not project_id:
-        raise HTTPException(status_code=400, detail="project_id required for project panes")
+        raise HTTPException(status_code=400, detail="project_id required for project panes") from None
     if pane_type == "adhoc" and project_id:
-        raise HTTPException(status_code=400, detail="project_id must be empty for adhoc panes")
+        raise HTTPException(status_code=400, detail="project_id must be empty for adhoc panes") from None
 
 
 def validate_active_mode(pane_type: str, active_mode: str) -> None:
@@ -48,7 +48,7 @@ def validate_active_mode(pane_type: str, active_mode: str) -> None:
     Raises HTTPException if adhoc pane tries to use claude mode.
     """
     if pane_type == "adhoc" and active_mode == "claude":
-        raise HTTPException(status_code=400, detail="Ad-hoc panes do not support claude mode")
+        raise HTTPException(status_code=400, detail="Ad-hoc panes do not support claude mode") from None
 
 
 def require_pane_exists(pane: dict[str, Any] | None, pane_id: str) -> dict[str, Any]:
@@ -57,5 +57,5 @@ def require_pane_exists(pane: dict[str, Any] | None, pane_id: str) -> dict[str, 
     Returns the pane if it exists.
     """
     if not pane:
-        raise HTTPException(status_code=404, detail=f"Pane {pane_id} not found")
+        raise HTTPException(status_code=404, detail=f"Pane {pane_id} not found") from None
     return pane

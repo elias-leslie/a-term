@@ -23,7 +23,9 @@ from .logging_config import SyslogPrefixFormatter, configure_logging, get_logger
 from .rate_limit import limiter
 from .services import lifecycle
 from .services.summitflow_client import close_client
+from .services.upload_cleanup import cleanup_old_uploads
 from .storage.connection import close_pool, get_connection
+from .utils.tmux import run_tmux_command
 
 # Configure structured logging (skip in test mode - tests configure their own logging)
 if not os.getenv("PYTEST_CURRENT_TEST"):
@@ -100,6 +102,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     except Exception as e:
         logger.error("startup_reconciliation_failed", error=str(e))
 
+    # Clean up stale uploaded files
+    try:
+        deleted = cleanup_old_uploads()
+        if deleted > 0:
+            logger.info("startup_upload_cleanup", deleted=deleted)
+    except Exception as e:
+        logger.warning("startup_upload_cleanup_failed", error=str(e))
+
     # Set up tmux options and hooks
     app.state.internal_token = secrets.token_urlsafe(32)
     _setup_tmux_options(app.state.internal_token)
@@ -163,16 +173,26 @@ app.include_router(files.router)
 @app.get("/health", response_model=None)
 async def health() -> dict[str, str] | JSONResponse:
     """Health check endpoint."""
+    checks: dict[str, str] = {"service": "terminal"}
+
+    # Check database
     try:
         with get_connection() as conn, conn.cursor() as cur:
             cur.execute("SELECT 1")
-        return {"status": "healthy", "service": "terminal"}
+        checks["db"] = "ok"
     except Exception as e:
-        logger.error("health_check_failed", error=str(e))
-        return JSONResponse(
-            status_code=503,
-            content={"status": "unhealthy", "service": "terminal", "db": "down"},
-        )
+        logger.error("health_check_db_failed", error=str(e))
+        checks["db"] = "down"
+        return JSONResponse(status_code=503, content={**checks, "status": "unhealthy"})
+
+    # Check tmux server
+    tmux_ok, _ = run_tmux_command(["list-sessions"])
+    # tmux returns failure when there are no sessions, which is fine
+    # We just need the server to respond (not hang or crash)
+    checks["tmux"] = "ok" if tmux_ok else "no_sessions"
+
+    checks["status"] = "healthy"
+    return checks
 
 
 def main() -> None:

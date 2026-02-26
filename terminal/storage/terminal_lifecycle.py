@@ -13,6 +13,7 @@ from .connection import get_connection
 from .terminal_crud import (
     TERMINAL_SESSION_FIELDS,
     _execute_session_query,
+    _row_to_dict,
     update_session,
 )
 from .terminal_utils import SessionId, _to_str
@@ -109,9 +110,6 @@ def list_orphaned(older_than_days: int = 30) -> list[dict[str, Any]]:
     """
     return _execute_session_query(query, (cutoff,), fetch_mode="all")
 
-
-# Import _row_to_dict for touch_session
-from .terminal_crud import _row_to_dict  # noqa: E402
 
 __all__ = [
     "list_orphaned",

@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import uuid as _uuid_mod
 
 from ..config import TMUX_DEFAULT_COLS, TMUX_DEFAULT_ROWS
 from ..logging_config import get_logger
@@ -148,18 +149,36 @@ def create_tmux_session(
     return session_name
 
 
+def _is_valid_uuid(value: str) -> bool:
+    """Check if a string is a valid UUID."""
+    try:
+        _uuid_mod.UUID(value)
+        return True
+    except ValueError:
+        return False
+
+
 def list_tmux_sessions() -> set[str]:
-    """List all summitflow tmux sessions (returns session IDs without prefix)."""
+    """List all summitflow tmux sessions (returns session IDs without prefix).
+
+    Only includes sessions whose extracted ID is a valid UUID,
+    preventing non-terminal sessions from polluting reconciliation.
+    """
     success, output = run_tmux_command(["list-sessions", "-F", "#{session_name}"])
 
     if not success:
         return set()
 
-    return {
-        line.replace("summitflow-", "")
-        for line in output.split("\n")
-        if line.startswith("summitflow-")
-    }
+    result: set[str] = set()
+    for line in output.split("\n"):
+        if not line.startswith("summitflow-"):
+            continue
+        session_id = line[len("summitflow-"):]
+        if _is_valid_uuid(session_id):
+            result.add(session_id)
+        else:
+            logger.debug("skipping_non_uuid_tmux_session", session_name=line)
+    return result
 
 
 def is_claude_running_in_session(session_name: str) -> bool:

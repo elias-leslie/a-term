@@ -71,7 +71,7 @@ async def get_claude_state_endpoint(session_id: str) -> ClaudeStateResponse:
     """
     session = terminal_store.get_session(session_id)
     if not session:
-        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found") from None
 
     claude_state: ClaudeState = session.get("claude_state", "not_started")
     return ClaudeStateResponse(session_id=session_id, claude_state=claude_state)
@@ -89,7 +89,7 @@ async def start_claude(session_id: str, background_tasks: BackgroundTasks) -> St
     """Start Claude Code in a terminal session using state-machine guards."""
     session = terminal_store.get_session(session_id)
     if not session:
-        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found") from None
 
     current_state: ClaudeState = session.get("claude_state", "not_started")
 
@@ -100,7 +100,7 @@ async def start_claude(session_id: str, background_tasks: BackgroundTasks) -> St
 
     tmux_session = get_tmux_session_name(session_id)
     if not tmux_session_exists_by_name(tmux_session):
-        raise HTTPException(status_code=400, detail=f"tmux session {tmux_session} does not exist")
+        raise HTTPException(status_code=400, detail=f"tmux session {tmux_session} does not exist") from None
 
     # Sync state if Claude is already running but DB is stale
     if await is_claude_running(tmux_session):
