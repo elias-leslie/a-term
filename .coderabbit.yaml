@@ -1,0 +1,98 @@
+language: "en-US"
+tone_instructions: "Be direct and technical. Skip pleasantries."
+
+reviews:
+  profile: "assertive"
+  request_changes_workflow: false
+  high_level_summary: true
+  sequence_diagrams: false
+  poem: false
+  collapse_walkthrough: true
+  changed_files_summary: true
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: false
+    ignore_title_keywords:
+      - "WIP"
+      - "DO NOT MERGE"
+    ignore_authors:
+      - "dependabot[bot]"
+      - "renovate[bot]"
+  path_filters:
+    - "!**/*.lock"
+    - "!**/package-lock.json"
+    - "!**/*.min.js"
+    - "!**/migrations-archive/**"
+    - "!data/**"
+    - "!backups/**"
+  path_instructions:
+    - path: "terminal/**/*.py"
+      instructions: |
+        Python 3.13+, FastAPI backend with WebSocket terminal handlers.
+        - Max 3 levels of nesting, use early returns
+        - Functions under 50 lines, files under 500 lines
+        - Check WebSocket lifecycle management (connect/disconnect/error handling)
+        - Rate limiting via SlowAPI — verify limits are appropriate
+        - All DB schema changes via Alembic, never raw SQL files
+        - Verify FK constraints have ON DELETE/UPDATE and indexes
+        - structlog for structured logging
+    - path: "frontend/**/*.tsx"
+      instructions: |
+        Next.js 16+ with TypeScript and React 19. Check for:
+        - Proper TypeScript types (no 'any')
+        - Named exports only
+        - React hooks best practices
+        - No hardcoded URLs (use api-config.ts)
+        - xterm.js integration — check proper terminal lifecycle and addon management
+    - path: "frontend/**/*.ts"
+      instructions: |
+        TypeScript utility/config files. Check for:
+        - Proper types, no 'any'
+        - Named exports only
+    - path: "scripts/**/*.sh"
+      instructions: |
+        Bash scripts, many symlinked from SummitFlow. Check for:
+        - Proper quoting of variables
+        - Error handling (set -e or explicit checks)
+        - No interactive prompts (these are agent-only tools)
+        - POSIX-ish compatibility (bash 5+)
+    - path: "alembic/**"
+      instructions: |
+        Alembic migrations. Verify:
+        - Proper upgrade() and downgrade() functions
+        - FK constraints with ON DELETE/UPDATE
+        - Indexes on FK columns
+        - NOT NULL where appropriate
+  tools:
+    ruff:
+      enabled: true
+    biome:
+      enabled: true
+    shellcheck:
+      enabled: true
+    sqlfluff:
+      enabled: true
+    markdownlint:
+      enabled: false
+    languagetool:
+      enabled: false
+    ast-grep:
+      enabled: true
+      essential_rules: true
+    github-checks:
+      enabled: true
+      timeout_ms: 90000
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  learnings:
+    scope: "local"
+  web_search:
+    enabled: false
+  code_guidelines:
+    enabled: true
+
+early_access: true
