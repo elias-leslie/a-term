@@ -20,7 +20,7 @@ _FIELD_NAMES = [f.strip() for f in AGENT_TOOL_FIELDS.split(",")]
 
 def _row_to_dict(row: tuple) -> dict[str, Any]:
     """Convert a database row to a dict."""
-    return dict(zip(_FIELD_NAMES, row))
+    return dict(zip(_FIELD_NAMES, row, strict=False))
 
 
 def list_all() -> list[dict[str, Any]]:
