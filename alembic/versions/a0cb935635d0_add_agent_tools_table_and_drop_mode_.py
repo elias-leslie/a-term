@@ -21,10 +21,8 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
-def upgrade() -> None:
-    """Create agent_tools table, seed Claude Code, drop mode CHECK constraints."""
-
-    # 1. Create agent_tools table
+def _create_agent_tools_table() -> None:
+    """Create the agent_tools table and its indexes."""
     op.execute("""
         CREATE TABLE IF NOT EXISTS agent_tools (
             id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -41,8 +39,6 @@ def upgrade() -> None:
             updated_at      TIMESTAMPTZ DEFAULT NOW()
         );
     """)
-
-    # 2. Indexes
     op.execute("""
         CREATE INDEX IF NOT EXISTS idx_agent_tools_slug
         ON agent_tools(slug);
@@ -52,7 +48,9 @@ def upgrade() -> None:
         ON agent_tools(enabled) WHERE enabled = true;
     """)
 
-    # 3. Seed common agent tools (Claude Code as default)
+
+def _seed_agent_tools() -> None:
+    """Seed common agent tools with Claude Code as the default."""
     op.execute("""
         INSERT INTO agent_tools (name, slug, command, process_name, description, is_default, display_order, color)
         VALUES
@@ -63,25 +61,22 @@ def upgrade() -> None:
         ON CONFLICT (slug) DO NOTHING;
     """)
 
-    # 4. Drop CHECK constraints on mode columns so they accept any slug
-    # terminal_sessions.mode
+
+def _drop_mode_check_constraints() -> None:
+    """Drop CHECK constraints on mode columns so they accept any slug."""
     op.execute("""
         ALTER TABLE terminal_sessions DROP CONSTRAINT IF EXISTS terminal_sessions_mode_check;
     """)
-    # terminal_panes.active_mode
     op.execute("""
         ALTER TABLE terminal_panes DROP CONSTRAINT IF EXISTS terminal_panes_active_mode_check;
     """)
-    # terminal_project_settings.active_mode
     op.execute("""
         ALTER TABLE terminal_project_settings DROP CONSTRAINT IF EXISTS terminal_project_settings_active_mode_check;
     """)
 
 
-def downgrade() -> None:
-    """Restore CHECK constraints, drop agent_tools table."""
-
-    # Restore CHECK constraints (only valid if all data is 'shell' or 'claude')
+def _restore_mode_check_constraints() -> None:
+    """Restore CHECK constraints (only valid if all data is 'shell' or 'claude')."""
     op.execute("""
         ALTER TABLE terminal_sessions
         ADD CONSTRAINT terminal_sessions_mode_check
@@ -98,7 +93,22 @@ def downgrade() -> None:
         CHECK (active_mode IN ('shell', 'claude'));
     """)
 
-    # Drop agent_tools
+
+def _drop_agent_tools_table() -> None:
+    """Drop the agent_tools indexes and table."""
     op.execute("DROP INDEX IF EXISTS idx_agent_tools_enabled;")
     op.execute("DROP INDEX IF EXISTS idx_agent_tools_slug;")
     op.execute("DROP TABLE IF EXISTS agent_tools;")
+
+
+def upgrade() -> None:
+    """Create agent_tools table, seed Claude Code, drop mode CHECK constraints."""
+    _create_agent_tools_table()
+    _seed_agent_tools()
+    _drop_mode_check_constraints()
+
+
+def downgrade() -> None:
+    """Restore CHECK constraints, drop agent_tools table."""
+    _restore_mode_check_constraints()
+    _drop_agent_tools_table()
