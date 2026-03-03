@@ -86,14 +86,14 @@ def _to_response(tool: dict[str, Any]) -> AgentToolResponse:
 
 
 @router.get("/api/terminal/agent-tools", response_model=list[AgentToolResponse])
-async def list_agent_tools(enabled_only: bool = False) -> list[AgentToolResponse]:
+def list_agent_tools(enabled_only: bool = False) -> list[AgentToolResponse]:
     """List all agent tools, optionally filtered to enabled only."""
     tools = agent_tools_store.list_enabled() if enabled_only else agent_tools_store.list_all()
     return [_to_response(t) for t in tools]
 
 
 @router.post("/api/terminal/agent-tools", response_model=AgentToolResponse, status_code=201)
-async def create_agent_tool(body: CreateAgentToolRequest) -> AgentToolResponse:
+def create_agent_tool(body: CreateAgentToolRequest) -> AgentToolResponse:
     """Create a new agent tool."""
     # Check slug uniqueness
     existing = agent_tools_store.get_by_slug(body.slug)
@@ -119,7 +119,7 @@ async def create_agent_tool(body: CreateAgentToolRequest) -> AgentToolResponse:
 
 
 @router.patch("/api/terminal/agent-tools/{tool_id}", response_model=AgentToolResponse)
-async def update_agent_tool(tool_id: str, body: UpdateAgentToolRequest) -> AgentToolResponse:
+def update_agent_tool(tool_id: str, body: UpdateAgentToolRequest) -> AgentToolResponse:
     """Update an agent tool. Slug is immutable after creation."""
     existing = agent_tools_store.get_by_id(tool_id)
     if not existing:
@@ -137,7 +137,7 @@ async def update_agent_tool(tool_id: str, body: UpdateAgentToolRequest) -> Agent
 
 
 @router.delete("/api/terminal/agent-tools/{tool_id}")
-async def delete_agent_tool(tool_id: str) -> dict[str, Any]:
+def delete_agent_tool(tool_id: str) -> dict[str, Any]:
     """Delete an agent tool. Guarded: cannot delete if active sessions use it."""
     existing = agent_tools_store.get_by_id(tool_id)
     if not existing:

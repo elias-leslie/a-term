@@ -10,6 +10,9 @@ from typing import Any
 
 from .connection import get_connection
 
+#: Sentinel value callers pass to explicitly clear a nullable field (set it to SQL NULL).
+UNSET = object()
+
 AGENT_TOOL_FIELDS = (
     "id, name, slug, command, process_name, description, color, "
     "display_order, is_default, enabled, created_at, updated_at"
@@ -20,7 +23,7 @@ _FIELD_NAMES = [f.strip() for f in AGENT_TOOL_FIELDS.split(",")]
 
 def _row_to_dict(row: tuple) -> dict[str, Any]:
     """Convert a database row to a dict."""
-    return dict(zip(_FIELD_NAMES, row, strict=False))
+    return dict(zip(_FIELD_NAMES, row, strict=True))
 
 
 def list_all() -> list[dict[str, Any]]:
@@ -98,9 +101,18 @@ def create(
 
 
 def update(tool_id: str, **fields: Any) -> dict[str, Any] | None:
-    """Update an agent tool. Slug is immutable after creation."""
+    """Update an agent tool. Slug is immutable after creation.
+
+    Pass ``UNSET`` as the value for a nullable field (e.g. ``description`` or
+    ``color``) to clear it (set it to SQL NULL).  Fields whose values are plain
+    ``None`` are treated the same way — they are included in the UPDATE so the
+    column is set to NULL.  Only keys that are not in the allowed set are
+    silently ignored.
+    """
     allowed = {"name", "command", "process_name", "description", "color", "display_order", "is_default", "enabled"}
-    updates = {k: v for k, v in fields.items() if k in allowed and v is not None}
+    # Resolve UNSET → None (SQL NULL) and keep all allowed keys, including those
+    # explicitly set to None so callers can clear nullable fields.
+    updates = {k: (None if v is UNSET else v) for k, v in fields.items() if k in allowed}
     if not updates:
         return get_by_id(tool_id)
 

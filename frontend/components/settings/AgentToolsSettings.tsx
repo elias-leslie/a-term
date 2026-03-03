@@ -16,15 +16,19 @@ export function AgentToolsSettings() {
 
   const handleCreate = useCallback(
     async (data: ToolFormData) => {
-      await create({
-        name: data.name,
-        slug: data.slug,
-        command: data.command,
-        process_name: data.process_name,
-        description: data.description || undefined,
-        color: data.color || undefined,
-      })
-      setShowAddForm(false)
+      try {
+        await create({
+          name: data.name,
+          slug: data.slug,
+          command: data.command,
+          process_name: data.process_name,
+          description: data.description || undefined,
+          color: data.color || undefined,
+        })
+        setShowAddForm(false)
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Failed to create')
+      }
     },
     [create],
   )
@@ -32,14 +36,18 @@ export function AgentToolsSettings() {
   const handleUpdate = useCallback(
     async (data: ToolFormData) => {
       if (!editingTool) return
-      await update(editingTool.id, {
-        name: data.name,
-        command: data.command,
-        process_name: data.process_name,
-        description: data.description || undefined,
-        color: data.color || undefined,
-      })
-      setEditingTool(null)
+      try {
+        await update(editingTool.id, {
+          name: data.name,
+          command: data.command,
+          process_name: data.process_name,
+          description: data.description || undefined,
+          color: data.color || undefined,
+        })
+        setEditingTool(null)
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Failed to update')
+      }
     },
     [editingTool, update],
   )

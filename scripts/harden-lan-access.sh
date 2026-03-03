@@ -37,11 +37,42 @@ for subdomain in terminalapi devapi portapi agentapi; do
     fi
 done
 
-# Remove each *api block (matcher line + handle block with closing brace)
-sudo sed -i '/@terminalapi host terminalapi\.summitflow\.dev/{N;N;N;d}' "$CADDYFILE"
-sudo sed -i '/@devapi host devapi\.summitflow\.dev/{N;N;N;d}' "$CADDYFILE"
-sudo sed -i '/@portapi host portapi\.summitflow\.dev/{N;N;N;d}' "$CADDYFILE"
-sudo sed -i '/@agentapi host agentapi\.summitflow\.dev/{N;N;N;d}' "$CADDYFILE"
+# Remove each *api block (matcher line + brace-delimited handle block).
+# Uses awk to track brace depth so blocks with any line count are removed correctly.
+remove_caddy_block() {
+    local pattern="$1"
+    local file="$2"
+    sudo awk -v pat="$pattern" '
+        found {
+            for (i = 1; i <= length($0); i++) {
+                c = substr($0, i, 1)
+                if (c == "{") depth++
+                else if (c == "}") {
+                    depth--
+                    if (depth == 0) { found = 0; next }
+                }
+            }
+            next
+        }
+        index($0, pat) {
+            found = 1
+            depth = 0
+            for (i = 1; i <= length($0); i++) {
+                c = substr($0, i, 1)
+                if (c == "{") depth++
+                else if (c == "}") depth--
+            }
+            if (depth == 0) found = 0
+            next
+        }
+        { print }
+    ' "$file" | sudo tee "${file}.tmp" > /dev/null && sudo mv "${file}.tmp" "$file"
+}
+
+remove_caddy_block "@terminalapi host terminalapi.summitflow.dev" "$CADDYFILE"
+remove_caddy_block "@devapi host devapi.summitflow.dev" "$CADDYFILE"
+remove_caddy_block "@portapi host portapi.summitflow.dev" "$CADDYFILE"
+remove_caddy_block "@agentapi host agentapi.summitflow.dev" "$CADDYFILE"
 
 # Clean up any resulting double blank lines
 sudo sed -i '/^$/N;/^\n$/d' "$CADDYFILE"
@@ -107,7 +138,10 @@ echo -e "${YELLOW}Step 5: Verifying backend bindings...${NC}"
 
 for port in 8000 8001 8002 8003; do
     binding=$(ss -tlnp "sport = :$port" 2>/dev/null | grep -oP '\S+:'"$port" | head -1)
-    if [[ "$binding" == "127.0.0.1:$port" ]] || [[ "$binding" == *"[::1]:$port"* ]]; then
+    # Normalize: strip surrounding square brackets so [::1]:port becomes ::1:port
+    normalized="${binding#[}"
+    normalized="${normalized/\]:/:}"
+    if [[ "$normalized" == "127.0.0.1:$port" ]] || [[ "$normalized" == "::1:$port" ]]; then
         echo -e "  ${GREEN}Port $port: localhost only${NC}"
     elif [[ -z "$binding" ]]; then
         echo -e "  ${YELLOW}Port $port: not listening (service may not be running)${NC}"

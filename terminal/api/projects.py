@@ -163,12 +163,14 @@ async def reset_project(request: Request, project_id: str) -> dict[str, Any]:
     settings_store.upsert_settings(project_id=project_id, active_mode="shell")
 
     # Find the agent session ID (non-shell key)
-    agent_session_id = next((v for k, v in result.items() if k != "shell"), None)
+    agent_mode = next((k for k in result if k != "shell"), None)
+    agent_session_id = result.get(agent_mode) if agent_mode else None
     return {
         "project_id": project_id,
         "shell_session_id": result.get("shell"),
         "agent_session_id": agent_session_id,
         "mode": "shell",
+        "agent_mode": agent_mode,
     }
 
 

@@ -87,12 +87,18 @@ async def send_agent_command(session_id: str, tmux_session: str, command: str) -
 
     Returns an error message string on failure, or None on success.
     """
-    result = await asyncio.to_thread(
-        subprocess.run,
-        ["tmux", "send-keys", "-t", tmux_session, command, "Enter"],
-        capture_output=True,
-        text=True,
-    )
+    try:
+        result = await asyncio.to_thread(
+            subprocess.run,
+            ["tmux", "send-keys", "-t", tmux_session, command, "Enter"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except subprocess.TimeoutExpired as e:
+        terminal_store.update_claude_state(session_id, "error", expected_state="starting")
+        logger.error("agent_send_keys_timeout", session_id=session_id, error=str(e))
+        return f"tmux send-keys timed out: {e}"
 
     if result.returncode != 0:
         terminal_store.update_claude_state(session_id, "error", expected_state="starting")

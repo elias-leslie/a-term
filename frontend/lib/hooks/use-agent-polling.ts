@@ -78,6 +78,7 @@ export function useAgentPolling(): UseAgentPollingReturn {
           )
           if (stateRes.ok) {
             const stateData = await stateRes.json()
+            // Note: backend returns 'claude_state' field for backward compatibility
             if (
               stateData.claude_state === 'running' ||
               stateData.claude_state === 'error'
@@ -115,6 +116,7 @@ export function useAgentPolling(): UseAgentPollingReturn {
 
         queryClient.invalidateQueries({ queryKey: ['terminal-sessions'] })
 
+        // Note: backend returns 'claude_state' field for backward compatibility
         if (data.claude_state === 'starting') {
           // Fire and forget - don't await
           pollForAgentState(sessionId)

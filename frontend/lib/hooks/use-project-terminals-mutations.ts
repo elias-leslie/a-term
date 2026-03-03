@@ -14,6 +14,7 @@ interface ResetProjectResponse {
   shell_session_id: string
   agent_session_id: string
   mode: string
+  agent_mode: string | null
 }
 
 function createTerminalSession(
@@ -88,7 +89,7 @@ export function useResetProjectMutation(
           }
           if (data.agent_session_id) {
             newSessions.push(
-              createTerminalSession(data.agent_session_id, projectId, data.mode, project),
+              createTerminalSession(data.agent_session_id, projectId, data.agent_mode ?? data.mode, project),
             )
           }
 

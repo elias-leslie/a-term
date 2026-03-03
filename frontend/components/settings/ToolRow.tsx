@@ -64,7 +64,7 @@ export function ToolRow({
           onClick={onDelete}
           title="Delete"
           className="p-1 rounded hover:bg-white/5 transition-colors"
-          style={{ color: '#ff6b6b' }}
+          style={{ color: 'var(--term-error, #ff6b6b)' }}
         >
           <Trash2 size={10} />
         </button>

@@ -57,6 +57,7 @@ export function shouldStartAgent(
   return (
     pane.active_mode !== 'shell' &&
     targetSession.is_alive &&
+    // Note: claude_state field name is intentional - it's the field returned by the backend for agent state
     !sessions.find((s) => s.id === targetSession.id && s.claude_state === 'running')
   )
 }

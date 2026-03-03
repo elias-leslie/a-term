@@ -1,6 +1,7 @@
 'use client'
 
 import { Sparkles, Terminal } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import type { AgentTool } from '@/lib/hooks/use-agent-tools'
 import type { TerminalMode } from './ModeToggle'
 
@@ -19,12 +20,16 @@ export function ModeTogglePopover({
   onClose,
   onSelectMode,
 }: ModeTogglePopoverProps) {
-  const rect = buttonRef.current?.getBoundingClientRect()
-  const position = rect ? { top: rect.bottom + 4, left: rect.left } : { top: 0, left: 0 }
+  const [position, setPosition] = useState({ top: 0, left: 0 })
+
+  useEffect(() => {
+    const rect = buttonRef.current?.getBoundingClientRect()
+    setPosition(rect ? { top: rect.bottom + 4, left: rect.left } : { top: 0, left: 0 })
+  }, [buttonRef])
 
   return (
     <>
-      <div className="fixed inset-0 z-[9999]" onClick={onClose} />
+      <div className="fixed inset-0 z-[9999]" onClick={onClose} role="presentation" aria-hidden="true" />
       <div
         className="fixed z-[10000] rounded-lg overflow-hidden animate-in fade-in slide-in-from-top-1 duration-100"
         style={{

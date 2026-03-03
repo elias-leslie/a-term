@@ -156,7 +156,7 @@ export function ControlBar({
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Model picker — only in claude mode */}
+        {/* Model picker — shown in agent modes */}
         {isAgentMode && (
           <div className="relative" ref={pickerRef}>
             <button

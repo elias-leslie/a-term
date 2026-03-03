@@ -216,8 +216,9 @@ async def update_all_pane_layouts(
     return [build_pane_response(p) for p in all_panes]
 
 
+@limiter.limit("20/minute")
 @router.put("/api/terminal/panes/{pane_id}/agent-tool", response_model=PaneResponse)
-async def switch_agent_tool(pane_id: str, body: SwitchAgentToolRequest) -> PaneResponse:
+async def switch_agent_tool(request: Request, pane_id: str, body: SwitchAgentToolRequest) -> PaneResponse:
     """Switch the agent tool on a pane.
 
     Finds the agent session on the pane, kills its tmux session,
@@ -248,7 +249,12 @@ async def switch_agent_tool(pane_id: str, body: SwitchAgentToolRequest) -> PaneR
         delete_session(agent_session["id"])
 
     # Create new agent session with the new tool's slug as mode
-    working_dir = pane.get("sessions", [{}])[0].get("working_dir")
+    # Prefer shell session's working_dir as it's more likely to be accurate
+    shell_session = next(
+        (s for s in pane.get("sessions", []) if s.get("mode") == "shell"),
+        None,
+    )
+    working_dir = shell_session.get("working_dir") if shell_session else None
     project_id = pane.get("project_id")
     session_name = f"Project: {project_id}" if project_id else pane.get("pane_name", "Terminal")
     create_session(

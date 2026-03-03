@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CreatePaneRequest(BaseModel):
@@ -26,7 +26,7 @@ class UpdatePaneRequest(BaseModel):
 class SwitchAgentToolRequest(BaseModel):
     """Request to switch the agent tool on a pane."""
 
-    agent_tool_slug: str
+    agent_tool_slug: str = Field(..., min_length=1, pattern=r"^[a-z0-9_-]+$")
 
 
 class SwapPanesRequest(BaseModel):

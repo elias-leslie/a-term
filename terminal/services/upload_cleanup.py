@@ -48,6 +48,6 @@ def cleanup_old_uploads(
             logger.warning("upload_cleanup_error", file=str(file_path), error=str(e))
 
     if deleted > 0:
-        logger.info("upload_cleanup_complete", deleted=deleted, max_age_hours=max_age_seconds // 3600)
+        logger.info("upload_cleanup_complete", deleted=deleted, max_age_seconds=max_age_seconds)
 
     return deleted

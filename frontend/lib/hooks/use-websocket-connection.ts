@@ -62,6 +62,10 @@ export function openWebSocketConnection(
     clearTimeout(timeoutIdRef.current)
     timeoutIdRef.current = null
   }
+  if (retryTimeoutRef.current) {
+    clearTimeout(retryTimeoutRef.current)
+    retryTimeoutRef.current = null
+  }
 
   let wsPath = `/ws/terminal/${sessionId}`
   if (workingDir) {

@@ -70,20 +70,21 @@ def update_pane_order(pane_orders: list[tuple[str, int]]) -> None:
 
 def swap_pane_positions(pane_id_a: PaneId, pane_id_b: PaneId) -> bool:
     """Swap positions of two panes."""
-    if str(normalize_pane_id(pane_id_a)) == str(normalize_pane_id(pane_id_b)):
+    norm_a = normalize_pane_id(pane_id_a)
+    norm_b = normalize_pane_id(pane_id_b)
+    if str(norm_a) == str(norm_b):
         return True  # no-op: same pane
     with get_connection() as conn, conn.cursor() as cur:
         cur.execute(
             "SELECT id, pane_order FROM terminal_panes WHERE id IN (%s, %s)",
-            (normalize_pane_id(pane_id_a), normalize_pane_id(pane_id_b)),
+            (norm_a, norm_b),
         )
         rows = cur.fetchall()
         if len(rows) != 2:
             return False
         orders = {str(row[0]): row[1] for row in rows}
-        id_a, id_b = normalize_pane_id(pane_id_a), normalize_pane_id(pane_id_b)
-        cur.execute("UPDATE terminal_panes SET pane_order = %s WHERE id = %s", (orders[id_b], id_a))
-        cur.execute("UPDATE terminal_panes SET pane_order = %s WHERE id = %s", (orders[id_a], id_b))
+        cur.execute("UPDATE terminal_panes SET pane_order = %s WHERE id = %s", (orders[norm_b], norm_a))
+        cur.execute("UPDATE terminal_panes SET pane_order = %s WHERE id = %s", (orders[norm_a], norm_b))
         conn.commit()
     return True
 
@@ -137,9 +138,6 @@ def update_pane_layouts(layouts: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 __all__ = [
-    "_compute_session_number",
-    "_get_next_pane_order",
-    "_insert_session",
     "count_panes",
     "get_next_pane_number",
     "swap_pane_positions",

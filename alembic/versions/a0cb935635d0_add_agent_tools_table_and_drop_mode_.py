@@ -40,10 +40,6 @@ def _create_agent_tools_table() -> None:
         );
     """)
     op.execute("""
-        CREATE INDEX IF NOT EXISTS idx_agent_tools_slug
-        ON agent_tools(slug);
-    """)
-    op.execute("""
         CREATE INDEX IF NOT EXISTS idx_agent_tools_enabled
         ON agent_tools(enabled) WHERE enabled = true;
     """)
@@ -77,6 +73,16 @@ def _drop_mode_check_constraints() -> None:
 
 def _restore_mode_check_constraints() -> None:
     """Restore CHECK constraints (only valid if all data is 'shell' or 'claude')."""
+    # Clean up any non-standard modes before restoring constraints
+    op.execute("""
+        UPDATE terminal_sessions SET mode = 'shell' WHERE mode NOT IN ('shell', 'claude');
+    """)
+    op.execute("""
+        UPDATE terminal_panes SET active_mode = 'shell' WHERE active_mode NOT IN ('shell', 'claude');
+    """)
+    op.execute("""
+        UPDATE terminal_project_settings SET active_mode = 'shell' WHERE active_mode NOT IN ('shell', 'claude');
+    """)
     op.execute("""
         ALTER TABLE terminal_sessions
         ADD CONSTRAINT terminal_sessions_mode_check
@@ -97,7 +103,6 @@ def _restore_mode_check_constraints() -> None:
 def _drop_agent_tools_table() -> None:
     """Drop the agent_tools indexes and table."""
     op.execute("DROP INDEX IF EXISTS idx_agent_tools_enabled;")
-    op.execute("DROP INDEX IF EXISTS idx_agent_tools_slug;")
     op.execute("DROP TABLE IF EXISTS agent_tools;")
 
 

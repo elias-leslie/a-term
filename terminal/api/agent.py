@@ -67,7 +67,7 @@ def _get_agent_tool_for_session(session: dict) -> tuple[str, str]:
     """
     mode = session.get("mode", "shell")
     if mode == "shell":
-        raise HTTPException(status_code=400, detail="Session is in shell mode, not agent mode") from None
+        raise HTTPException(status_code=400, detail="Session is in shell mode, not agent mode")
 
     tool = agent_tools_store.get_by_slug(mode)
     if tool:

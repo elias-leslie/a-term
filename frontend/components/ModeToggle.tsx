@@ -5,7 +5,8 @@ import { memo, useCallback, useRef, useState } from 'react'
 import type { AgentTool } from '@/lib/hooks/use-agent-tools'
 import { ModeTogglePopover } from './ModeTogglePopover'
 
-export type TerminalMode = 'shell' | string
+/** Mode is either 'shell' for terminal mode, or an agent tool slug */
+export type TerminalMode = string
 
 interface ModeToggleProps {
   value: TerminalMode
