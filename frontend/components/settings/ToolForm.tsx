@@ -74,6 +74,10 @@ export function ToolForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name || !form.command || !form.process_name) return
+    if (!form.slug) {
+      setError('Name must contain at least one letter or number (slug cannot be empty)')
+      return
+    }
     setSubmitting(true)
     setError(null)
     try {
@@ -118,7 +122,7 @@ export function ToolForm({
       <div className="flex gap-2 pt-1">
         <button
           type="submit"
-          disabled={submitting || !form.name || !form.command || !form.process_name}
+          disabled={submitting || !form.name || !form.command || !form.process_name || !form.slug}
           className="flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-colors"
           style={{ backgroundColor: 'var(--term-accent)', color: 'var(--term-bg)', opacity: submitting ? 0.5 : 1, fontFamily: 'var(--font-mono)' }}
         >
