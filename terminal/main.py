@@ -82,6 +82,7 @@ def _setup_tmux_options(token: str) -> None:
         ["tmux", "set-hook", "-g", "client-session-changed", hook_cmd],
         capture_output=True,
         text=True,
+        timeout=10,
     )
 
     if result.returncode == 0:
