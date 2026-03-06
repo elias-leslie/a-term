@@ -121,7 +121,7 @@ async def read_pty_output(
     websocket: WebSocket,
     master_fd: int,
     session_id: str = "",
-    on_flush: Callable[[], Awaitable[None]] | None = None,
+    on_flush: Callable[[str], Awaitable[None]] | None = None,
 ) -> None:
     """Read output from PTY and send to WebSocket with batching.
 

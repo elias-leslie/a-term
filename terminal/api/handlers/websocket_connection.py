@@ -25,6 +25,7 @@ from .websocket_messages import handle_websocket_message
 from .websocket_resize import wait_for_initial_resize
 
 logger = get_logger(__name__)
+SCROLLBACK_SYNC_MIN_LINES = 40
 
 
 async def _setup_connection(
@@ -124,12 +125,19 @@ async def _run_session(
     if session.get("mode") == SHELL_MODE:
         scrollback_sync = ScrollbackSyncScheduler(websocket, tmux_session_name)
 
+    async def maybe_schedule_scrollback_sync(batch: str) -> None:
+        if not scrollback_sync:
+            return
+        if batch.count("\n") < SCROLLBACK_SYNC_MIN_LINES:
+            return
+        scrollback_sync.notify_output()
+
     output_task = asyncio.create_task(
         read_pty_output(
             websocket,
             master_fd,
             session_id=session_id,
-            on_flush=scrollback_sync.notify_output if scrollback_sync else None,
+            on_flush=maybe_schedule_scrollback_sync,
         )
     )
     heartbeat_task = asyncio.create_task(heartbeat_loop(websocket))

@@ -54,65 +54,27 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
     const fitAddonRef = useRef<InstanceType<typeof FitAddon> | null>(null)
     const isFocusedRef = useRef(false)
     const isVisibleRef = useRef(isVisible)
-    const pendingWriteRef = useRef(Promise.resolve())
 
     // Keep isVisibleRef in sync with prop
     useEffect(() => {
       isVisibleRef.current = isVisible
     }, [isVisible])
 
-    const enqueueWrite = useCallback(
-      (data: string, restoreViewport = false) => {
-        pendingWriteRef.current = pendingWriteRef.current.then(
-          () =>
-            new Promise<void>((resolve) => {
-              const term = terminalRef.current
-              if (!term || !isVisibleRef.current) {
-                resolve()
-                return
-              }
+    const applySnapshot = useCallback((snapshot: string) => {
+      const term = terminalRef.current
+      if (!term || !isVisibleRef.current) return
 
-              const buffer = term.buffer.active
-              const linesFromBottom = buffer.baseY - buffer.viewportY
-              term.write(data, () => {
-                if (restoreViewport && terminalRef.current && linesFromBottom > 0) {
-                  const nextBuffer = terminalRef.current.buffer.active
-                  terminalRef.current.scrollToLine(
-                    Math.max(nextBuffer.baseY - linesFromBottom, 0),
-                  )
-                }
-                resolve()
-              })
-            }),
-        )
-      },
-      [],
-    )
-
-    const enqueueSnapshot = useCallback((snapshot: string) => {
-      pendingWriteRef.current = pendingWriteRef.current.then(
-        () =>
-          new Promise<void>((resolve) => {
-            const term = terminalRef.current
-            if (!term || !isVisibleRef.current) {
-              resolve()
-              return
-            }
-
-            const buffer = term.buffer.active
-            const linesFromBottom = buffer.baseY - buffer.viewportY
-            term.reset()
-            term.write(snapshot, () => {
-              if (terminalRef.current && linesFromBottom > 0) {
-                const nextBuffer = terminalRef.current.buffer.active
-                terminalRef.current.scrollToLine(
-                  Math.max(nextBuffer.baseY - linesFromBottom, 0),
-                )
-              }
-              resolve()
-            })
-          }),
-      )
+      const buffer = term.buffer.active
+      const linesFromBottom = buffer.baseY - buffer.viewportY
+      term.reset()
+      term.write(snapshot, () => {
+        if (terminalRef.current && linesFromBottom > 0) {
+          const nextBuffer = terminalRef.current.buffer.active
+          terminalRef.current.scrollToLine(
+            Math.max(nextBuffer.baseY - linesFromBottom, 0),
+          )
+        }
+      })
     }, [])
 
     // WebSocket connection management via hook
@@ -125,19 +87,24 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
         onBeforeReconnectData: () => {
           // Clear xterm.js buffer before server sends fresh scrollback on reconnect.
           // Prevents duplicate content from stacking old buffer + new scrollback.
-          pendingWriteRef.current = Promise.resolve()
           terminalRef.current?.reset()
         },
         onMessage: (data) => {
           if (!terminalRef.current || !isVisibleRef.current) return
           const buffer = terminalRef.current.buffer.active
-          enqueueWrite(data, buffer.viewportY < buffer.baseY)
+          const savedViewportY = buffer.viewportY
+          const isScrolledUp = buffer.viewportY < buffer.baseY
+          terminalRef.current.write(data, () => {
+            if (isScrolledUp && terminalRef.current) {
+              terminalRef.current.scrollToLine(savedViewportY)
+            }
+          })
         },
         onScrollbackSync: (scrollback) => {
-          enqueueSnapshot(scrollback)
+          applySnapshot(scrollback)
         },
         onTerminalMessage: (message) => {
-          enqueueWrite(`${message}\r\n`)
+          terminalRef.current?.writeln(message)
         },
         getDimensions: () => fitAddonRef.current?.proposeDimensions() ?? null,
       })

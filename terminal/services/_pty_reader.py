@@ -88,7 +88,7 @@ async def _flush_batch(
     websocket: WebSocket,
     batch_buffer: str,
     loop: asyncio.AbstractEventLoop,
-    on_flush: Callable[[], Awaitable[None]] | None = None,
+    on_flush: Callable[[str], Awaitable[None]] | None = None,
 ) -> tuple[str, float, bool]:
     """Send buffered output to the websocket.
 
@@ -98,7 +98,7 @@ async def _flush_batch(
     if batch_buffer:
         await websocket.send_text(batch_buffer)
         if on_flush:
-            await on_flush()
+            await on_flush(batch_buffer)
         if _TMUX_EXITED_RE.search(batch_buffer):
             logger.info("tmux_session_exited_detected")
             return "", loop.time(), False
@@ -111,7 +111,7 @@ async def _run_one_iteration(
     loop: asyncio.AbstractEventLoop,
     state: dict,
     wait_time: float,
-    on_flush: Callable[[], Awaitable[None]] | None = None,
+    on_flush: Callable[[str], Awaitable[None]] | None = None,
 ) -> None:
     """Run one iteration: wait for data, decode, and flush when ready."""
     try:
@@ -145,7 +145,7 @@ async def _run_batch_loop(
     websocket: WebSocket,
     queue: asyncio.Queue[bytes | None],
     loop: asyncio.AbstractEventLoop,
-    on_flush: Callable[[], Awaitable[None]] | None = None,
+    on_flush: Callable[[str], Awaitable[None]] | None = None,
 ) -> None:
     """Drive the batching loop: read from queue, decode, flush to websocket."""
     state: dict = {
