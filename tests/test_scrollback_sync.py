@@ -4,6 +4,7 @@ import asyncio
 import json
 
 from terminal.services.scrollback_sync import (
+    ScrollbackSyncOutputTracker,
     ScrollbackSyncScheduler,
     normalize_scrollback,
 )
@@ -43,3 +44,41 @@ def test_scrollback_sync_scheduler_debounces_to_latest_snapshot() -> None:
         "__ctrl": True,
         "scrollback_sync": "second\r\n",
     }
+
+
+def test_scrollback_sync_output_tracker_waits_for_cumulative_threshold() -> None:
+    notifications: list[str] = []
+
+    class FakeScheduler:
+        def notify_output(self) -> None:
+            notifications.append("sync")
+
+    tracker = ScrollbackSyncOutputTracker(FakeScheduler(), min_lines=5)
+
+    tracker.record_output("1\n2\n")
+    tracker.record_output("3\n4\n")
+
+    assert notifications == []
+
+    tracker.record_output("5\n")
+
+    assert notifications == ["sync"]
+
+
+def test_scrollback_sync_output_tracker_resets_after_trigger() -> None:
+    notifications: list[str] = []
+
+    class FakeScheduler:
+        def notify_output(self) -> None:
+            notifications.append("sync")
+
+    tracker = ScrollbackSyncOutputTracker(FakeScheduler(), min_lines=3)
+
+    tracker.record_output("1\n2\n3\n")
+    tracker.record_output("4\n5\n")
+
+    assert notifications == ["sync"]
+
+    tracker.record_output("6\n")
+
+    assert notifications == ["sync", "sync"]

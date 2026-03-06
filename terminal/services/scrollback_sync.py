@@ -26,6 +26,27 @@ def build_scrollback_sync_payload(scrollback: str) -> str:
     })
 
 
+class ScrollbackSyncOutputTracker:
+    """Trigger syncs after enough cumulative flushed output has arrived."""
+
+    def __init__(
+        self,
+        scheduler: ScrollbackSyncScheduler,
+        *,
+        min_lines: int,
+    ) -> None:
+        self._scheduler = scheduler
+        self._min_lines = min_lines
+        self._pending_lines = 0
+
+    def record_output(self, batch: str) -> None:
+        self._pending_lines += batch.count("\n")
+        if self._pending_lines < self._min_lines:
+            return
+        self._pending_lines = 0
+        self._scheduler.notify_output()
+
+
 class ScrollbackSyncScheduler:
     """Debounce authoritative tmux scrollback syncs after live shell output."""
 

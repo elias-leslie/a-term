@@ -13,6 +13,7 @@ from ...constants import SHELL_MODE
 from ...logging_config import get_logger
 from ...services.pty_manager import read_pty_output, spawn_pty_for_tmux
 from ...services.scrollback_sync import (
+    ScrollbackSyncOutputTracker,
     ScrollbackSyncScheduler,
     normalize_scrollback,
 )
@@ -122,15 +123,18 @@ async def _run_session(
         return None, None
 
     scrollback_sync: ScrollbackSyncScheduler | None = None
+    scrollback_tracker: ScrollbackSyncOutputTracker | None = None
     if session.get("mode") == SHELL_MODE:
         scrollback_sync = ScrollbackSyncScheduler(websocket, tmux_session_name)
+        scrollback_tracker = ScrollbackSyncOutputTracker(
+            scrollback_sync,
+            min_lines=SCROLLBACK_SYNC_MIN_LINES,
+        )
 
     async def maybe_schedule_scrollback_sync(batch: str) -> None:
-        if not scrollback_sync:
+        if not scrollback_tracker:
             return
-        if batch.count("\n") < SCROLLBACK_SYNC_MIN_LINES:
-            return
-        scrollback_sync.notify_output()
+        scrollback_tracker.record_output(batch)
 
     output_task = asyncio.create_task(
         read_pty_output(
