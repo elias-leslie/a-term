@@ -30,6 +30,8 @@ from .pane_db_helpers import (
 from .pane_sessions import fetch_all_sessions_by_pane, fetch_sessions_for_pane
 from .pane_validation import validate_pane_type_and_project
 
+MAX_PANES = 4
+
 
 # Import lazily to avoid circular imports
 def _get_default_agent_slug() -> str:
@@ -37,6 +39,16 @@ def _get_default_agent_slug() -> str:
     from . import agent_tools
     default = agent_tools.get_default()
     return default["slug"] if default else "claude"
+
+
+def _enforce_pane_limit(cur: Any, max_panes: int = MAX_PANES) -> None:
+    """Enforce pane limit within the current transaction to avoid race conditions."""
+    cur.execute("LOCK TABLE terminal_panes IN SHARE ROW EXCLUSIVE MODE")
+    cur.execute("SELECT COUNT(*) FROM terminal_panes")
+    row = cur.fetchone()
+    current_count = int(row[0]) if row else 0
+    if current_count >= max_panes:
+        raise ValueError(f"Maximum {max_panes} panes allowed. Close one to add more.")
 
 
 def list_panes() -> list[dict[str, Any]]:
@@ -80,6 +92,7 @@ def create_pane(
     """Create a new pane (without sessions)."""
     validate_pane_type_and_project(pane_type, project_id)
     with get_connection() as conn, conn.cursor() as cur:
+        _enforce_pane_limit(cur)
         if pane_order is None:
             pane_order = _get_next_pane_order(cur)
         cur.execute(
@@ -109,6 +122,7 @@ def create_pane_with_sessions(
     """
     validate_pane_type_and_project(pane_type, project_id)
     with get_connection() as conn, conn.cursor() as cur:
+        _enforce_pane_limit(cur)
         if pane_order is None:
             pane_order = _get_next_pane_order(cur)
         tool_slug = agent_tool_slug or _get_default_agent_slug()

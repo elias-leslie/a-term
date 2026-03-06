@@ -197,6 +197,66 @@ def test_get_pane_invalid_uuid_returns_400(test_app: TestClient) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Update pane
+# ---------------------------------------------------------------------------
+
+def test_update_project_pane_rejects_unavailable_mode(test_app: TestClient) -> None:
+    """PATCH /api/terminal/panes/{id} -- rejects mode not present in pane sessions."""
+    # Arrange
+    pid = str(uuid.uuid4())
+    pane = _make_pane(
+        pane_id=pid,
+        pane_type="project",
+        project_id="proj-1",
+        active_mode="shell",
+        sessions=[
+            _make_session_in_pane(mode="shell", name="Shell"),
+            _make_session_in_pane(mode="claude", name="Claude"),
+        ],
+    )
+    with patch("terminal.api.panes.pane_crud.get_pane_with_sessions", return_value=pane):
+        # Act
+        response = test_app.patch(
+            f"/api/terminal/panes/{pid}",
+            json={"active_mode": "codex"},
+        )
+
+    # Assert
+    assert response.status_code == 400
+    assert "not available" in response.json()["detail"]
+
+
+def test_update_project_pane_accepts_existing_mode(test_app: TestClient) -> None:
+    """PATCH /api/terminal/panes/{id} -- allows switching to an existing session mode."""
+    # Arrange
+    pid = str(uuid.uuid4())
+    pane = _make_pane(
+        pane_id=pid,
+        pane_type="project",
+        project_id="proj-1",
+        active_mode="shell",
+        sessions=[
+            _make_session_in_pane(mode="shell", name="Shell"),
+            _make_session_in_pane(mode="claude", name="Claude"),
+        ],
+    )
+    updated = {**pane, "active_mode": "claude"}
+    with (
+        patch("terminal.api.panes.pane_crud.get_pane_with_sessions", side_effect=[pane, updated]),
+        patch("terminal.api.panes.pane_crud.update_pane", return_value=updated),
+    ):
+        # Act
+        response = test_app.patch(
+            f"/api/terminal/panes/{pid}",
+            json={"active_mode": "claude"},
+        )
+
+    # Assert
+    assert response.status_code == 200
+    assert response.json()["active_mode"] == "claude"
+
+
+# ---------------------------------------------------------------------------
 # Delete pane
 # ---------------------------------------------------------------------------
 

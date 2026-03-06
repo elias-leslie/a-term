@@ -51,23 +51,12 @@ def _make_on_readable(
     session_id: str = "",
 ) -> Callable[[], None]:
     """Return a callback for when the PTY fd becomes readable."""
-    drop_count = 0
-
     def on_readable() -> None:
-        nonlocal drop_count
         data = _read_pty_data(master_fd)
         if data is not None:
-            # Drop data when consumer can't keep up — prevents memory runaway.
-            # Terminal output is best-effort; the user still has tmux scrollback.
-            try:
-                queue.put_nowait(data)
-            except asyncio.QueueFull:
-                drop_count += 1
-                if drop_count % 100 == 1:  # Log first drop, then every 100th
-                    logger.warning("pty_output_dropped", drop_count=drop_count, session=session_id)
+            queue.put_nowait(data)
         else:
-            with contextlib.suppress(asyncio.QueueFull):
-                queue.put_nowait(None)  # EOF
+            queue.put_nowait(None)  # EOF
 
     return on_readable
 

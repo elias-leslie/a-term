@@ -10,6 +10,29 @@ export interface TerminalResizeOptions {
   wsRef: React.MutableRefObject<WebSocket | null>
 }
 
+type ViewportEventTarget = Pick<
+  Window,
+  'addEventListener' | 'removeEventListener'
+>
+
+export function attachViewportResizeListeners(
+  onViewportChange: () => void,
+  viewport: ViewportEventTarget | null = window.visualViewport,
+) {
+  window.addEventListener('resize', onViewportChange, { passive: true })
+  window.addEventListener('orientationchange', onViewportChange)
+
+  viewport?.addEventListener('resize', onViewportChange)
+  viewport?.addEventListener('scroll', onViewportChange)
+
+  return () => {
+    window.removeEventListener('resize', onViewportChange)
+    window.removeEventListener('orientationchange', onViewportChange)
+    viewport?.removeEventListener('resize', onViewportChange)
+    viewport?.removeEventListener('scroll', onViewportChange)
+  }
+}
+
 /**
  * Hook to manage terminal resizing with ResizeObserver and WebSocket dimension updates.
  * Handles container size changes and sends resize events to backend when connected.
@@ -43,6 +66,10 @@ export function useTerminalResize(options: TerminalResizeOptions) {
     let resizeTimeout: ReturnType<typeof setTimeout> | null = null
     let lastWidth = 0
     let lastHeight = 0
+    const scheduleResize = () => {
+      if (resizeTimeout) clearTimeout(resizeTimeout)
+      resizeTimeout = setTimeout(() => handleResize(), RESIZE_DEBOUNCE_MS)
+    }
 
     const resizeObserver = new ResizeObserver((entries) => {
       const entry = entries[0]
@@ -51,13 +78,15 @@ export function useTerminalResize(options: TerminalResizeOptions) {
       if (width === lastWidth && height === lastHeight) return
       lastWidth = width
       lastHeight = height
-      if (resizeTimeout) clearTimeout(resizeTimeout)
-      resizeTimeout = setTimeout(() => handleResize(), RESIZE_DEBOUNCE_MS)
+      scheduleResize()
     })
 
     resizeObserver.observe(containerRef.current)
+    const viewportCleanup = attachViewportResizeListeners(scheduleResize)
+
     return () => {
       if (resizeTimeout) clearTimeout(resizeTimeout)
+      viewportCleanup()
       resizeObserver.disconnect()
     }
   }, [containerRef, handleResize])

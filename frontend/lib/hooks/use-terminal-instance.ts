@@ -3,6 +3,7 @@ import type { Terminal } from '@xterm/xterm'
 import type { FitAddon } from '@xterm/addon-fit'
 import { setupTerminalMouseHandling } from './use-terminal-mouse-handling'
 import { isMobileDevice } from '../utils/device'
+import { applyMobileTerminalTouchStyles } from '../utils/mobile-terminal-touch'
 
 // Dynamic imports for xterm (client-side only)
 let TerminalClass: typeof import('@xterm/xterm').Terminal
@@ -168,7 +169,7 @@ export function useTerminalInstance(
       const viewport =
         containerRef.current.querySelector<HTMLElement>('.xterm-viewport')
       let scrollTimer: ReturnType<typeof setTimeout> | null = null
-      if (viewport) {
+      if (viewport && !isMobileDevice()) {
         const onScroll = () => {
           viewport.classList.add('scrolling')
           if (scrollTimer) clearTimeout(scrollTimer)
@@ -195,9 +196,7 @@ export function useTerminalInstance(
           textarea.readOnly = true
         }
 
-        // Prevent pull-to-refresh via CSS
-        containerRef.current.style.overscrollBehavior = 'none'
-        containerRef.current.style.touchAction = 'none'
+        applyMobileTerminalTouchStyles(containerRef.current)
       }
 
       // Initial fit (ResizeObserver handles subsequent resizes)

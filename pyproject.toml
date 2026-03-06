@@ -51,3 +51,5 @@ invalid-argument-type = "ignore"
 unknown-argument = "ignore"
 unresolved-import = "ignore"
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -114,22 +114,22 @@ async def update_pane(pane_id: str, request: UpdatePaneRequest) -> PaneResponse:
     """Update terminal pane metadata (pane_name, active_mode)."""
     validate_uuid(pane_id)
 
-    existing = require_pane_exists(pane_crud.get_pane(pane_id), pane_id)
+    existing = require_pane_exists(pane_crud.get_pane_with_sessions(pane_id), pane_id)
 
     if request.active_mode is not None:
-        validate_active_mode(existing["pane_type"], request.active_mode)
+        available_modes = {s.get("mode", "shell") for s in existing.get("sessions", [])}
+        validate_active_mode(existing["pane_type"], request.active_mode, available_modes)
 
     update_fields = get_update_fields(request.pane_name, request.active_mode)
     if not update_fields:
-        pane = pane_crud.get_pane_with_sessions(pane_id)
-        return build_pane_response(pane or existing)
+        return build_pane_response(existing)
 
     pane = pane_crud.update_pane(pane_id, **update_fields)
     if not pane:
         raise HTTPException(status_code=500, detail="Failed to update pane") from None
 
     pane_with_sessions = pane_crud.get_pane_with_sessions(pane_id)
-    return build_pane_response(pane_with_sessions or pane)
+    return build_pane_response(pane_with_sessions or existing)
 
 
 @router.delete("/api/terminal/panes/{pane_id}")

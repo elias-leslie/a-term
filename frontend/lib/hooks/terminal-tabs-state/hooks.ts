@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo } from 'react'
 import type { LayoutMode } from '@/components/LayoutModeButton'
 import type { ConnectionStatus } from '@/components/Terminal'
 import type { PaneSlot } from '@/lib/utils/slot'
+import { isReconnectableStatus } from '@/lib/utils/mobile-terminal-status'
 import { getSlotPanelId } from '@/lib/utils/slot'
 
 /**
@@ -51,7 +52,7 @@ export function useConnectionStatus(
 ) {
   return useMemo(() => {
     const activeStatus = activeSessionId ? terminalStatuses.get(activeSessionId) : undefined
-    const showReconnect = activeStatus && ['disconnected', 'error', 'timeout'].includes(activeStatus)
+    const showReconnect = isReconnectableStatus(activeStatus)
     return { activeStatus, showReconnect }
   }, [activeSessionId, terminalStatuses])
 }

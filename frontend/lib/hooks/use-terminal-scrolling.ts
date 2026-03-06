@@ -28,6 +28,8 @@ interface UseTerminalScrollingReturn {
 // Arrow key escape sequences (application mode)
 const ARROW_UP = '\x1b[A'
 const ARROW_DOWN = '\x1b[A'.replace('A', 'B') // \x1b[B
+const MOBILE_SCROLLBAR_GUTTER_PX = 28
+const MOBILE_TOUCH_SCROLL_SENSITIVITY = 2
 
 /**
  * Check if terminal is in alternate screen mode (vim, less, htop, etc.)
@@ -38,6 +40,36 @@ const ARROW_DOWN = '\x1b[A'.replace('A', 'B') // \x1b[B
  */
 function isAlternateScreen(terminal: Terminal): boolean {
   return terminal.buffer.active.type === 'alternate'
+}
+
+function getViewport(container: HTMLElement): HTMLElement | null {
+  return container.querySelector<HTMLElement>('.xterm-viewport')
+}
+
+export function isTouchOnTerminalScrollbar(
+  viewport: Pick<HTMLElement, 'getBoundingClientRect'>,
+  clientX: number,
+  gutterWidth = MOBILE_SCROLLBAR_GUTTER_PX,
+): boolean {
+  const rect = viewport.getBoundingClientRect()
+  return clientX >= rect.right - gutterWidth
+}
+
+export function getTouchScrollLineDelta(
+  pixelDeltaY: number,
+  cellHeight: number,
+): number {
+  if (cellHeight <= 0 || pixelDeltaY === 0) return 0
+
+  const effectiveCellHeight = cellHeight / MOBILE_TOUCH_SCROLL_SENSITIVITY
+  const lines = Math.max(1, Math.floor(Math.abs(pixelDeltaY) / effectiveCellHeight))
+  return pixelDeltaY > 0 ? lines : -lines
+}
+
+function getConsumedTouchScrollPixels(lineDelta: number, cellHeight: number): number {
+  if (lineDelta === 0 || cellHeight <= 0) return 0
+  const effectiveCellHeight = cellHeight / MOBILE_TOUCH_SCROLL_SENSITIVITY
+  return Math.sign(lineDelta) * Math.abs(lineDelta) * effectiveCellHeight
 }
 
 /**
@@ -111,12 +143,27 @@ export function useTerminalScrolling({
       // Touch handlers for mobile scrolling
       let touchStartY = 0
       let lastSentY = 0
+      let useNativeScrollbarGesture = false
+      let pendingNormalScrollDeltaY = 0
       let touchCleanup = () => {}
 
       if (isMobile) {
         const handleTouchStart = (e: TouchEvent) => {
+          const terminal = terminalRef.current
           touchStartY = e.touches[0].clientY
           lastSentY = touchStartY
+          useNativeScrollbarGesture = false
+          pendingNormalScrollDeltaY = 0
+
+          if (!terminal || isAlternateScreen(terminal)) return
+
+          const viewport = getViewport(container)
+          if (!viewport) return
+
+          useNativeScrollbarGesture = isTouchOnTerminalScrollbar(
+            viewport,
+            e.touches[0].clientX,
+          )
         }
 
         const handleTouchMove = (e: TouchEvent) => {
@@ -135,13 +182,42 @@ export function useTerminalScrolling({
               sendArrowKey(deltaY > 0 ? 'down' : 'up')
               lastSentY = currentY
             }
+            return
           }
-          // In normal mode, don't prevent - let xterm.js scroll natively
+
+          if (useNativeScrollbarGesture) {
+            return
+          }
+
+          const currentY = e.touches[0].clientY
+          pendingNormalScrollDeltaY += lastSentY - currentY
+          lastSentY = currentY
+
+          const screen = container.querySelector<HTMLElement>('.xterm-screen')
+          const cellHeight = screen
+            ? screen.clientHeight / Math.max(terminal.rows, 1)
+            : 0
+          const lineDelta = getTouchScrollLineDelta(
+            pendingNormalScrollDeltaY,
+            cellHeight,
+          )
+
+          if (lineDelta === 0) return
+
+          e.preventDefault()
+          e.stopPropagation()
+          terminal.scrollLines(lineDelta)
+          pendingNormalScrollDeltaY -= getConsumedTouchScrollPixels(
+            lineDelta,
+            cellHeight,
+          )
         }
 
         const handleTouchEnd = () => {
           touchStartY = 0
           lastSentY = 0
+          useNativeScrollbarGesture = false
+          pendingNormalScrollDeltaY = 0
         }
 
         container.addEventListener('touchstart', handleTouchStart, {
@@ -156,6 +232,10 @@ export function useTerminalScrolling({
           passive: true,
           capture: true,
         })
+        container.addEventListener('touchcancel', handleTouchEnd, {
+          passive: true,
+          capture: true,
+        })
 
         touchCleanup = () => {
           container.removeEventListener('touchstart', handleTouchStart, {
@@ -165,6 +245,9 @@ export function useTerminalScrolling({
             capture: true,
           })
           container.removeEventListener('touchend', handleTouchEnd, {
+            capture: true,
+          })
+          container.removeEventListener('touchcancel', handleTouchEnd, {
             capture: true,
           })
         }

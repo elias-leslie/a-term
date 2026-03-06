@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import ClassVar
 
 import structlog
-from pythonjsonlogger import jsonlogger
+from pythonjsonlogger import json
 
 
 def _parse_log_level(level_str: str | None) -> int:
@@ -63,7 +63,7 @@ def _create_file_handler(
     log_path = Path(log_dir)
     log_path.mkdir(exist_ok=True)
 
-    json_formatter = jsonlogger.JsonFormatter(
+    json_formatter = json.JsonFormatter(
         "%(timestamp)s %(level)s %(name)s %(message)s %(pathname)s %(lineno)d",
         rename_fields={
             "levelname": "level",

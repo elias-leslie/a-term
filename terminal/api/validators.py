@@ -42,13 +42,24 @@ def validate_create_pane_request(pane_type: str, project_id: str | None) -> None
         raise HTTPException(status_code=400, detail="project_id must be empty for adhoc panes")
 
 
-def validate_active_mode(pane_type: str, active_mode: str) -> None:
+def validate_active_mode(
+    pane_type: str,
+    active_mode: str,
+    available_modes: set[str] | None = None,
+) -> None:
     """Validate active_mode is compatible with pane_type.
 
-    Raises HTTPException if adhoc pane tries to use agent mode.
+    Raises HTTPException if:
+    - adhoc pane tries to use non-shell mode
+    - project pane mode is not one of its existing session modes
     """
     if pane_type == "adhoc" and active_mode != "shell":
         raise HTTPException(status_code=400, detail="Ad-hoc panes only support shell mode") from None
+    if pane_type == "project" and available_modes is not None and active_mode not in available_modes:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Mode '{active_mode}' not available on this pane",
+        ) from None
 
 
 def require_pane_exists(pane: dict[str, Any] | None, pane_id: str) -> dict[str, Any]:

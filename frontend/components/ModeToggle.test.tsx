@@ -1,26 +1,49 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import type { AgentTool } from '@/lib/hooks/use-agent-tools'
 import { ModeToggle } from './ModeToggle'
 
-// Mock styled-jsx to avoid errors in test environment
-vi.mock('react', async () => {
-  const actual = await vi.importActual('react')
-  return actual
+const mockTool = (overrides: Partial<AgentTool>): AgentTool => ({
+  id: 'tool-id',
+  name: 'Claude',
+  slug: 'claude',
+  command: 'claude',
+  process_name: 'claude',
+  description: null,
+  color: null,
+  display_order: 0,
+  is_default: true,
+  enabled: true,
+  created_at: null,
+  updated_at: null,
+  ...overrides,
 })
 
 describe('ModeToggle', () => {
   it('renders in shell mode with correct aria-label', () => {
     const onChange = vi.fn()
-    render(<ModeToggle value="shell" onChange={onChange} />)
+    render(
+      <ModeToggle
+        value="shell"
+        onChange={onChange}
+        agentTools={[mockTool({})]}
+      />,
+    )
 
     const button = screen.getByTestId('mode-toggle')
     expect(button).toBeInTheDocument()
     expect(button).toHaveAttribute('aria-label', 'Shell mode — click for Claude')
   })
 
-  it('renders in claude mode with correct aria-label', () => {
+  it('renders in agent mode with tool name in aria-label', () => {
     const onChange = vi.fn()
-    render(<ModeToggle value="claude" onChange={onChange} />)
+    render(
+      <ModeToggle
+        value="claude"
+        onChange={onChange}
+        agentTools={[mockTool({})]}
+      />,
+    )
 
     const button = screen.getByTestId('mode-toggle')
     expect(button).toHaveAttribute('aria-label', 'Claude mode — click for Shell')
@@ -28,7 +51,13 @@ describe('ModeToggle', () => {
 
   it('calls onChange with opposite mode when clicked in shell mode', async () => {
     const onChange = vi.fn().mockResolvedValue(undefined)
-    render(<ModeToggle value="shell" onChange={onChange} />)
+    render(
+      <ModeToggle
+        value="shell"
+        onChange={onChange}
+        agentTools={[mockTool({})]}
+      />,
+    )
 
     const button = screen.getByTestId('mode-toggle')
     fireEvent.click(button)
@@ -40,13 +69,32 @@ describe('ModeToggle', () => {
 
   it('calls onChange with opposite mode when clicked in claude mode', async () => {
     const onChange = vi.fn().mockResolvedValue(undefined)
-    render(<ModeToggle value="claude" onChange={onChange} />)
+    render(
+      <ModeToggle
+        value="claude"
+        onChange={onChange}
+        agentTools={[mockTool({})]}
+      />,
+    )
 
     const button = screen.getByTestId('mode-toggle')
     fireEvent.click(button)
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalledWith('shell')
+    })
+  })
+
+  it('falls back to claude slug when no agent tools are loaded yet', async () => {
+    const onChange = vi.fn().mockResolvedValue(undefined)
+    render(<ModeToggle value="shell" onChange={onChange} />)
+
+    const button = screen.getByTestId('mode-toggle')
+    expect(button).toHaveAttribute('aria-label', 'Shell mode — click for Agent')
+    fireEvent.click(button)
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith('claude')
     })
   })
 

@@ -10,7 +10,6 @@
  */
 
 const PORTS = { frontend: 3002, backend: 8002 }
-const PROD_DOMAIN = 'terminal.summitflow.dev'
 
 /**
  * Get the base URL for Terminal backend API calls.
@@ -48,17 +47,18 @@ export function getWsUrl(path: string): string {
   }
 
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const host = window.location.hostname
+  const hostname = window.location.hostname
+  const originHost = window.location.host
 
   // Development
-  if (host === 'localhost' || host === '127.0.0.1') {
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return `ws://localhost:${PORTS.backend}${path}`
   }
 
-  // Production: use same-origin WebSocket via Cloudflare Tunnel path routing
-  // Tunnel config routes /ws/* paths directly to backend, avoiding CF Access cookie issues
-  if (host === PROD_DOMAIN) {
-    return `${protocol}//${PROD_DOMAIN}${path}`
+  // Non-local browser hosts must use same-origin /ws routing.
+  // This covers production plus emulator/device access such as 10.0.2.2:3002.
+  if (originHost) {
+    return `${protocol}//${originHost}${path}`
   }
 
   // Fallback

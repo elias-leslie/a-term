@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useState } from 'react'
+import { getPromptCleanerModel } from '../utils/agent-hub-models'
 
 interface UsePromptCleanerReturn {
   /** Clean a prompt using agent-hub */
@@ -20,9 +21,6 @@ interface UsePromptCleanerReturn {
 function getAgentHubUrl(): string | null {
   return process.env.NEXT_PUBLIC_AGENT_HUB_URL || null
 }
-
-// Model to use for prompt cleaning (fast and cheap)
-const CLEAN_MODEL = 'claude-haiku-4-5'
 
 // System prompt for cleaning
 const SYSTEM_PROMPT = `You are a prompt formatting assistant. Your task is to clean and improve user prompts.
@@ -61,6 +59,8 @@ export function usePromptCleaner(): UsePromptCleanerReturn {
           userMessage += `\n\nAdditional instruction: ${refinement}`
         }
 
+        const model = await getPromptCleanerModel()
+
         const response = await fetch(`${agentHubUrl}/api/complete`, {
           method: 'POST',
           headers: {
@@ -69,7 +69,7 @@ export function usePromptCleaner(): UsePromptCleanerReturn {
             'X-Source-Path': 'frontend/lib/hooks/use-prompt-cleaner.ts',
           },
           body: JSON.stringify({
-            model: CLEAN_MODEL,
+            model,
             messages: [
               { role: 'system', content: SYSTEM_PROMPT },
               { role: 'user', content: userMessage },

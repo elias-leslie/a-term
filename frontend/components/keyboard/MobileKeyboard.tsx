@@ -21,7 +21,8 @@ interface MobileKeyboardProps {
 
 export function MobileKeyboard({
   onSend,
-  // connectionStatus and onReconnect reserved for future mobile status display
+  connectionStatus,
+  onReconnect,
   keyboardSize = 'medium',
   onVoice,
   voiceActive = false,
@@ -76,7 +77,10 @@ export function MobileKeyboard({
           minimized={minimized}
           onToggleMinimize={handleToggleMinimize}
           onVoice={onVoice}
+          voiceActive={voiceActive}
           activeMode={activeMode}
+          connectionStatus={connectionStatus}
+          onReconnect={onReconnect}
         />
         {/* Full keyboard - hidden when minimized or voice is active */}
         {!minimized && !voiceActive && (

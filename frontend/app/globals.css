@@ -121,6 +121,27 @@ body {
   scrollbar-color: var(--term-accent-muted) transparent;
 }
 
+/* Mobile terminal needs a persistent, wider drag target. Hover/fade behavior
+   is unreliable on touch devices and makes the scrollbar feel unresponsive. */
+.xterm-viewport.mobile-terminal-viewport::-webkit-scrollbar {
+  width: 20px;
+}
+
+.xterm-viewport.mobile-terminal-viewport::-webkit-scrollbar-thumb {
+  background: var(--term-accent-muted);
+  border-radius: 999px;
+  border: 5px solid var(--term-bg-surface);
+}
+
+.xterm-viewport.mobile-terminal-viewport::-webkit-scrollbar-thumb:hover {
+  background: var(--term-accent);
+}
+
+.xterm-viewport.mobile-terminal-viewport {
+  scrollbar-width: auto;
+  scrollbar-color: var(--term-accent-muted) transparent;
+}
+
 /* Make cursor highly visible with glow effect */
 .xterm-cursor-block {
   box-shadow:

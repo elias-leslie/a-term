@@ -97,6 +97,8 @@ export const ModeToggle = memo(function ModeToggle({
   const isDisabled = disabled || isCurrentlyLoading
   const isAgentMode = value !== 'shell'
   const activeTool = agentTools.find((t) => t.slug === value)
+  const defaultTool = agentTools.find((t) => t.is_default) ?? agentTools[0]
+  const fallbackAgentSlug = 'claude'
   const accentColor = activeTool?.color || 'var(--term-accent)'
   const hasMultipleTools = agentTools.length > 1
 
@@ -105,12 +107,11 @@ export const ModeToggle = memo(function ModeToggle({
       e.stopPropagation()
       if (isDisabled) return
       if (hasMultipleTools) { setShowPopover((prev) => !prev); return }
-      const defaultTool = agentTools.find((t) => t.is_default) ?? agentTools[0]
-      const oppositeMode: TerminalMode = isAgentMode ? 'shell' : defaultTool?.slug ?? 'shell'
+      const oppositeMode: TerminalMode = isAgentMode ? 'shell' : defaultTool?.slug ?? fallbackAgentSlug
       setInternalLoading(true)
       try { await onChange(oppositeMode) } catch (error) { console.error('Failed to switch mode:', error) } finally { setInternalLoading(false) }
     },
-    [isAgentMode, onChange, isDisabled, hasMultipleTools, agentTools],
+    [isAgentMode, onChange, isDisabled, hasMultipleTools, defaultTool],
   )
 
   const handleSelectMode = useCallback(
@@ -127,7 +128,7 @@ export const ModeToggle = memo(function ModeToggle({
     ? 'Switching mode...'
     : isAgentMode
       ? `${activeTool?.name ?? 'Agent'} mode — click for ${hasMultipleTools ? 'options' : 'Shell'}`
-      : `Shell mode — click for ${hasMultipleTools ? 'options' : agentTools[0]?.name ?? 'Agent'}`
+      : `Shell mode — click for ${hasMultipleTools ? 'options' : defaultTool?.name ?? 'Agent'}`
 
   const size = isMobile ? 32 : 26
   const iconSize = isMobile ? 16 : 14
