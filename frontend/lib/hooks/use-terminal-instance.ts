@@ -167,7 +167,9 @@ export function useTerminalInstance(
 
       // Auto-hiding scrollbar: toggle .scrolling class on scroll events
       const viewport =
-        containerRef.current.querySelector<HTMLElement>('.xterm-viewport')
+        containerRef.current.querySelector<HTMLElement>(
+          '.xterm-scrollable-element',
+        )
       let scrollTimer: ReturnType<typeof setTimeout> | null = null
       if (viewport && !isMobileDevice()) {
         const onScroll = () => {

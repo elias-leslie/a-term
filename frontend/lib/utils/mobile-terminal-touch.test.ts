@@ -16,11 +16,11 @@ describe('getMobileTerminalTouchStyles', () => {
   it('applies touch-safe scrolling styles to the xterm touch surfaces', () => {
     const container = document.createElement('div')
     const screen = document.createElement('div')
-    const viewport = document.createElement('div')
+    const scrollableElement = document.createElement('div')
 
     screen.className = 'xterm-screen'
-    viewport.className = 'xterm-viewport'
-    container.append(screen, viewport)
+    scrollableElement.className = 'xterm-scrollable-element'
+    container.append(screen, scrollableElement)
 
     applyMobileTerminalTouchStyles(container)
 
@@ -28,9 +28,13 @@ describe('getMobileTerminalTouchStyles', () => {
     expect(container.style.touchAction).toBe('pan-y')
     expect(screen.style.overscrollBehavior).toBe('none')
     expect(screen.style.touchAction).toBe('pan-y')
-    expect(viewport.style.overscrollBehavior).toBe('none')
-    expect(viewport.style.touchAction).toBe('pan-y')
-    expect(viewport.style.getPropertyValue('-webkit-overflow-scrolling')).toBe('touch')
-    expect(viewport.classList.contains(MOBILE_TERMINAL_VIEWPORT_CLASS)).toBe(true)
+    expect(scrollableElement.style.overscrollBehavior).toBe('none')
+    expect(scrollableElement.style.touchAction).toBe('pan-y')
+    expect(
+      scrollableElement.style.getPropertyValue('-webkit-overflow-scrolling'),
+    ).toBe('touch')
+    expect(
+      scrollableElement.classList.contains(MOBILE_TERMINAL_VIEWPORT_CLASS),
+    ).toBe(true)
   })
 })

@@ -5,7 +5,7 @@ export interface MobileTerminalTouchStyles {
 
 export const MOBILE_TERMINAL_TOUCH_SURFACE_SELECTORS = [
   '.xterm-screen',
-  '.xterm-viewport',
+  '.xterm-scrollable-element',
 ] as const
 
 export const MOBILE_TERMINAL_VIEWPORT_CLASS =
@@ -39,7 +39,7 @@ export function applyMobileTerminalTouchStyles(container: HTMLElement): void {
     element.style.overscrollBehavior = touchStyles.overscrollBehavior
     element.style.touchAction = touchStyles.touchAction
 
-    if (selector === '.xterm-viewport') {
+    if (selector === '.xterm-scrollable-element') {
       element.classList.add(MOBILE_TERMINAL_VIEWPORT_CLASS)
       element.style.setProperty('-webkit-overflow-scrolling', 'touch')
     }

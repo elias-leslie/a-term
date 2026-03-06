@@ -21,7 +21,25 @@ describe('getTouchScrollLineDelta', () => {
 })
 
 describe('refreshTerminalViewport', () => {
-  it('refreshes the full visible row range', () => {
+  it('prefers the xterm render service when available', () => {
+    const refreshRows = vi.fn()
+    const refresh = vi.fn()
+
+    refreshTerminalViewport({
+      _core: {
+        _renderService: {
+          refreshRows,
+        },
+      },
+      rows: 18,
+      refresh,
+    } as unknown as Parameters<typeof refreshTerminalViewport>[0])
+
+    expect(refreshRows).toHaveBeenCalledWith(0, 17)
+    expect(refresh).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the public refresh API when needed', () => {
     const refresh = vi.fn()
 
     refreshTerminalViewport({

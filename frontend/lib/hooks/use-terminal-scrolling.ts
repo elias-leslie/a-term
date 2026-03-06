@@ -59,7 +59,26 @@ function getConsumedTouchScrollPixels(lineDelta: number, cellHeight: number): nu
 }
 
 export function refreshTerminalViewport(terminal: Terminal): void {
-  terminal.refresh(0, Math.max(terminal.rows - 1, 0))
+  const start = 0
+  const end = Math.max(terminal.rows - 1, 0)
+  const renderService = (
+    terminal as Terminal & {
+      _core?: {
+        _renderService?: {
+          refreshRows?: (start: number, end: number) => void
+        }
+      }
+    }
+  )._core?._renderService
+
+  // xterm's public refresh can leave touch-driven scrollLines() visually stale
+  // on mobile; refreshRows repaints the newly selected viewport rows.
+  if (typeof renderService?.refreshRows === 'function') {
+    renderService.refreshRows(start, end)
+    return
+  }
+
+  terminal.refresh(start, end)
 }
 
 export function initializeTouchTracking(currentY: number): {
