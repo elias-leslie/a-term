@@ -144,6 +144,32 @@ build_emulator_command() {
   done
 }
 
+launch_emulator_detached() {
+  local emulator_bin="${ANDROID_SDK_ROOT}/emulator/emulator"
+  local -a cmd=(
+    "${emulator_bin}"
+    -avd "${AVD_NAME}"
+    -gpu swiftshader_indirect
+    -no-boot-anim
+    -no-metrics
+  )
+
+  if [[ "${HEADLESS_MODE}" == "1" ]]; then
+    cmd+=(-no-window -no-audio)
+  fi
+
+  local quoted_cmd
+  printf -v quoted_cmd "%q " "${cmd[@]}"
+  quoted_cmd="${quoted_cmd% }"
+
+  if command -v sg >/dev/null 2>&1 && getent group kvm | grep -Eq "(^|:|,)${USER}(,|$)"; then
+    sg kvm -c "setsid -f ${quoted_cmd} >/tmp/terminal-android-emulator.log 2>&1"
+    return
+  fi
+
+  setsid -f "${cmd[@]}" >/tmp/terminal-android-emulator.log 2>&1
+}
+
 start_emulator() {
   if [[ ! -x "${ANDROID_SDK_ROOT}/emulator/emulator" ]]; then
     echo "Emulator binary not found: ${ANDROID_SDK_ROOT}/emulator/emulator" >&2
@@ -156,7 +182,14 @@ start_emulator() {
 
   echo "Launching Android emulator for ${AVD_NAME}"
   echo "Command: ${emulator_cmd}"
-  nohup bash -lc "${emulator_cmd}" >/tmp/terminal-android-emulator.log 2>&1 &
+  launch_emulator_detached
+  sleep 2
+
+  if ! pgrep -af "qemu-system-x86_64-headless|emulator .*${AVD_NAME}" >/dev/null; then
+    echo "Emulator launch failed. Check /tmp/terminal-android-emulator.log for details." >&2
+    exit 1
+  fi
+
   echo "Emulator started in background. Log: /tmp/terminal-android-emulator.log"
 }
 
