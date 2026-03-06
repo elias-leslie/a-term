@@ -16,6 +16,7 @@ import pty
 import shlex
 import struct
 import termios
+from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING
 
 from ..logging_config import get_logger
@@ -116,7 +117,12 @@ def resize_pty(master_fd: int, cols: int, rows: int) -> None:
     fcntl.ioctl(master_fd, termios.TIOCSWINSZ, winsize)
 
 
-async def read_pty_output(websocket: WebSocket, master_fd: int, session_id: str = "") -> None:
+async def read_pty_output(
+    websocket: WebSocket,
+    master_fd: int,
+    session_id: str = "",
+    on_flush: Callable[[], Awaitable[None]] | None = None,
+) -> None:
     """Read output from PTY and send to WebSocket with batching.
 
     Uses asyncio native FD watching with loop.add_reader() for true zero CPU
@@ -135,6 +141,6 @@ async def read_pty_output(websocket: WebSocket, master_fd: int, session_id: str 
 
     loop.add_reader(master_fd, _make_on_readable(master_fd, queue, session_id=session_id))
     try:
-        await _run_batch_loop(websocket, queue, loop)
+        await _run_batch_loop(websocket, queue, loop, on_flush)
     finally:
         loop.remove_reader(master_fd)

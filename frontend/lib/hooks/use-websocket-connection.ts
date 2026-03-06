@@ -21,6 +21,7 @@ export interface WebSocketConnectionRefs {
 export interface WebSocketConnectionCallbacks {
   onTerminalMessage?: (message: string) => void
   onMessage?: (data: string) => void
+  onScrollbackSync?: (scrollback: string) => void
   onBeforeReconnectData?: () => void
   onDisconnect?: () => void
   getDimensions?: () => { cols: number; rows: number } | null
@@ -47,6 +48,7 @@ export function openWebSocketConnection(
   const {
     onTerminalMessage,
     onMessage,
+    onScrollbackSync,
     onBeforeReconnectData,
     onDisconnect,
     getDimensions,
@@ -132,6 +134,20 @@ export function openWebSocketConnection(
   ws.onmessage = (event) => {
     if (!mountedRef.current) return
     try {
+      if (typeof event.data === 'string' && event.data.startsWith('{')) {
+        try {
+          const control = JSON.parse(event.data) as {
+            __ctrl?: boolean
+            scrollback_sync?: string
+          }
+          if (control.__ctrl && typeof control.scrollback_sync === 'string') {
+            onScrollbackSync?.(control.scrollback_sync)
+            return
+          }
+        } catch {
+          // Fall through to regular terminal data handling.
+        }
+      }
       onMessage?.(event.data)
     } catch (error) {
       console.error('Error handling WebSocket message:', error)

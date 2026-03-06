@@ -12,6 +12,10 @@ from fastapi import WebSocket, WebSocketDisconnect
 from ...constants import SHELL_MODE
 from ...logging_config import get_logger
 from ...services.pty_manager import read_pty_output, spawn_pty_for_tmux
+from ...services.scrollback_sync import (
+    ScrollbackSyncScheduler,
+    normalize_scrollback,
+)
 from ...storage import agent_tools as agent_tools_store
 from ...utils.tmux import get_scrollback, is_agent_running_in_session
 from .session_validation import validate_and_prepare_session
@@ -44,11 +48,7 @@ async def _setup_connection(
 
     scrollback = get_scrollback(tmux_session_name)
     if scrollback:
-        # tmux capture-pane -p outputs bare \n between lines.
-        # xterm.js treats \n as LF-only (cursor down, same column) without \r,
-        # causing diagonal/staircase text. Convert to \r\n so each line starts
-        # at column 0. Normalize first to avoid \r\r\n from existing \r\n pairs.
-        scrollback = scrollback.replace("\r\n", "\n").replace("\n", "\r\n")
+        scrollback = normalize_scrollback(scrollback)
         await websocket.send_text(scrollback)
         logger.info("scrollback_sent", session_id=session_id, bytes=len(scrollback))
 
@@ -120,13 +120,28 @@ async def _run_session(
         )
         return None, None
 
-    output_task = asyncio.create_task(read_pty_output(websocket, master_fd, session_id=session_id))
-    heartbeat_task = asyncio.create_task(heartbeat_loop(websocket))
-    await _maybe_autostart_agent(session, master_fd, tmux_session_name, session_id)
-    await _run_message_loop(
-        websocket, master_fd, session_id, tmux_session_name,
-        output_task, heartbeat_task,
+    scrollback_sync: ScrollbackSyncScheduler | None = None
+    if session.get("mode") == SHELL_MODE:
+        scrollback_sync = ScrollbackSyncScheduler(websocket, tmux_session_name)
+
+    output_task = asyncio.create_task(
+        read_pty_output(
+            websocket,
+            master_fd,
+            session_id=session_id,
+            on_flush=scrollback_sync.notify_output if scrollback_sync else None,
+        )
     )
+    heartbeat_task = asyncio.create_task(heartbeat_loop(websocket))
+    try:
+        await _maybe_autostart_agent(session, master_fd, tmux_session_name, session_id)
+        await _run_message_loop(
+            websocket, master_fd, session_id, tmux_session_name,
+            output_task, heartbeat_task,
+        )
+    finally:
+        if scrollback_sync:
+            await scrollback_sync.close()
     return pid, master_fd
 
 

@@ -11,7 +11,7 @@ import contextlib
 import errno
 import os
 import re
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING
 
 from ..logging_config import get_logger
@@ -88,6 +88,7 @@ async def _flush_batch(
     websocket: WebSocket,
     batch_buffer: str,
     loop: asyncio.AbstractEventLoop,
+    on_flush: Callable[[], Awaitable[None]] | None = None,
 ) -> tuple[str, float, bool]:
     """Send buffered output to the websocket.
 
@@ -96,6 +97,8 @@ async def _flush_batch(
     """
     if batch_buffer:
         await websocket.send_text(batch_buffer)
+        if on_flush:
+            await on_flush()
         if _TMUX_EXITED_RE.search(batch_buffer):
             logger.info("tmux_session_exited_detected")
             return "", loop.time(), False
@@ -108,13 +111,14 @@ async def _run_one_iteration(
     loop: asyncio.AbstractEventLoop,
     state: dict,
     wait_time: float,
+    on_flush: Callable[[], Awaitable[None]] | None = None,
 ) -> None:
     """Run one iteration: wait for data, decode, and flush when ready."""
     try:
         output = await asyncio.wait_for(queue.get(), timeout=wait_time)
     except TimeoutError:
         state["batch"], state["flush_time"], ok = await _flush_batch(
-            websocket, state["batch"], loop
+            websocket, state["batch"], loop, on_flush
         )
         if not ok:
             state["running"] = False
@@ -131,7 +135,7 @@ async def _run_one_iteration(
         size_limit_hit = len(state["batch"]) >= BATCH_SIZE_LIMIT
         if size_limit_hit or queue.empty():
             state["batch"], state["flush_time"], ok = await _flush_batch(
-                websocket, state["batch"], loop
+                websocket, state["batch"], loop, on_flush
             )
             if not ok:
                 state["running"] = False
@@ -141,6 +145,7 @@ async def _run_batch_loop(
     websocket: WebSocket,
     queue: asyncio.Queue[bytes | None],
     loop: asyncio.AbstractEventLoop,
+    on_flush: Callable[[], Awaitable[None]] | None = None,
 ) -> None:
     """Drive the batching loop: read from queue, decode, flush to websocket."""
     state: dict = {
@@ -154,7 +159,14 @@ async def _run_batch_loop(
         while state["running"]:
             elapsed_ms = (loop.time() - state["flush_time"]) * 1000
             wait_time = max(0.001, (FLUSH_INTERVAL_MS - elapsed_ms) / 1000)
-            await _run_one_iteration(websocket, queue, loop, state, wait_time)
+            await _run_one_iteration(
+                websocket,
+                queue,
+                loop,
+                state,
+                wait_time,
+                on_flush,
+            )
     except asyncio.CancelledError:
         with contextlib.suppress(Exception):
             await websocket.send_text(state["batch"])

@@ -15,6 +15,8 @@ interface UseTerminalWebSocketOptions {
   onMessage?: (data: string) => void
   /** Called when terminal should display a message */
   onTerminalMessage?: (message: string) => void
+  /** Called when backend sends an authoritative scrollback snapshot */
+  onScrollbackSync?: (scrollback: string) => void
   /** Called before reconnect data arrives — clear terminal buffer to prevent duplicates */
   onBeforeReconnectData?: () => void
   /** Get current terminal dimensions for resize message */
@@ -63,6 +65,7 @@ export function useTerminalWebSocket({
   onDisconnect,
   onMessage,
   onTerminalMessage,
+  onScrollbackSync,
   onBeforeReconnectData,
   getDimensions,
 }: UseTerminalWebSocketOptions): UseTerminalWebSocketReturn {
@@ -81,6 +84,7 @@ export function useTerminalWebSocket({
   const onDisconnectRef = useRef(onDisconnect)
   const onMessageRef = useRef(onMessage)
   const onTerminalMessageRef = useRef(onTerminalMessage)
+  const onScrollbackSyncRef = useRef(onScrollbackSync)
   const onBeforeReconnectDataRef = useRef(onBeforeReconnectData)
   const getDimensionsRef = useRef(getDimensions)
 
@@ -90,9 +94,10 @@ export function useTerminalWebSocket({
     onDisconnectRef.current = onDisconnect
     onMessageRef.current = onMessage
     onTerminalMessageRef.current = onTerminalMessage
+    onScrollbackSyncRef.current = onScrollbackSync
     onBeforeReconnectDataRef.current = onBeforeReconnectData
     getDimensionsRef.current = getDimensions
-  }, [onStatusChange, onDisconnect, onMessage, onTerminalMessage, onBeforeReconnectData, getDimensions])
+  }, [onStatusChange, onDisconnect, onMessage, onTerminalMessage, onScrollbackSync, onBeforeReconnectData, getDimensions])
 
   // Notify parent of status changes
   useEffect(() => {
@@ -121,6 +126,7 @@ export function useTerminalWebSocket({
     }, {
       onTerminalMessage: (msg) => onTerminalMessageRef.current?.(msg),
       onMessage: (data) => onMessageRef.current?.(data),
+      onScrollbackSync: (scrollback) => onScrollbackSyncRef.current?.(scrollback),
       onBeforeReconnectData: () => onBeforeReconnectDataRef.current?.(),
       onDisconnect: () => onDisconnectRef.current?.(),
       getDimensions: () => getDimensionsRef.current?.() ?? null,
