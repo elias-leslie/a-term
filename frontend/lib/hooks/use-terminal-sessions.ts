@@ -54,6 +54,11 @@ const resetSession = (sessionId: string) =>
 const resetAllSessions = () =>
   apiFetch<{ reset_count: number }>('/api/terminal/reset-all', { method: 'POST' })
 
+const invalidatePanesAndSessions = (queryClient: ReturnType<typeof useQueryClient>) => {
+  queryClient.invalidateQueries({ queryKey: ['terminal-panes'] })
+  queryClient.invalidateQueries({ queryKey: ['terminal-sessions'] })
+}
+
 /** Hook for managing terminal sessions with backend sync */
 export function useTerminalSessions() {
   const queryClient = useQueryClient()
@@ -118,7 +123,7 @@ export function useTerminalSessions() {
 
   const resetAllMutation = useMutation({
     mutationFn: resetAllSessions,
-    onSuccess: invalidate,
+    onSuccess: () => invalidatePanesAndSessions(queryClient),
   })
 
   const update = useCallback(

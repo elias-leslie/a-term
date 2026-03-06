@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import {
   type ProjectTerminal,
   useProjectTerminals,
@@ -10,6 +10,36 @@ import {
   type TerminalSession,
   useTerminalSessions,
 } from './use-terminal-sessions'
+
+export function deriveActiveSessionId(
+  sessions: TerminalSession[],
+  urlSessionId: string | null,
+  urlProjectId: string | null,
+): string | null {
+  if (sessions.length === 0) {
+    return null
+  }
+
+  if (urlSessionId && sessions.some((session) => session.id === urlSessionId)) {
+    return urlSessionId
+  }
+
+  if (urlProjectId) {
+    const projectSession = sessions.find((session) => session.project_id === urlProjectId)
+    if (projectSession) {
+      return projectSession.id
+    }
+  }
+
+  return sessions[0]?.id ?? null
+}
+
+export function shouldSyncSessionParam(
+  activeSessionId: string | null,
+  urlSessionId: string | null,
+): boolean {
+  return Boolean(activeSessionId && urlSessionId !== activeSessionId)
+}
 
 // ============================================================================
 // Types
@@ -100,27 +130,7 @@ export function useActiveSession(): UseActiveSessionResult {
 
   // Derive active session ID from URL + available sessions
   const activeSessionId = useMemo(() => {
-    // No sessions at all
-    if (sessions.length === 0) {
-      return null
-    }
-
-    // Trust the URL session ID — layout layer handles fallback if no matching pane
-    if (urlSessionId) {
-      return urlSessionId
-    }
-
-    // If project param is set, find a session for that project
-    if (urlProjectId) {
-      const projectSession = sessions.find((s) => s.project_id === urlProjectId)
-      if (projectSession) {
-        return projectSession.id
-      }
-      // No session for this project yet - fall through to default
-    }
-
-    // Default to first session if no valid URL param
-    return sessions[0]?.id ?? null
+    return deriveActiveSessionId(sessions, urlSessionId, urlProjectId)
   }, [sessions, urlSessionId, urlProjectId])
 
   // Get the active session object
@@ -131,6 +141,19 @@ export function useActiveSession(): UseActiveSessionResult {
 
   // Whether we're in a valid state
   const isValid = activeSessionId !== null && activeSession !== null
+
+  useEffect(() => {
+    if (!shouldSyncSessionParam(activeSessionId, urlSessionId)) {
+      return
+    }
+    if (!activeSessionId) {
+      return
+    }
+
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('session', activeSessionId)
+    router.replace(`?${params.toString()}`, { scroll: false })
+  }, [activeSessionId, urlSessionId, searchParams, router])
 
   // Switch to a different session by updating the URL
   const switchToSession = useCallback(

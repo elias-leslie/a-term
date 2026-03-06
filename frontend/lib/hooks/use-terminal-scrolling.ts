@@ -28,7 +28,6 @@ interface UseTerminalScrollingReturn {
 // Arrow key escape sequences (application mode)
 const ARROW_UP = '\x1b[A'
 const ARROW_DOWN = '\x1b[A'.replace('A', 'B') // \x1b[B
-const MOBILE_SCROLLBAR_GUTTER_PX = 28
 const MOBILE_TOUCH_SCROLL_SENSITIVITY = 2
 
 /**
@@ -40,19 +39,6 @@ const MOBILE_TOUCH_SCROLL_SENSITIVITY = 2
  */
 function isAlternateScreen(terminal: Terminal): boolean {
   return terminal.buffer.active.type === 'alternate'
-}
-
-function getViewport(container: HTMLElement): HTMLElement | null {
-  return container.querySelector<HTMLElement>('.xterm-viewport')
-}
-
-export function isTouchOnTerminalScrollbar(
-  viewport: Pick<HTMLElement, 'getBoundingClientRect'>,
-  clientX: number,
-  gutterWidth = MOBILE_SCROLLBAR_GUTTER_PX,
-): boolean {
-  const rect = viewport.getBoundingClientRect()
-  return clientX >= rect.right - gutterWidth
 }
 
 export function getTouchScrollLineDelta(
@@ -74,6 +60,16 @@ function getConsumedTouchScrollPixels(lineDelta: number, cellHeight: number): nu
 
 export function refreshTerminalViewport(terminal: Terminal): void {
   terminal.refresh(0, Math.max(terminal.rows - 1, 0))
+}
+
+export function initializeTouchTracking(currentY: number): {
+  touchStartY: number
+  lastSentY: number
+} {
+  return {
+    touchStartY: currentY,
+    lastSentY: currentY,
+  }
 }
 
 /**
@@ -147,39 +143,32 @@ export function useTerminalScrolling({
       // Touch handlers for mobile scrolling
       let touchStartY = 0
       let lastSentY = 0
-      let useNativeScrollbarGesture = false
       let pendingNormalScrollDeltaY = 0
       let touchCleanup = () => {}
 
       if (isMobile) {
         const handleTouchStart = (e: TouchEvent) => {
-          const terminal = terminalRef.current
           touchStartY = e.touches[0].clientY
           lastSentY = touchStartY
-          useNativeScrollbarGesture = false
           pendingNormalScrollDeltaY = 0
-
-          if (!terminal || isAlternateScreen(terminal)) return
-
-          const viewport = getViewport(container)
-          if (!viewport) return
-
-          useNativeScrollbarGesture = isTouchOnTerminalScrollbar(
-            viewport,
-            e.touches[0].clientX,
-          )
         }
 
         const handleTouchMove = (e: TouchEvent) => {
           const terminal = terminalRef.current
           if (!terminal) return
+          const currentY = e.touches[0].clientY
+
+          if (touchStartY === 0 && lastSentY === 0) {
+            const tracking = initializeTouchTracking(currentY)
+            touchStartY = tracking.touchStartY
+            lastSentY = tracking.lastSentY
+            return
+          }
 
           // Check if in alternate screen
           if (isAlternateScreen(terminal)) {
             e.preventDefault()
             e.stopPropagation()
-
-            const currentY = e.touches[0].clientY
             const deltaY = lastSentY - currentY
 
             if (Math.abs(deltaY) >= SCROLL_THRESHOLD) {
@@ -189,11 +178,6 @@ export function useTerminalScrolling({
             return
           }
 
-          if (useNativeScrollbarGesture) {
-            return
-          }
-
-          const currentY = e.touches[0].clientY
           pendingNormalScrollDeltaY += lastSentY - currentY
           lastSentY = currentY
 
@@ -221,7 +205,6 @@ export function useTerminalScrolling({
         const handleTouchEnd = () => {
           touchStartY = 0
           lastSentY = 0
-          useNativeScrollbarGesture = false
           pendingNormalScrollDeltaY = 0
         }
 

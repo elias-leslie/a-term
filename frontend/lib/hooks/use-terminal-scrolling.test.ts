@@ -1,27 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   getTouchScrollLineDelta,
-  isTouchOnTerminalScrollbar,
+  initializeTouchTracking,
   refreshTerminalViewport,
 } from './use-terminal-scrolling'
-
-describe('isTouchOnTerminalScrollbar', () => {
-  const viewport = {
-    getBoundingClientRect: () =>
-      ({
-        right: 300,
-      }) as DOMRect,
-  }
-
-  it('treats touches near the right edge as scrollbar gestures', () => {
-    expect(isTouchOnTerminalScrollbar(viewport, 290)).toBe(true)
-    expect(isTouchOnTerminalScrollbar(viewport, 275)).toBe(true)
-  })
-
-  it('treats touches away from the gutter as direct content drags', () => {
-    expect(isTouchOnTerminalScrollbar(viewport, 240)).toBe(false)
-  })
-})
 
 describe('getTouchScrollLineDelta', () => {
   it('uses natural touch direction when the finger moves upward', () => {
@@ -48,5 +30,14 @@ describe('refreshTerminalViewport', () => {
     } as unknown as Parameters<typeof refreshTerminalViewport>[0])
 
     expect(refresh).toHaveBeenCalledWith(0, 17)
+  })
+})
+
+describe('initializeTouchTracking', () => {
+  it('boots touch tracking from the first observed move position', () => {
+    expect(initializeTouchTracking(144)).toEqual({
+      touchStartY: 144,
+      lastSentY: 144,
+    })
   })
 })
