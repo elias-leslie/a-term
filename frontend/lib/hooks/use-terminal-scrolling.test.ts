@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   getTouchScrollLineDelta,
   isTouchOnTerminalScrollbar,
+  refreshTerminalViewport,
 } from './use-terminal-scrolling'
 
 describe('isTouchOnTerminalScrollbar', () => {
@@ -34,5 +35,18 @@ describe('getTouchScrollLineDelta', () => {
   it('returns zero when there is not enough information to compute a scroll', () => {
     expect(getTouchScrollLineDelta(0, 18)).toBe(0)
     expect(getTouchScrollLineDelta(20, 0)).toBe(0)
+  })
+})
+
+describe('refreshTerminalViewport', () => {
+  it('refreshes the full visible row range', () => {
+    const refresh = vi.fn()
+
+    refreshTerminalViewport({
+      rows: 18,
+      refresh,
+    } as unknown as Parameters<typeof refreshTerminalViewport>[0])
+
+    expect(refresh).toHaveBeenCalledWith(0, 17)
   })
 })

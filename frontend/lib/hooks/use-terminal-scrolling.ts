@@ -72,6 +72,10 @@ function getConsumedTouchScrollPixels(lineDelta: number, cellHeight: number): nu
   return Math.sign(lineDelta) * Math.abs(lineDelta) * effectiveCellHeight
 }
 
+export function refreshTerminalViewport(terminal: Terminal): void {
+  terminal.refresh(0, Math.max(terminal.rows - 1, 0))
+}
+
 /**
  * Hook for managing terminal scrolling with alternate screen detection.
  *
@@ -207,6 +211,7 @@ export function useTerminalScrolling({
           e.preventDefault()
           e.stopPropagation()
           terminal.scrollLines(lineDelta)
+          refreshTerminalViewport(terminal)
           pendingNormalScrollDeltaY -= getConsumedTouchScrollPixels(
             lineDelta,
             cellHeight,

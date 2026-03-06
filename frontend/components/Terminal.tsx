@@ -54,28 +54,98 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
     const fitAddonRef = useRef<InstanceType<typeof FitAddon> | null>(null)
     const isFocusedRef = useRef(false)
     const isVisibleRef = useRef(isVisible)
+    const pendingWriteRef = useRef(Promise.resolve())
 
     // Keep isVisibleRef in sync with prop
     useEffect(() => {
       isVisibleRef.current = isVisible
     }, [isVisible])
 
-    const applySnapshot = useCallback((snapshot: string) => {
-      const term = terminalRef.current
-      if (!term || !isVisibleRef.current) return
+    const enqueueTerminalWrite = useCallback(
+      (operation: (term: InstanceType<typeof Terminal>, resolve: () => void) => void) => {
+        pendingWriteRef.current = pendingWriteRef.current.then(
+          () =>
+            new Promise<void>((resolve) => {
+              const term = terminalRef.current
+              if (!term || !isVisibleRef.current) {
+                resolve()
+                return
+              }
 
-      const buffer = term.buffer.active
-      const linesFromBottom = buffer.baseY - buffer.viewportY
-      term.reset()
-      term.write(snapshot, () => {
-        if (terminalRef.current && linesFromBottom > 0) {
-          const nextBuffer = terminalRef.current.buffer.active
-          terminalRef.current.scrollToLine(
-            Math.max(nextBuffer.baseY - linesFromBottom, 0),
-          )
-        }
-      })
+              operation(term, resolve)
+            }),
+        )
+      },
+      [],
+    )
+
+    const getSnapshotLastLine = useCallback((snapshot: string) => {
+      const lines = snapshot.split(/\r?\n/)
+      while (lines.length > 0 && lines.at(-1) === '') {
+        lines.pop()
+      }
+      return lines.at(-1) ?? ''
     }, [])
+
+    const hasPendingPromptInput = useCallback(
+      (term: InstanceType<typeof Terminal>, snapshot: string) => {
+        const buffer = term.buffer.active
+        if (buffer.viewportY < buffer.baseY) return false
+
+        const cursorLine = buffer.getLine(buffer.baseY + buffer.cursorY)
+        const currentLine = cursorLine?.translateToString(true) ?? ''
+        const snapshotLastLine = getSnapshotLastLine(snapshot)
+
+        return (
+          currentLine.length > snapshotLastLine.length &&
+          currentLine.startsWith(snapshotLastLine)
+        )
+      },
+      [getSnapshotLastLine],
+    )
+
+    const enqueueWrite = useCallback(
+      (data: string) => {
+        enqueueTerminalWrite((term, resolve) => {
+          const buffer = term.buffer.active
+          const savedViewportY = buffer.viewportY
+          const isScrolledUp = buffer.viewportY < buffer.baseY
+
+          term.write(data, () => {
+            if (isScrolledUp && terminalRef.current) {
+              terminalRef.current.scrollToLine(savedViewportY)
+            }
+            resolve()
+          })
+        })
+      },
+      [enqueueTerminalWrite],
+    )
+
+    const applySnapshot = useCallback(
+      (snapshot: string) => {
+        enqueueTerminalWrite((term, resolve) => {
+          if (hasPendingPromptInput(term, snapshot)) {
+            resolve()
+            return
+          }
+
+          const buffer = term.buffer.active
+          const linesFromBottom = buffer.baseY - buffer.viewportY
+          term.reset()
+          term.write(snapshot, () => {
+            if (terminalRef.current && linesFromBottom > 0) {
+              const nextBuffer = terminalRef.current.buffer.active
+              terminalRef.current.scrollToLine(
+                Math.max(nextBuffer.baseY - linesFromBottom, 0),
+              )
+            }
+            resolve()
+          })
+        })
+      },
+      [enqueueTerminalWrite, hasPendingPromptInput],
+    )
 
     // WebSocket connection management via hook
     const { status, wsRef, reconnect, sendInput, connect, disconnect } =
@@ -87,24 +157,18 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
         onBeforeReconnectData: () => {
           // Clear xterm.js buffer before server sends fresh scrollback on reconnect.
           // Prevents duplicate content from stacking old buffer + new scrollback.
+          pendingWriteRef.current = Promise.resolve()
           terminalRef.current?.reset()
         },
         onMessage: (data) => {
           if (!terminalRef.current || !isVisibleRef.current) return
-          const buffer = terminalRef.current.buffer.active
-          const savedViewportY = buffer.viewportY
-          const isScrolledUp = buffer.viewportY < buffer.baseY
-          terminalRef.current.write(data, () => {
-            if (isScrolledUp && terminalRef.current) {
-              terminalRef.current.scrollToLine(savedViewportY)
-            }
-          })
+          enqueueWrite(data)
         },
         onScrollbackSync: (scrollback) => {
           applySnapshot(scrollback)
         },
         onTerminalMessage: (message) => {
-          terminalRef.current?.writeln(message)
+          enqueueWrite(`${message}\r\n`)
         },
         getDimensions: () => fitAddonRef.current?.proposeDimensions() ?? null,
       })
