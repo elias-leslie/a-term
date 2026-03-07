@@ -8,7 +8,7 @@ import {
   PanelsTopLeft,
   type LucideIcon,
 } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type LayoutMode, GRID_MIN_WIDTHS } from '@/lib/constants/terminal'
 import { useClickOutside } from '@/lib/hooks/use-click-outside'
 import { useDropdownPosition } from '@/lib/hooks/use-dropdown-position'
@@ -69,8 +69,10 @@ export function LayoutModeButtons({
   availableLayouts,
 }: LayoutModeButtonsProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [highlightedIndex, setHighlightedIndex] = useState(0)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([])
 
   const closeDropdown = useCallback(() => setIsOpen(false), [])
   const clickOutsideRefs = useMemo(() => [buttonRef, dropdownRef], [])
@@ -86,9 +88,85 @@ export function LayoutModeButtons({
     return LAYOUT_OPTIONS.filter((opt) => availableLayouts.includes(opt.mode))
   }, [availableLayouts])
 
+  useEffect(() => {
+    if (!isOpen) return
+
+    const selectedIndex = filteredOptions.findIndex(
+      (option) => option.mode === layoutMode,
+    )
+    const nextIndex = selectedIndex >= 0 ? selectedIndex : 0
+    setHighlightedIndex(nextIndex)
+    optionRefs.current[nextIndex]?.focus()
+  }, [filteredOptions, isOpen, layoutMode])
+
   const handleSelect = (mode: LayoutMode) => {
     onLayoutChange(mode)
     setIsOpen(false)
+  }
+
+  const moveHighlight = useCallback(
+    (direction: 1 | -1) => {
+      if (filteredOptions.length === 0) return
+      const nextIndex =
+        (highlightedIndex + direction + filteredOptions.length) %
+        filteredOptions.length
+      setHighlightedIndex(nextIndex)
+      optionRefs.current[nextIndex]?.focus()
+    },
+    [filteredOptions.length, highlightedIndex],
+  )
+
+  const handleButtonKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      setIsOpen(true)
+    }
+  }
+
+  const handleOptionKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    mode: LayoutMode,
+    index: number,
+  ) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      moveHighlight(1)
+      return
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      moveHighlight(-1)
+      return
+    }
+
+    if (event.key === 'Home') {
+      event.preventDefault()
+      setHighlightedIndex(0)
+      optionRefs.current[0]?.focus()
+      return
+    }
+
+    if (event.key === 'End') {
+      event.preventDefault()
+      const lastIndex = filteredOptions.length - 1
+      setHighlightedIndex(lastIndex)
+      optionRefs.current[lastIndex]?.focus()
+      return
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      setIsOpen(false)
+      buttonRef.current?.focus()
+      return
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      setHighlightedIndex(index)
+      handleSelect(mode)
+    }
   }
 
   // Get current layout info
@@ -121,8 +199,10 @@ export function LayoutModeButtons({
           }
         }}
         title={currentLayout.title}
+        aria-label="Change pane layout"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
+        onKeyDown={handleButtonKeyDown}
       >
         <CurrentIcon className="w-4 h-4" />
         <ChevronDown
@@ -153,20 +233,27 @@ export function LayoutModeButtons({
               boxShadow: 'var(--term-shadow-dropdown)',
             }}
           >
-            {filteredOptions.map(({ mode, icon: Icon, title }) => {
+            {filteredOptions.map(({ mode, icon: Icon, title }, index) => {
               const isSelected = mode === layoutMode
+              const isHighlighted = index === highlightedIndex
               return (
                 <button
                   key={mode}
+                  ref={(element) => {
+                    optionRefs.current[index] = element
+                  }}
                   role="option"
                   aria-selected={isSelected}
                   onClick={() => handleSelect(mode)}
+                  onKeyDown={(event) => handleOptionKeyDown(event, mode, index)}
                   className="flex items-center gap-2 w-full text-left px-2.5 py-2 text-xs transition-colors"
                   style={{
                     color: isSelected
                       ? 'var(--term-accent)'
                       : 'var(--term-text-primary)',
-                    backgroundColor: 'transparent',
+                    backgroundColor: isHighlighted
+                      ? 'var(--term-bg-surface)'
+                      : 'transparent',
                     fontFamily: 'var(--font-mono)',
                   }}
                   onMouseEnter={(e) => {

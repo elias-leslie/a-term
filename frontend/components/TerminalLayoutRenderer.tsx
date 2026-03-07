@@ -22,6 +22,7 @@ interface TerminalLayoutRendererProps {
   // Terminal ref and status handlers
   onTerminalRef: (sessionId: string, handle: TerminalHandle | null) => void
   onStatusChange: (sessionId: string, status: ConnectionStatus) => void
+  terminalStatuses: Map<string, ConnectionStatus>
 
   // Slot action handlers
   onSlotSwitch: (slot: TerminalSlot | PaneSlot) => void
@@ -72,6 +73,7 @@ export function TerminalLayoutRenderer({
   theme,
   onTerminalRef,
   onStatusChange,
+  terminalStatuses,
   onSlotSwitch,
   onSlotReset,
   onSlotClose,
@@ -103,6 +105,7 @@ export function TerminalLayoutRenderer({
       theme={theme}
       onTerminalRef={onTerminalRef}
       onStatusChange={onStatusChange}
+      terminalStatuses={terminalStatuses}
       onSwitch={onSlotSwitch}
       onSettings={onShowSettings}
       onReset={onSlotReset}

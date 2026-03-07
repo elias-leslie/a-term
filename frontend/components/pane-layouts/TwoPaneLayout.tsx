@@ -12,7 +12,8 @@ export function TwoPaneLayout({
   containerRef,
   displaySlots,
   getMinSizePercent,
-  handleLayoutChange,
+  createGroupLayoutChangeHandler,
+  getStoredGroupLayout,
   renderPane,
   orientation = 'horizontal',
 }: LayoutHelperProps) {
@@ -21,6 +22,8 @@ export function TwoPaneLayout({
     getSlotPanelId(displaySlots[0]),
     getSlotPanelId(displaySlots[1]),
   ]
+  const groupId = `two-pane-${orientation}`
+  const panelSizes = getStoredGroupLayout(groupId, 2, 50)
 
   return (
     <div
@@ -30,14 +33,14 @@ export function TwoPaneLayout({
     >
       <Group
         orientation={orientation}
-        onLayoutChange={handleLayoutChange}
+        onLayoutChange={createGroupLayoutChangeHandler(groupId, panelIds, true)}
         groupRef={groupRef}
         className="h-full"
       >
         <Panel
           id={panelIds[0]}
           minSize={`${getMinSizePercent(orientation)}%`}
-          defaultSize="50%"
+          defaultSize={`${panelSizes[0]}%`}
           className="h-full"
         >
           {renderPane(displaySlots[0], 0)}
@@ -52,7 +55,7 @@ export function TwoPaneLayout({
         <Panel
           id={panelIds[1]}
           minSize={`${getMinSizePercent(orientation)}%`}
-          defaultSize="50%"
+          defaultSize={`${panelSizes[1]}%`}
           className="h-full"
         >
           {renderPane(displaySlots[1], 1)}

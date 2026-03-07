@@ -10,6 +10,7 @@ import { PaneOverflowMenu } from '../PaneOverflowMenu'
 import { AddTerminalButton } from './AddTerminalButton'
 import { HeaderIconButton } from './HeaderIconButton'
 import { HeaderNameDisplay } from './HeaderNameDisplay'
+import { PaneStatusBadge } from './PaneStatusBadge'
 import type { UnifiedTerminalHeaderProps } from './types'
 
 export const UnifiedTerminalHeaderContent = memo(
@@ -37,6 +38,7 @@ export const UnifiedTerminalHeaderContent = memo(
     layoutMode,
     availableLayouts,
     onLayoutModeChange,
+    connectionStatus,
   }: UnifiedTerminalHeaderProps) {
     const { enabledTools } = useAgentTools()
     const isAgentMode = slot.type === 'project' && slot.activeMode !== 'shell'
@@ -77,6 +79,8 @@ export const UnifiedTerminalHeaderContent = memo(
           onSwitchTo={onSwitchTo}
           onSwitch={onSwitch}
         />
+
+        {!isMobile && <PaneStatusBadge status={connectionStatus} />}
 
         {/* Add terminal button */}
         {onOpenModal && (

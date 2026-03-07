@@ -29,6 +29,7 @@ export interface ResizablePaneLayoutProps {
   theme?: Parameters<typeof TerminalComponent>[0]['theme']
   onTerminalRef?: (sessionId: string, handle: TerminalHandle | null) => void
   onStatusChange?: (sessionId: string, status: ConnectionStatus) => void
+  terminalStatuses?: Map<string, ConnectionStatus>
   onSwitch?: (slot: TerminalSlot | PaneSlot) => void
   onSettings?: () => void
   onReset?: (slot: TerminalSlot | PaneSlot) => void

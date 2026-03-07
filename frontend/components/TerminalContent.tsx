@@ -35,6 +35,7 @@ export function TerminalContent({
   isMobile,
   setTerminalRef,
   handleStatusChange,
+  terminalStatuses,
   onSlotSwitch,
   onSlotReset,
   onSlotClose,
@@ -116,6 +117,7 @@ export function TerminalContent({
         theme={theme}
         setTerminalRef={setTerminalRef}
         handleStatusChange={handleStatusChange}
+        terminalStatuses={terminalStatuses}
         onSlotSwitch={onSlotSwitch}
         onSlotReset={onSlotReset}
         onSlotClose={onSlotClose}

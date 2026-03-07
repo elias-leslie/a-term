@@ -6,6 +6,16 @@ export interface LayoutHelperProps {
   displaySlots: (TerminalSlot | PaneSlot)[]
   getMinSizePercent: (direction: 'horizontal' | 'vertical') => number
   handleLayoutChange: (layout: Layout) => void
+  getStoredGroupLayout: (
+    groupId: string,
+    panelCount: number,
+    defaultSize: number,
+  ) => number[]
+  createGroupLayoutChangeHandler: (
+    groupId: string,
+    panelIds: string[],
+    persistPaneLayouts?: boolean,
+  ) => (layout: Layout) => void
   renderPane: (slot: TerminalSlot | PaneSlot, index: number) => React.ReactNode
   orientation?: 'horizontal' | 'vertical'
 }

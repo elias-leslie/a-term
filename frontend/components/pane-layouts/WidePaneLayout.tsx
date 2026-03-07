@@ -10,21 +10,26 @@ function WidePaneRow({
   startIndex,
   renderPane,
   getMinSizePercent,
-  handleLayoutChange,
+  createGroupLayoutChangeHandler,
+  getStoredGroupLayout,
+  groupId,
 }: {
   slots: LayoutHelperProps['displaySlots']
   startIndex: number
   renderPane: LayoutHelperProps['renderPane']
   getMinSizePercent: LayoutHelperProps['getMinSizePercent']
-  handleLayoutChange: LayoutHelperProps['handleLayoutChange']
+  createGroupLayoutChangeHandler: LayoutHelperProps['createGroupLayoutChangeHandler']
+  getStoredGroupLayout: LayoutHelperProps['getStoredGroupLayout']
+  groupId: string
 }) {
   const rowGroupRef = useGroupRef()
   const panelIds = slots.map((slot) => getSlotPanelId(slot))
+  const panelSizes = getStoredGroupLayout(groupId, slots.length, 100 / slots.length)
 
   return (
     <Group
       orientation="horizontal"
-      onLayoutChange={handleLayoutChange}
+      onLayoutChange={createGroupLayoutChangeHandler(groupId, panelIds, true)}
       groupRef={rowGroupRef}
       className="h-full"
     >
@@ -35,7 +40,7 @@ function WidePaneRow({
             key={panelId}
             id={panelId}
             minSize={`${getMinSizePercent('horizontal')}%`}
-            defaultSize={`${100 / slots.length}%`}
+            defaultSize={`${panelSizes[rowIndex] ?? 100 / slots.length}%`}
             className="h-full"
           >
             {renderPane(slot, startIndex + rowIndex)}
@@ -62,12 +67,20 @@ export function WidePaneLayout({
   containerRef,
   displaySlots,
   getMinSizePercent,
-  handleLayoutChange,
+  createGroupLayoutChangeHandler,
+  getStoredGroupLayout,
   renderPane,
 }: LayoutHelperProps) {
   const verticalGroupRef = useGroupRef()
   const topRowSlots = displaySlots.slice(0, 3)
   const bottomRowSlots = displaySlots.slice(3)
+  const rootPanelIds =
+    bottomRowSlots.length > 0 ? ['wide-top-row', 'wide-bottom-row'] : ['wide-top-row']
+  const rootSizes = getStoredGroupLayout(
+    'wide-pane-root',
+    rootPanelIds.length,
+    bottomRowSlots.length > 0 ? 50 : 100,
+  )
 
   return (
     <div
@@ -77,20 +90,23 @@ export function WidePaneLayout({
     >
       <Group
         orientation="vertical"
+        onLayoutChange={createGroupLayoutChangeHandler('wide-pane-root', rootPanelIds)}
         groupRef={verticalGroupRef}
         className="h-full"
       >
         <Panel
           id="wide-top-row"
           minSize={`${getMinSizePercent('vertical')}%`}
-          defaultSize={bottomRowSlots.length > 0 ? '50%' : '100%'}
+          defaultSize={`${rootSizes[0] ?? (bottomRowSlots.length > 0 ? 50 : 100)}%`}
         >
           <WidePaneRow
             slots={topRowSlots}
             startIndex={0}
             renderPane={renderPane}
             getMinSizePercent={getMinSizePercent}
-            handleLayoutChange={handleLayoutChange}
+            createGroupLayoutChangeHandler={createGroupLayoutChangeHandler}
+            getStoredGroupLayout={getStoredGroupLayout}
+            groupId="wide-pane-top-row"
           />
         </Panel>
 
@@ -105,14 +121,16 @@ export function WidePaneLayout({
             <Panel
               id="wide-bottom-row"
               minSize={`${getMinSizePercent('vertical')}%`}
-              defaultSize="50%"
+              defaultSize={`${rootSizes[1] ?? 50}%`}
             >
               <WidePaneRow
                 slots={bottomRowSlots}
                 startIndex={topRowSlots.length}
                 renderPane={renderPane}
                 getMinSizePercent={getMinSizePercent}
-                handleLayoutChange={handleLayoutChange}
+                createGroupLayoutChangeHandler={createGroupLayoutChangeHandler}
+                getStoredGroupLayout={getStoredGroupLayout}
+                groupId="wide-pane-bottom-row"
               />
             </Panel>
           </>

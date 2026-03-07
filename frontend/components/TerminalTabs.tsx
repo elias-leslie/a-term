@@ -44,6 +44,7 @@ export function TerminalTabs({
     isMobile,
     setTerminalRef,
     handleStatusChange,
+    terminalStatuses,
     canAddPane,
     swapPanes,
     activeSessionId,
@@ -143,6 +144,7 @@ export function TerminalTabs({
         isMobile={isMobile}
         setTerminalRef={setTerminalRef}
         handleStatusChange={handleStatusChange}
+        terminalStatuses={terminalStatuses}
         onSlotSwitch={handleSlotSwitch}
         onSlotReset={handleSlotReset}
         onSlotClose={handleSlotClose}

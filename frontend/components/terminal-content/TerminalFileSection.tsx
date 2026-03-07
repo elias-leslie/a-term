@@ -19,6 +19,7 @@ interface TerminalFileSectionProps {
   theme?: Parameters<typeof TerminalLayoutRenderer>[0]['theme']
   setTerminalRef: (sessionId: string, handle: TerminalHandle | null) => void
   handleStatusChange: (sessionId: string, status: ConnectionStatus) => void
+  terminalStatuses: Map<string, ConnectionStatus>
   onSlotSwitch: (slot: TerminalSlot) => void
   onSlotReset: (slot: TerminalSlot) => void
   onSlotClose: (slot: TerminalSlot) => void
@@ -56,6 +57,7 @@ export function TerminalFileSection({
   theme,
   setTerminalRef,
   handleStatusChange,
+  terminalStatuses,
   onSlotSwitch,
   onSlotReset,
   onSlotClose,
@@ -116,6 +118,7 @@ export function TerminalFileSection({
           theme={theme}
           onTerminalRef={setTerminalRef}
           onStatusChange={handleStatusChange}
+          terminalStatuses={terminalStatuses}
           onSlotSwitch={onSlotSwitch}
           onSlotReset={onSlotReset}
           onSlotClose={onSlotClose}

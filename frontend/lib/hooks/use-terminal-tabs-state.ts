@@ -130,7 +130,12 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     const session = sessions.find((s) => s.id === activeSessionId)
     return session?.mode
   }, [activeSessionId, sessions])
-  useLayoutAutoDowngrade(availableLayouts, layoutMode, setLayoutMode)
+  useLayoutAutoDowngrade(
+    availableLayouts,
+    layoutMode,
+    setLayoutMode,
+    panesLoadedOnce && panes.length > 0,
+  )
   useAutoCreatePane({
     panes,
     isLoading,

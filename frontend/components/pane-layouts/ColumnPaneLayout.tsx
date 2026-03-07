@@ -22,13 +22,17 @@ function ColumnGroup({
   startIndex,
   renderPane,
   getMinSizePercent,
-  handleLayoutChange,
+  createGroupLayoutChangeHandler,
+  getStoredGroupLayout,
+  groupId,
 }: {
   slots: LayoutHelperProps['displaySlots']
   startIndex: number
   renderPane: LayoutHelperProps['renderPane']
   getMinSizePercent: LayoutHelperProps['getMinSizePercent']
-  handleLayoutChange: LayoutHelperProps['handleLayoutChange']
+  createGroupLayoutChangeHandler: LayoutHelperProps['createGroupLayoutChangeHandler']
+  getStoredGroupLayout: LayoutHelperProps['getStoredGroupLayout']
+  groupId: string
 }) {
   const columnGroupRef = useGroupRef()
 
@@ -37,11 +41,12 @@ function ColumnGroup({
   }
 
   const panelIds = slots.map((slot) => getSlotPanelId(slot))
+  const panelSizes = getStoredGroupLayout(groupId, slots.length, 100 / slots.length)
 
   return (
     <Group
       orientation="vertical"
-      onLayoutChange={handleLayoutChange}
+      onLayoutChange={createGroupLayoutChangeHandler(groupId, panelIds, true)}
       groupRef={columnGroupRef}
       className="h-full"
     >
@@ -52,7 +57,7 @@ function ColumnGroup({
             key={panelId}
             id={panelId}
             minSize={`${getMinSizePercent('vertical')}%`}
-            defaultSize={`${100 / slots.length}%`}
+            defaultSize={`${panelSizes[rowIndex] ?? 100 / slots.length}%`}
             className="h-full"
           >
             {renderPane(slot, startIndex + rowIndex)}
@@ -79,11 +84,23 @@ export function ColumnPaneLayout({
   containerRef,
   displaySlots,
   getMinSizePercent,
-  handleLayoutChange,
+  createGroupLayoutChangeHandler,
+  getStoredGroupLayout,
   renderPane,
 }: LayoutHelperProps) {
   const rowGroupRef = useGroupRef()
   const columns = buildColumns(displaySlots)
+  const rootGroupId = `column-pane-root-${displaySlots.length}`
+  const columnSizes = getStoredGroupLayout(
+    rootGroupId,
+    columns.length,
+    100 / columns.length,
+  )
+  const columnPanelIds = columns.map((columnSlots, columnIndex) =>
+    columnSlots.length === 1
+      ? getSlotPanelId(columnSlots[0])
+      : `column-${displaySlots.length}-${columnIndex}`,
+  )
 
   return (
     <div
@@ -93,6 +110,10 @@ export function ColumnPaneLayout({
     >
       <Group
         orientation="horizontal"
+        onLayoutChange={createGroupLayoutChangeHandler(
+          rootGroupId,
+          columnPanelIds,
+        )}
         groupRef={rowGroupRef}
         className="h-full"
       >
@@ -108,32 +129,30 @@ export function ColumnPaneLayout({
               startIndex={startIndex}
               renderPane={renderPane}
               getMinSizePercent={getMinSizePercent}
-              handleLayoutChange={handleLayoutChange}
+              createGroupLayoutChangeHandler={createGroupLayoutChangeHandler}
+              getStoredGroupLayout={getStoredGroupLayout}
+              groupId={`column-pane-${displaySlots.length}-${columnIndex}`}
             />
           )
-
-          if (columnIndex === columns.length - 1) return [columnNode]
-
-          const currentPanelId =
-            columnSlots.length === 1
-              ? getSlotPanelId(columnSlots[0])
-              : `column-${columnIndex}`
-          const nextColumn = columns[columnIndex + 1]
-          const nextPanelId =
-            nextColumn.length === 1
-              ? getSlotPanelId(nextColumn[0])
-              : `column-${columnIndex + 1}`
-
-          return [
+          const currentPanelId = columnPanelIds[columnIndex]
+          const panelNode = (
             <Panel
               key={currentPanelId}
               id={currentPanelId}
               minSize={`${getMinSizePercent('horizontal')}%`}
-              defaultSize={`${100 / columns.length}%`}
+              defaultSize={`${columnSizes[columnIndex] ?? 100 / columns.length}%`}
               className="h-full"
             >
               {columnNode}
-            </Panel>,
+            </Panel>
+          )
+
+          if (columnIndex === columns.length - 1) return [panelNode]
+
+          const nextPanelId = columnPanelIds[columnIndex + 1]
+
+          return [
+            panelNode,
             <ResizeSeparator
               key={`separator-${currentPanelId}`}
               orientation="horizontal"

@@ -2,7 +2,9 @@
 
 import { useMemo, useRef } from 'react'
 import { MAX_PANES } from '@/lib/constants/terminal'
+import { usePaneLayoutGroups } from '@/lib/hooks/use-pane-layout-groups'
 import type { ResizablePaneLayoutProps } from '@/types/pane-layout'
+import { getSlotPanelId } from '@/lib/utils/slot'
 import {
   useMinSizeCalculator,
   usePaneRenderer,
@@ -42,6 +44,7 @@ export function ResizablePaneLayout(props: ResizablePaneLayoutProps) {
   const displaySlots = useMemo(() => slots.slice(0, MAX_PANES), [slots])
   const paneCount = displaySlots.length
   const containerRef = useRef<HTMLDivElement>(null)
+  const layoutStorageKey = `terminal-layout-groups:${layoutMode}:${paneCount}`
 
   const getMinSizePercent = useMinSizeCalculator(containerRef)
   const handleLayoutChange = useLayoutChangeHandler(
@@ -49,7 +52,40 @@ export function ResizablePaneLayout(props: ResizablePaneLayoutProps) {
     paneCount,
     onLayoutChange,
   )
+  const { getGroupSizes, updateGroupSizes } =
+    usePaneLayoutGroups(layoutStorageKey)
   const renderPane = usePaneRenderer({ props, displaySlots, paneCount })
+  const displaySlotPanelIds = useMemo(
+    () => new Set(displaySlots.map((slot) => getSlotPanelId(slot))),
+    [displaySlots],
+  )
+  const getStoredGroupLayout = useMemo(
+    () =>
+      (groupId: string, panelCountForGroup: number, defaultSize: number) =>
+        getGroupSizes(groupId, panelCountForGroup, defaultSize),
+    [getGroupSizes],
+  )
+  const createGroupLayoutChangeHandler = useMemo(
+    () =>
+      (
+        groupId: string,
+        panelIds: string[],
+        persistPaneLayouts = false,
+      ) =>
+      (layout: Record<string, number>) => {
+        const sizes = panelIds.map((panelId) => layout[panelId] ?? 100 / panelIds.length)
+        updateGroupSizes(groupId, sizes)
+
+        if (persistPaneLayouts && panelIds.every((panelId) => displaySlotPanelIds.has(panelId))) {
+          handleLayoutChange(layout)
+        }
+      },
+    [displaySlotPanelIds, handleLayoutChange, updateGroupSizes],
+  )
+  const layoutHelpers = {
+    getStoredGroupLayout,
+    createGroupLayoutChangeHandler,
+  }
 
   if (paneCount === 0) {
     return (
@@ -93,6 +129,7 @@ export function ResizablePaneLayout(props: ResizablePaneLayoutProps) {
         displaySlots={displaySlots}
         getMinSizePercent={getMinSizePercent}
         handleLayoutChange={handleLayoutChange}
+        {...layoutHelpers}
         renderPane={renderPane}
         orientation={
           layoutMode === 'split-vertical' ? 'vertical' : 'horizontal'
@@ -108,6 +145,7 @@ export function ResizablePaneLayout(props: ResizablePaneLayoutProps) {
         displaySlots={displaySlots}
         getMinSizePercent={getMinSizePercent}
         handleLayoutChange={handleLayoutChange}
+        {...layoutHelpers}
         renderPane={renderPane}
         orientation={
           layoutMode === 'split-vertical' ? 'vertical' : 'horizontal'
@@ -124,6 +162,7 @@ export function ResizablePaneLayout(props: ResizablePaneLayoutProps) {
           displaySlots={displaySlots}
           getMinSizePercent={getMinSizePercent}
           handleLayoutChange={handleLayoutChange}
+          {...layoutHelpers}
           renderPane={renderPane}
         />
       )
@@ -135,6 +174,7 @@ export function ResizablePaneLayout(props: ResizablePaneLayoutProps) {
         displaySlots={displaySlots}
         getMinSizePercent={getMinSizePercent}
         handleLayoutChange={handleLayoutChange}
+        {...layoutHelpers}
         renderPane={renderPane}
       />
     )
@@ -147,6 +187,7 @@ export function ResizablePaneLayout(props: ResizablePaneLayoutProps) {
         displaySlots={displaySlots}
         getMinSizePercent={getMinSizePercent}
         handleLayoutChange={handleLayoutChange}
+        {...layoutHelpers}
         renderPane={renderPane}
       />
     ) : (
@@ -155,6 +196,7 @@ export function ResizablePaneLayout(props: ResizablePaneLayoutProps) {
         displaySlots={displaySlots}
         getMinSizePercent={getMinSizePercent}
         handleLayoutChange={handleLayoutChange}
+        {...layoutHelpers}
         renderPane={renderPane}
       />
     )

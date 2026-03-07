@@ -12,7 +12,8 @@ export function FourPaneLayout({
   containerRef,
   displaySlots,
   getMinSizePercent,
-  handleLayoutChange,
+  createGroupLayoutChangeHandler,
+  getStoredGroupLayout,
   renderPane,
 }: LayoutHelperProps) {
   const verticalGroupRef = useGroupRef()
@@ -27,6 +28,9 @@ export function FourPaneLayout({
     getSlotPanelId(displaySlots[2]),
     getSlotPanelId(displaySlots[3]),
   ]
+  const rootSizes = getStoredGroupLayout('four-pane-root', 2, 50)
+  const topRowSizes = getStoredGroupLayout('four-pane-top-row', 2, 50)
+  const bottomRowSizes = getStoredGroupLayout('four-pane-bottom-row', 2, 50)
 
   return (
     <div
@@ -36,24 +40,32 @@ export function FourPaneLayout({
     >
       <Group
         orientation="vertical"
+        onLayoutChange={createGroupLayoutChangeHandler('four-pane-root', [
+          'top-row',
+          'bottom-row',
+        ])}
         groupRef={verticalGroupRef}
         className="h-full"
       >
         <Panel
           id="top-row"
           minSize={`${getMinSizePercent('vertical')}%`}
-          defaultSize="50%"
+          defaultSize={`${rootSizes[0]}%`}
         >
           <Group
             orientation="horizontal"
-            onLayoutChange={handleLayoutChange}
+            onLayoutChange={createGroupLayoutChangeHandler(
+              'four-pane-top-row',
+              topRowPanelIds,
+              true,
+            )}
             groupRef={topRowGroupRef}
             className="h-full"
           >
             <Panel
               id={topRowPanelIds[0]}
               minSize={`${getMinSizePercent('horizontal')}%`}
-              defaultSize="50%"
+              defaultSize={`${topRowSizes[0]}%`}
               className="h-full"
             >
               {renderPane(displaySlots[0], 0)}
@@ -68,7 +80,7 @@ export function FourPaneLayout({
             <Panel
               id={topRowPanelIds[1]}
               minSize={`${getMinSizePercent('horizontal')}%`}
-              defaultSize="50%"
+              defaultSize={`${topRowSizes[1]}%`}
               className="h-full"
             >
               {renderPane(displaySlots[1], 1)}
@@ -85,18 +97,22 @@ export function FourPaneLayout({
         <Panel
           id="bottom-row"
           minSize={`${getMinSizePercent('vertical')}%`}
-          defaultSize="50%"
+          defaultSize={`${rootSizes[1]}%`}
         >
           <Group
             orientation="horizontal"
-            onLayoutChange={handleLayoutChange}
+            onLayoutChange={createGroupLayoutChangeHandler(
+              'four-pane-bottom-row',
+              bottomRowPanelIds,
+              true,
+            )}
             groupRef={bottomRowGroupRef}
             className="h-full"
           >
             <Panel
               id={bottomRowPanelIds[0]}
               minSize={`${getMinSizePercent('horizontal')}%`}
-              defaultSize="50%"
+              defaultSize={`${bottomRowSizes[0]}%`}
               className="h-full"
             >
               {renderPane(displaySlots[2], 2)}
@@ -111,7 +127,7 @@ export function FourPaneLayout({
             <Panel
               id={bottomRowPanelIds[1]}
               minSize={`${getMinSizePercent('horizontal')}%`}
-              defaultSize="50%"
+              defaultSize={`${bottomRowSizes[1]}%`}
               className="h-full"
             >
               {renderPane(displaySlots[3], 3)}

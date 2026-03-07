@@ -1,6 +1,7 @@
 import type { TerminalSlot } from '@/lib/utils/slot'
 import type { TerminalMode } from '../ModeToggle'
 import type { LayoutMode } from '@/lib/constants/terminal'
+import type { ConnectionStatus } from '@/components/terminal.types'
 
 export interface UnifiedTerminalHeaderProps {
   slot: TerminalSlot
@@ -35,6 +36,7 @@ export interface UnifiedTerminalHeaderProps {
   layoutMode?: LayoutMode
   availableLayouts?: LayoutMode[]
   onLayoutModeChange?: (mode: LayoutMode) => void
+  connectionStatus?: ConnectionStatus
 }
 
 export interface IconButtonProps {

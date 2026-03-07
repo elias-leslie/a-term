@@ -45,6 +45,7 @@ export interface TerminalContentProps {
   // Handlers
   setTerminalRef: (sessionId: string, handle: TerminalHandle | null) => void
   handleStatusChange: (sessionId: string, status: ConnectionStatus) => void
+  terminalStatuses: Map<string, ConnectionStatus>
   onSlotSwitch: (slot: TerminalSlot) => void
   onSlotReset: (slot: TerminalSlot) => void
   onSlotClose: (slot: TerminalSlot) => void

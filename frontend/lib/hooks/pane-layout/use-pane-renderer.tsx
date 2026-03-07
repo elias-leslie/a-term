@@ -36,6 +36,7 @@ interface UsePaneRendererOptions {
     | 'layoutMode'
     | 'availableLayouts'
     | 'onLayoutModeChange'
+    | 'terminalStatuses'
   >
   displaySlots: (TerminalSlot | PaneSlot)[]
   paneCount: number
@@ -74,6 +75,7 @@ export function usePaneRenderer({
     layoutMode,
     availableLayouts,
     onLayoutModeChange,
+    terminalStatuses,
   } = props
 
   const renderPane = useCallback(
@@ -123,6 +125,7 @@ export function usePaneRenderer({
             layoutMode={layoutMode}
             availableLayouts={availableLayouts}
             onLayoutModeChange={onLayoutModeChange}
+            connectionStatus={sessionId ? terminalStatuses?.get(sessionId) : undefined}
           />
 
           <div
@@ -184,6 +187,7 @@ export function usePaneRenderer({
       layoutMode,
       availableLayouts,
       onLayoutModeChange,
+      terminalStatuses,
     ],
   )
 

@@ -33,15 +33,17 @@ export function useLayoutAutoDowngrade(
   availableLayouts: LayoutMode[],
   layoutMode: LayoutMode,
   setLayoutMode: (mode: LayoutMode) => void,
+  enabled = true,
 ) {
   useEffect(() => {
+    if (!enabled || availableLayouts.length === 0) return
     if (!availableLayouts.includes(layoutMode)) {
       const highest =
         availableLayouts[availableLayouts.length - 1] || 'split-horizontal'
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync layout to viewport constraints
       setLayoutMode(highest)
     }
-  }, [availableLayouts, layoutMode, setLayoutMode])
+  }, [availableLayouts, enabled, layoutMode, setLayoutMode])
 }
 
 /**
