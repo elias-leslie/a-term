@@ -215,6 +215,44 @@ async def update_all_pane_layouts(
     return [build_pane_response(p) for p in all_panes]
 
 
+def _validate_agent_tool(slug: str) -> None:
+    """Validate agent tool exists and is enabled. Raises HTTPException otherwise."""
+    tool = agent_tools_store.get_by_slug(slug)
+    if not tool:
+        raise HTTPException(status_code=404, detail=f"Agent tool '{slug}' not found") from None
+    if not tool["enabled"]:
+        raise HTTPException(status_code=400, detail=f"Agent tool '{tool['name']}' is disabled") from None
+
+
+def _replace_agent_session(pane: dict[str, Any], pane_id: str, agent_tool_slug: str) -> None:
+    """Kill existing agent session and create a new one with the given tool slug.
+
+    Prefers shell session's working_dir as it's more likely to be accurate.
+    """
+    agent_session = next(
+        (s for s in pane.get("sessions", []) if s.get("mode") != "shell"),
+        None,
+    )
+    if agent_session:
+        _kill_tmux_session(agent_session["id"], ignore_missing=True)
+        delete_session(agent_session["id"])
+
+    shell_session = next(
+        (s for s in pane.get("sessions", []) if s.get("mode") == "shell"),
+        None,
+    )
+    working_dir = shell_session.get("working_dir") if shell_session else None
+    project_id = pane.get("project_id")
+    session_name = f"Project: {project_id}" if project_id else pane.get("pane_name", "Terminal")
+    create_session(
+        name=session_name,
+        project_id=project_id,
+        working_dir=working_dir,
+        mode=agent_tool_slug,
+        pane_id=pane_id,
+    )
+
+
 @limiter.limit("20/minute")
 @router.put("/api/terminal/panes/{pane_id}/agent-tool", response_model=PaneResponse)
 async def switch_agent_tool(request: Request, pane_id: str, body: SwitchAgentToolRequest) -> PaneResponse:
@@ -229,42 +267,8 @@ async def switch_agent_tool(request: Request, pane_id: str, body: SwitchAgentToo
     if pane["pane_type"] != "project":
         raise HTTPException(status_code=400, detail="Only project panes support agent tools") from None
 
-    # Validate the target agent tool exists and is enabled
-    tool = agent_tools_store.get_by_slug(body.agent_tool_slug)
-    if not tool:
-        raise HTTPException(status_code=404, detail=f"Agent tool '{body.agent_tool_slug}' not found") from None
-    if not tool["enabled"]:
-        raise HTTPException(status_code=400, detail=f"Agent tool '{tool['name']}' is disabled") from None
-
-    # Find the current agent session (non-shell session)
-    agent_session = next(
-        (s for s in pane.get("sessions", []) if s.get("mode") != "shell"),
-        None,
-    )
-
-    if agent_session:
-        # Kill old tmux session and delete old agent session
-        _kill_tmux_session(agent_session["id"], ignore_missing=True)
-        delete_session(agent_session["id"])
-
-    # Create new agent session with the new tool's slug as mode
-    # Prefer shell session's working_dir as it's more likely to be accurate
-    shell_session = next(
-        (s for s in pane.get("sessions", []) if s.get("mode") == "shell"),
-        None,
-    )
-    working_dir = shell_session.get("working_dir") if shell_session else None
-    project_id = pane.get("project_id")
-    session_name = f"Project: {project_id}" if project_id else pane.get("pane_name", "Terminal")
-    create_session(
-        name=session_name,
-        project_id=project_id,
-        working_dir=working_dir,
-        mode=body.agent_tool_slug,
-        pane_id=pane_id,
-    )
-
-    # Update pane's active_mode
+    _validate_agent_tool(body.agent_tool_slug)
+    _replace_agent_session(pane, pane_id, body.agent_tool_slug)
     pane_crud.update_pane(pane_id, active_mode=body.agent_tool_slug)
 
     pane_with_sessions = pane_crud.get_pane_with_sessions(pane_id)
