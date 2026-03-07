@@ -37,7 +37,10 @@ def prepare_scrollback_for_transport(
     max_chars: int = MAX_SCROLLBACK_CHARS,
 ) -> str:
     """Normalize and bound tmux scrollback before sending it to the browser."""
-    return normalize_scrollback(limit_scrollback(scrollback, max_chars=max_chars))
+    return limit_scrollback(
+        normalize_scrollback(scrollback),
+        max_chars=max_chars,
+    )
 
 
 def build_scrollback_sync_payload(scrollback: str) -> str:
