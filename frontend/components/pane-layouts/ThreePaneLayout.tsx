@@ -20,6 +20,10 @@ export function ThreePaneLayout({
   const outerGroupRef = useGroupRef()
   const innerGroupRef = useGroupRef()
   const isVertical = orientation === 'vertical'
+  // 2+1 geometry: vertical orientation places slots[1] and [2] in the right
+  // column (primary pair) with slots[0] as the left/secondary pane; horizontal
+  // orientation places slots[0] and [1] in the top-row pair with slots[2] as
+  // the bottom/secondary pane.
   const primaryPanelIds: [string, string] = isVertical
     ? [getSlotPanelId(displaySlots[1]), getSlotPanelId(displaySlots[2])]
     : [getSlotPanelId(displaySlots[0]), getSlotPanelId(displaySlots[1])]

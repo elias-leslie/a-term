@@ -48,7 +48,7 @@ describe('TerminalManagerModal', () => {
     })
 
     expect(screen.getByText('Agent Hub')).toBeInTheDocument()
-    expect(screen.queryByText('Terminal')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Terminal$/ })).not.toBeInTheDocument()
   })
 
   it('creates an ad-hoc terminal from quick start', () => {

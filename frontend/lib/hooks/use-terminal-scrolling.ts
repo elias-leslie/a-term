@@ -168,7 +168,6 @@ export function useTerminalScrolling({
             const tracking = initializeTouchTracking(currentY)
             touchStartY = tracking.touchStartY
             lastSentY = tracking.lastSentY
-            return
           }
 
           // Check if in alternate screen

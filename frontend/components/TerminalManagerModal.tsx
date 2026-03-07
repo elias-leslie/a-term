@@ -2,7 +2,7 @@
 
 import * as Dialog from '@radix-ui/react-dialog'
 import { Folder, Plus, Terminal, X } from 'lucide-react'
-import { useDeferredValue, useMemo, useState } from 'react'
+import { useDeferredValue, useMemo, useRef, useState } from 'react'
 import { useHoverStyle } from '@/lib/hooks/use-hover-style'
 import {
   type ProjectSetting,
@@ -132,6 +132,7 @@ export function TerminalManagerModal({
   const { projects } = useProjectSettings()
   const [searchQuery, setSearchQuery] = useState('')
   const deferredSearchQuery = useDeferredValue(searchQuery)
+  const searchRef = useRef<HTMLInputElement>(null)
 
   // Count panes per project (only project panes, not ad-hoc)
   const paneCountByProject = useMemo(() => {
@@ -217,8 +218,7 @@ export function TerminalManagerModal({
           }}
           onOpenAutoFocus={(event) => {
             event.preventDefault()
-            const input = document.getElementById('terminal-manager-search')
-            input instanceof HTMLInputElement && input.focus()
+            searchRef.current?.focus()
           }}
         >
           <div
@@ -268,6 +268,7 @@ export function TerminalManagerModal({
               Search Projects
             </label>
             <input
+              ref={searchRef}
               id="terminal-manager-search"
               type="text"
               value={searchQuery}
