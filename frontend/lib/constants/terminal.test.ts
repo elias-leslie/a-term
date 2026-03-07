@@ -44,8 +44,8 @@ describe('getAvailableLayoutModes', () => {
     expect(getAvailableLayoutModes(6, 2560)).toEqual(['grid-3x2', 'grid-2x3'])
   })
 
-  it('uses the standard grid for four-pane defaults', () => {
-    expect(getAvailableLayoutModes(4, 1440)).toEqual(['grid-2x2'])
+  it('returns only a horizontal split for a single pane', () => {
+    expect(getAvailableLayoutModes(1, 1440)).toEqual(['split-horizontal'])
   })
 })
 

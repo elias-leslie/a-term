@@ -29,16 +29,28 @@ click_button_with_text() {
 }
 
 button_count() {
-  ab eval "
+  local result
+  result="$(ab eval "
     String(document.querySelectorAll('button[title=\"Close terminal\"]').length)
-  " | tr -d '"'
+  " | tr -d '"')"
+  if ! [[ "$result" =~ ^[0-9]+$ ]]; then
+    echo "Failed to parse button count: $result" >&2
+    exit 1
+  fi
+  echo "$result"
 }
 
 prompt_count() {
-  ab eval "
+  local result
+  result="$(ab eval "
     String(Array.from(document.querySelectorAll('.xterm-rows'))
       .filter((node) => (node.textContent || '').includes('$')).length)
-  " | tr -d '"'
+  " | tr -d '"')"
+  if ! [[ "$result" =~ ^[0-9]+$ ]]; then
+    echo "Failed to parse prompt count: $result" >&2
+    exit 1
+  fi
+  echo "$result"
 }
 
 ensure_panes() {
