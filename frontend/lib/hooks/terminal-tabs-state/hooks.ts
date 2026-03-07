@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo } from 'react'
-import type { LayoutMode } from '@/components/LayoutModeButton'
+import type { LayoutMode } from '@/lib/constants/terminal'
 import type { ConnectionStatus } from '@/components/Terminal'
 import type { PaneSlot } from '@/lib/utils/slot'
 import { isReconnectableStatus } from '@/lib/utils/mobile-terminal-status'
@@ -36,7 +36,8 @@ export function useLayoutAutoDowngrade(
 ) {
   useEffect(() => {
     if (!availableLayouts.includes(layoutMode)) {
-      const highest = availableLayouts[availableLayouts.length - 1] || 'single'
+      const highest =
+        availableLayouts[availableLayouts.length - 1] || 'split-horizontal'
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync layout to viewport constraints
       setLayoutMode(highest)
     }

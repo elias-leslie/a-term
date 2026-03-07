@@ -34,6 +34,9 @@ interface UsePaneRendererOptions {
     | 'onStatusChange'
     | 'onVoice'
     | 'activeSessionId'
+    | 'layoutMode'
+    | 'availableLayouts'
+    | 'onLayoutModeChange'
   >
   displaySlots: (TerminalSlot | PaneSlot)[]
   paneCount: number
@@ -70,6 +73,9 @@ export function usePaneRenderer({
     onStatusChange,
     onVoice,
     activeSessionId,
+    layoutMode,
+    availableLayouts,
+    onLayoutModeChange,
   } = props
 
   const renderPane = useCallback(
@@ -117,6 +123,9 @@ export function usePaneRenderer({
                 ? (targetSlot) => onSwitch(targetSlot)
                 : undefined
             }
+            layoutMode={layoutMode}
+            availableLayouts={availableLayouts}
+            onLayoutModeChange={onLayoutModeChange}
           />
 
           <div
@@ -176,6 +185,9 @@ export function usePaneRenderer({
       onStatusChange,
       onVoice,
       activeSessionId,
+      layoutMode,
+      availableLayouts,
+      onLayoutModeChange,
     ],
   )
 

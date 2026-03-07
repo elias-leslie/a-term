@@ -1,5 +1,6 @@
 import type { ConnectionStatus, TerminalHandle } from '@/components/Terminal'
 import type { TerminalMode } from '@/components/ModeToggle'
+import type { LayoutMode } from '@/lib/constants/terminal'
 import type { PaneSlot, TerminalSlot } from '@/lib/utils/slot'
 import type { TerminalComponent } from '@/components/Terminal'
 
@@ -43,6 +44,9 @@ export interface ResizablePaneLayoutProps {
   isModeSwitching?: boolean
   isMobile?: boolean
   activeSessionId?: string | null
+  layoutMode?: LayoutMode
+  availableLayouts?: LayoutMode[]
+  onLayoutModeChange?: (mode: LayoutMode) => void
   onLayoutChange?: (layouts: PaneLayout[]) => void
   initialLayouts?: PaneLayout[]
   onSwapPanes?: (slotIdA: string, slotIdB: string) => void

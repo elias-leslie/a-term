@@ -1,6 +1,7 @@
 export { TwoPaneLayout } from './TwoPaneLayout'
 export { ThreePaneLayout } from './ThreePaneLayout'
 export { FourPaneLayout } from './FourPaneLayout'
+export { WidePaneLayout } from './WidePaneLayout'
 export { SinglePaneLayout } from './SinglePaneLayout'
 export { EmptyPaneState } from './EmptyPaneState'
 export { ResizeSeparator } from './ResizeSeparator'

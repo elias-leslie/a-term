@@ -2,11 +2,11 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
-import type { LayoutMode } from '@/components/LayoutModeButton'
 import type { KeyboardSizePreset } from '@/components/SettingsDropdown'
 import type { ConnectionStatus, TerminalHandle } from '@/components/Terminal'
 import { useAgentPolling } from '@/lib/hooks/use-agent-polling'
 import { useAgentTools } from '@/lib/hooks/use-agent-tools'
+import type { LayoutMode } from '@/lib/constants/terminal'
 import { useProjectModeSwitch } from '@/lib/hooks/use-project-mode-switch'
 import { useProjectTerminals } from '@/lib/hooks/use-project-terminals'
 import type { TerminalSession } from '@/lib/hooks/use-terminal-sessions'

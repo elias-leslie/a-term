@@ -8,7 +8,7 @@ Complete checklist for testing all terminal workflows and behaviors.
 
 | Concept | Description |
 |---------|-------------|
-| **Pane** | Container holding 1-2 sessions. Max 4 panes. |
+| **Pane** | Container holding 1-2 sessions. Max 6 panes on ultrawide layouts. |
 | **Project Pane** | Has shell + claude sessions, mode toggle |
 | **Ad-Hoc Pane** | Shell-only, no project association |
 | **Session** | Actual tmux-backed terminal instance |
@@ -86,7 +86,7 @@ Complete checklist for testing all terminal workflows and behaviors.
 
 ### Pane Limit (4 max)
 
-- [ ] With 4 panes open, + buttons are disabled
+- [ ] With the viewport pane limit reached, + buttons are disabled
 - [ ] Terminal Manager shows "at limit" state
 - [ ] Cannot create 5th pane
 

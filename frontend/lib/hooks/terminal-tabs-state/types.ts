@@ -1,6 +1,6 @@
 import type { ConnectionStatus, TerminalHandle } from '@/components/Terminal'
 import type { KeyboardSizePreset } from '@/components/SettingsDropdown'
-import type { LayoutMode } from '@/components/LayoutModeButton'
+import type { LayoutMode } from '@/lib/constants/terminal'
 
 export interface UseTerminalTabsStateProps {
   projectId?: string

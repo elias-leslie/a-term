@@ -2,6 +2,7 @@ import type { RefObject } from 'react'
 import { clsx } from 'clsx'
 import type { TerminalSlot } from '@/lib/utils/slot'
 import type { TerminalHandle, ConnectionStatus } from '@/components/terminal.types'
+import type { LayoutMode } from '@/lib/constants/terminal'
 import type { TerminalFontSize, TerminalScrollback } from '@/lib/hooks/use-terminal-settings'
 import type { PaneLayout } from '@/types/pane-layout'
 import { FileUploadDropzone } from '@/components/FileUploadDropzone'
@@ -29,6 +30,9 @@ interface TerminalFileSectionProps {
   onModeSwitch: (slot: TerminalSlot, mode: string) => void
   isModeSwitching: boolean
   onSwapPanes: (slotIdA: string, slotIdB: string) => void
+  layoutMode: LayoutMode
+  availableLayouts: LayoutMode[]
+  onLayoutModeChange: (mode: LayoutMode) => void
   onLayoutChange?: (layouts: PaneLayout[]) => void
   fileInputRef: RefObject<HTMLInputElement | null>
   progress: number
@@ -63,6 +67,9 @@ export function TerminalFileSection({
   onModeSwitch,
   isModeSwitching,
   onSwapPanes,
+  layoutMode,
+  availableLayouts,
+  onLayoutModeChange,
   onLayoutChange,
   fileInputRef,
   progress,
@@ -121,6 +128,9 @@ export function TerminalFileSection({
           isModeSwitching={isModeSwitching}
           isMobile={isMobile ?? false}
           activeSessionId={activeSessionId}
+          layoutMode={layoutMode}
+          availableLayouts={availableLayouts}
+          onLayoutModeChange={onLayoutModeChange}
           onSwapPanes={onSwapPanes}
           onLayoutChange={onLayoutChange}
           onVoice={isVoiceSupported ? handleVoiceOpen : undefined}

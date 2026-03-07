@@ -46,6 +46,9 @@ export function TerminalContent({
   onModeSwitch,
   isModeSwitching,
   onSwapPanes,
+  layoutMode,
+  availableLayouts,
+  onLayoutModeChange,
   onLayoutChange,
   fileInputRef,
   progress,
@@ -124,6 +127,9 @@ export function TerminalContent({
         onModeSwitch={onModeSwitch}
         isModeSwitching={isModeSwitching}
         onSwapPanes={onSwapPanes}
+        layoutMode={layoutMode}
+        availableLayouts={availableLayouts}
+        onLayoutModeChange={onLayoutModeChange}
         onLayoutChange={onLayoutChange}
         fileInputRef={fileInputRef}
         progress={progress}

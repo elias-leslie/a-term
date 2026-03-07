@@ -24,7 +24,7 @@ export function useTerminalPanes() {
   })
 
   const panes = data?.items ?? []
-  const maxPanes = data?.max_panes ?? 4
+  const maxPanes = data?.max_panes ?? 6
   const atLimit = panes.length >= maxPanes
 
   const createMutation = useMutation({

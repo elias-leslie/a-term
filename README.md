@@ -53,7 +53,7 @@ terminal/
 ## Key Features
 
 - **Persistent sessions** - tmux-backed terminals survive browser disconnects and server restarts
-- **Multi-pane layouts** - Up to 4 panes with resizable split views
+- **Multi-pane layouts** - Up to 6 panes with resizable split views on wide desktops
 - **Dual mode** - Switch between shell and Claude Code mode per pane
 - **Project context** - Open terminals in project-specific working directories
 - **Mobile keyboard** - On-screen keyboard for touch devices (simple-keyboard)
@@ -121,7 +121,7 @@ DATABASE_URL=postgresql://user:pass@localhost/summitflow
 | PATCH | `/api/terminal/sessions/{id}` | Update session |
 | DELETE | `/api/terminal/sessions/{id}` | Delete session |
 | GET | `/api/terminal/panes` | List panes |
-| POST | `/api/terminal/panes` | Create pane (max 4) |
+| POST | `/api/terminal/panes` | Create pane (max 6) |
 | PATCH | `/api/terminal/panes/{id}` | Update pane |
 | DELETE | `/api/terminal/panes/{id}` | Delete pane |
 | GET | `/api/terminal/projects/{id}` | Get project settings |

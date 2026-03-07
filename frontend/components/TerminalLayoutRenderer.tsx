@@ -4,6 +4,7 @@ import type { PaneSlot, TerminalSlot } from '@/lib/utils/slot'
 import type { TerminalMode } from './ModeToggle'
 import { type PaneLayout, ResizablePaneLayout } from './ResizablePaneLayout'
 import type { TerminalComponent, TerminalHandle } from './Terminal'
+import type { LayoutMode } from '@/lib/constants/terminal'
 import type { ConnectionStatus } from './terminal.types'
 
 interface TerminalLayoutRendererProps {
@@ -51,6 +52,9 @@ interface TerminalLayoutRendererProps {
   onSwapPanes?: (slotIdA: string, slotIdB: string) => void
 
   // Layout persistence
+  layoutMode: LayoutMode
+  availableLayouts: LayoutMode[]
+  onLayoutModeChange: (mode: LayoutMode) => void
   onLayoutChange?: (layouts: PaneLayout[]) => void
   initialLayouts?: PaneLayout[]
 
@@ -81,6 +85,9 @@ export function TerminalLayoutRenderer({
   isMobile,
   activeSessionId,
   onSwapPanes,
+  layoutMode,
+  availableLayouts,
+  onLayoutModeChange,
   onLayoutChange,
   initialLayouts,
   onVoice,
@@ -108,6 +115,9 @@ export function TerminalLayoutRenderer({
       isModeSwitching={isModeSwitching}
       isMobile={isMobile}
       activeSessionId={activeSessionId}
+      layoutMode={layoutMode}
+      availableLayouts={availableLayouts}
+      onLayoutModeChange={onLayoutModeChange}
       onSwapPanes={onSwapPanes}
       onLayoutChange={onLayoutChange}
       initialLayouts={initialLayouts}

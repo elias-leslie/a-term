@@ -1,14 +1,17 @@
 'use client'
 
-import { ChevronDown, Grid2x2, type LucideIcon } from 'lucide-react'
+import {
+  ChevronDown,
+  Grid2x2,
+  LayoutPanelLeft,
+  LayoutPanelTop,
+  PanelsTopLeft,
+  type LucideIcon,
+} from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { GRID_MIN_WIDTHS, type GridLayoutMode } from '@/lib/constants/terminal'
+import { type LayoutMode, GRID_MIN_WIDTHS } from '@/lib/constants/terminal'
 import { useClickOutside } from '@/lib/hooks/use-click-outside'
 import { useDropdownPosition } from '@/lib/hooks/use-dropdown-position'
-
-// Define LayoutMode locally for standalone terminal app
-// Only grid mode supported (single mode removed)
-export type LayoutMode = GridLayoutMode
 
 interface LayoutOption {
   mode: LayoutMode
@@ -19,10 +22,26 @@ interface LayoutOption {
 
 const LAYOUT_OPTIONS: LayoutOption[] = [
   {
+    mode: 'split-horizontal',
+    icon: LayoutPanelLeft,
+    title: 'Side by Side',
+  },
+  {
+    mode: 'split-vertical',
+    icon: LayoutPanelTop,
+    title: 'Stacked',
+  },
+  {
     mode: 'grid-2x2',
     icon: Grid2x2,
     title: '2×2 Grid',
     minWidth: GRID_MIN_WIDTHS['grid-2x2'],
+  },
+  {
+    mode: 'grid-3x2',
+    icon: PanelsTopLeft,
+    title: '3×2 Grid',
+    minWidth: GRID_MIN_WIDTHS['grid-3x2'],
   },
 ]
 

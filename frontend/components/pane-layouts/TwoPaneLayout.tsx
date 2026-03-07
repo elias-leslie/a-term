@@ -14,6 +14,7 @@ export function TwoPaneLayout({
   getMinSizePercent,
   handleLayoutChange,
   renderPane,
+  orientation = 'horizontal',
 }: LayoutHelperProps) {
   const groupRef = useGroupRef()
   const panelIds: [string, string] = [
@@ -28,14 +29,14 @@ export function TwoPaneLayout({
       style={{ backgroundColor: 'var(--term-bg-deep)' }}
     >
       <Group
-        orientation="horizontal"
+        orientation={orientation}
         onLayoutChange={handleLayoutChange}
         groupRef={groupRef}
         className="h-full"
       >
         <Panel
           id={panelIds[0]}
-          minSize={`${getMinSizePercent('horizontal')}%`}
+          minSize={`${getMinSizePercent(orientation)}%`}
           defaultSize="50%"
           className="h-full"
         >
@@ -43,14 +44,14 @@ export function TwoPaneLayout({
         </Panel>
 
         <ResizeSeparator
-          orientation="horizontal"
+          orientation={orientation}
           groupRef={groupRef}
           adjacentPanelIds={panelIds}
         />
 
         <Panel
           id={panelIds[1]}
-          minSize={`${getMinSizePercent('horizontal')}%`}
+          minSize={`${getMinSizePercent(orientation)}%`}
           defaultSize="50%"
           className="h-full"
         >

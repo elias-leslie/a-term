@@ -16,7 +16,7 @@ export function AddTerminalButton({
 }: AddTerminalButtonProps) {
   const title = canAddPane
     ? 'Open terminal'
-    : 'Maximum 4 terminals. Close one to add more.'
+    : 'Pane limit reached for the current viewport. Close one or widen the window.'
 
   return (
     <button

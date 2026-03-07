@@ -14,21 +14,29 @@ import {
   TwoPaneLayout,
   ThreePaneLayout,
   FourPaneLayout,
+  WidePaneLayout,
 } from './pane-layouts'
 
 /**
  * Resizable pane layout using react-resizable-panels.
  * Dynamically adapts grid based on pane count:
  * - 1 pane: full size
- * - 2 panes: vertical split (side by side)
+ * - 2 panes: side-by-side or stacked split
  * - 3 panes: 2+1 layout
  * - 4 panes: 2x2 grid
+ * - 5-6 panes: 3x2 wide grid
  *
  * On mobile: always renders a single full-size pane (the active one).
  */
 export function ResizablePaneLayout(props: ResizablePaneLayoutProps) {
-  const { slots, isMobile, activeSessionId, onLayoutChange, onOpenModal } =
-    props
+  const {
+    slots,
+    isMobile,
+    activeSessionId,
+    onLayoutChange,
+    onOpenModal,
+    layoutMode = 'split-horizontal',
+  } = props
 
   const displaySlots = useMemo(() => slots.slice(0, MAX_PANES), [slots])
   const paneCount = displaySlots.length
@@ -85,6 +93,9 @@ export function ResizablePaneLayout(props: ResizablePaneLayoutProps) {
         getMinSizePercent={getMinSizePercent}
         handleLayoutChange={handleLayoutChange}
         renderPane={renderPane}
+        orientation={
+          layoutMode === 'split-vertical' ? 'vertical' : 'horizontal'
+        }
       />
     )
   }
@@ -101,8 +112,20 @@ export function ResizablePaneLayout(props: ResizablePaneLayoutProps) {
     )
   }
 
+  if (paneCount <= 4) {
+    return (
+      <FourPaneLayout
+        containerRef={containerRef}
+        displaySlots={displaySlots}
+        getMinSizePercent={getMinSizePercent}
+        handleLayoutChange={handleLayoutChange}
+        renderPane={renderPane}
+      />
+    )
+  }
+
   return (
-    <FourPaneLayout
+    <WidePaneLayout
       containerRef={containerRef}
       displaySlots={displaySlots}
       getMinSizePercent={getMinSizePercent}

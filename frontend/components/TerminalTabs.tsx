@@ -49,6 +49,8 @@ export function TerminalTabs({
     activeSessionId,
     activeMode,
     activeStatus,
+    layoutMode,
+    availableLayouts,
     handleKeyboardInput,
     handleReconnect,
     panes,
@@ -70,6 +72,7 @@ export function TerminalTabs({
     isModeSwitching,
 
     // Layout handlers
+    handleLayoutModeChange,
     handleLayoutChange,
 
     // Keyboard shortcuts
@@ -151,6 +154,9 @@ export function TerminalTabs({
         onModeSwitch={handleSlotModeSwitch}
         isModeSwitching={!!isModeSwitching}
         onSwapPanes={swapPanes}
+        layoutMode={layoutMode}
+        availableLayouts={availableLayouts}
+        onLayoutModeChange={handleLayoutModeChange}
         onLayoutChange={handleLayoutChange}
         fileInputRef={fileInputRef}
         progress={progress}

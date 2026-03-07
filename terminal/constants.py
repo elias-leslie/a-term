@@ -8,4 +8,4 @@ Agent tool commands and process names are now stored in the agent_tools DB table
 SHELL_MODE = "shell"
 
 # Maximum number of panes allowed
-MAX_PANES = 4
+MAX_PANES = 6

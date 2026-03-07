@@ -1,5 +1,6 @@
 import type { TerminalSlot } from '@/lib/utils/slot'
 import type { TerminalMode } from '../ModeToggle'
+import type { LayoutMode } from '@/lib/constants/terminal'
 
 export interface UnifiedTerminalHeaderProps {
   slot: TerminalSlot
@@ -31,6 +32,9 @@ export interface UnifiedTerminalHeaderProps {
   onResetAll?: () => void
   /** Callback to close all panes (overflow menu) */
   onCloseAll?: () => void
+  layoutMode?: LayoutMode
+  availableLayouts?: LayoutMode[]
+  onLayoutModeChange?: (mode: LayoutMode) => void
 }
 
 export interface IconButtonProps {

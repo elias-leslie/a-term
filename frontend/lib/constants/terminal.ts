@@ -22,16 +22,53 @@ export const SCROLL_THRESHOLD = 50
 /** Copy-mode timeout in milliseconds (auto-exit after inactivity) */
 export const COPY_MODE_TIMEOUT_MS = 10000
 
-/** Grid layout types (only 2x2 supported - max 4 panes) */
-export type GridLayoutMode = 'grid-2x2'
+/** Layout modes supported by the desktop pane renderer. */
+export type LayoutMode =
+  | 'split-horizontal'
+  | 'split-vertical'
+  | 'grid-2x2'
+  | 'grid-3x2'
+
+/** Grid layout types. */
+export type GridLayoutMode = Extract<LayoutMode, `grid-${string}`>
+
+/** Minimum viewport widths required for wider pane capacities. */
+export const ULTRAWIDE_PANE_BREAKPOINT = 1920
 
 /** Minimum viewport widths required for each grid layout mode (in pixels) */
 export const GRID_MIN_WIDTHS: Record<GridLayoutMode, number> = {
   'grid-2x2': 1280,
+  'grid-3x2': ULTRAWIDE_PANE_BREAKPOINT,
 } as const
 
-/** Maximum number of panes allowed */
-export const MAX_PANES = 4
+/** Default pane capacity on standard desktop widths. */
+export const DEFAULT_DESKTOP_PANE_CAPACITY = 4
+
+/** Maximum number of panes allowed by the backend. */
+export const MAX_PANES = 6
+
+export function getPaneCapacityForViewport(viewportWidth: number): number {
+  return viewportWidth >= ULTRAWIDE_PANE_BREAKPOINT
+    ? MAX_PANES
+    : DEFAULT_DESKTOP_PANE_CAPACITY
+}
+
+export function getAvailableLayoutModes(
+  paneCount: number,
+  _viewportWidth: number,
+): LayoutMode[] {
+  if (paneCount <= 1) return ['split-horizontal']
+  if (paneCount === 2) return ['split-horizontal', 'split-vertical']
+  if (paneCount <= DEFAULT_DESKTOP_PANE_CAPACITY) return ['grid-2x2']
+  return ['grid-3x2']
+}
+
+export function getDefaultLayoutMode(
+  paneCount: number,
+  viewportWidth: number,
+): LayoutMode {
+  return getAvailableLayoutModes(paneCount, viewportWidth)[0] ?? 'split-horizontal'
+}
 
 /** Phosphor terminal theme colors */
 export const PHOSPHOR_THEME = {

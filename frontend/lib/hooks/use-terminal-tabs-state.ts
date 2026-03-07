@@ -1,12 +1,18 @@
 'use client'
 
 import { useCallback, useMemo, useRef, useState } from 'react'
-import type { LayoutMode } from '@/components/LayoutModeButton'
 import type { KeyboardSizePreset } from '@/components/SettingsDropdown'
 import type { ConnectionStatus, TerminalHandle } from '@/components/Terminal'
 import { useActiveSession } from '@/lib/hooks/use-active-session'
 import { useAutoCreatePane } from '@/lib/hooks/use-auto-create-pane'
-import { useAvailableLayouts } from '@/lib/hooks/use-available-layouts'
+import {
+  useAvailableLayouts,
+  usePaneCapacity,
+} from '@/lib/hooks/use-available-layouts'
+import {
+  getDefaultLayoutMode,
+  type LayoutMode,
+} from '@/lib/constants/terminal'
 import { useLocalStorageState } from '@/lib/hooks/use-local-storage-state'
 import { useMediaQuery } from '@/lib/hooks/use-media-query'
 import { useTabEditing } from '@/lib/hooks/use-tab-editing'
@@ -48,9 +54,14 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     createProjectPane,
     isCreating: isPaneCreating,
     saveLayouts,
+    maxPanes,
   } = useTerminalPanes()
 
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('grid-2x2')
+  const viewportPaneCapacity = usePaneCapacity()
+  const [layoutMode, setLayoutMode] = useLocalStorageState<LayoutMode>(
+    'terminal-layout-mode',
+    getDefaultLayoutMode(1, 0),
+  )
   const activeSessionProjectId = useMemo(() => getActiveSessionProjectId(activeSessionId, sessions), [activeSessionId, sessions])
   const { fontId, fontSize, fontFamily, scrollback, cursorStyle, cursorBlink, themeId, theme, setFontId, setFontSize, setScrollback, setCursorStyle, setCursorBlink, setThemeId } = useTerminalSettings(activeSessionProjectId)
   const isMobile = useMediaQuery('(max-width: 767px)')
@@ -100,12 +111,16 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
   })
 
   const isLoading = activeSessionLoading || sessionsLoading || projectsLoading || panesLoading
-  const availableLayouts = useAvailableLayouts()
+  const availableLayouts = useAvailableLayouts(panes.length)
   const terminalSlots = useMemo(() => getPanesToSlots(panes), [panes])
   const orderedIds = useMemo(() => getOrderedIds(terminalSlots), [terminalSlots])
   const reorder = useCallback((_newOrder: string[]) => { /* noop — reorder via drag-and-drop not yet implemented */ }, [])
   const swapPanes = useSwapPanes(terminalSlots, swapPanePositions)
-  const canAddPane = useCallback(() => !panesAtLimit, [panesAtLimit])
+  const canAddPane = useCallback(
+    () =>
+      panes.length < Math.min(maxPanes, viewportPaneCapacity) && !panesAtLimit,
+    [maxPanes, panes.length, panesAtLimit, viewportPaneCapacity],
+  )
   const isGridMode = isGridLayoutMode(layoutMode)
   const { activeStatus, showReconnect } = useConnectionStatus(activeSessionId, terminalStatuses)
 

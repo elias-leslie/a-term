@@ -83,7 +83,7 @@ def test_list_panes_returns_items(test_app: TestClient) -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["total"] == 2
-    assert body["max_panes"] == 4
+    assert body["max_panes"] == 6
     assert len(body["items"]) == 2
 
 
@@ -128,13 +128,13 @@ def test_create_pane_adhoc_returns_pane(test_app: TestClient) -> None:
 
 
 def test_create_pane_limit_exceeded_returns_400(test_app: TestClient) -> None:
-    """POST /api/terminal/panes -- 4 panes already exist rejects creation."""
+    """POST /api/terminal/panes -- 6 panes already exist rejects creation."""
     # Arrange
-    with patch("terminal.api.panes.pane_crud.count_panes", return_value=4):
+    with patch("terminal.api.panes.pane_crud.count_panes", return_value=6):
         # Act
         response = test_app.post(
             "/api/terminal/panes",
-            json={"pane_type": "adhoc", "pane_name": "Fifth"},
+            json={"pane_type": "adhoc", "pane_name": "Seventh"},
         )
 
     # Assert
@@ -309,14 +309,14 @@ def test_pane_count_returns_count_and_limit(test_app: TestClient) -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["count"] == 3
-    assert body["max_panes"] == 4
+    assert body["max_panes"] == 6
     assert body["at_limit"] is False
 
 
 def test_pane_count_at_limit_returns_true(test_app: TestClient) -> None:
     """GET /api/terminal/panes/count -- at_limit is True when count >= max."""
     # Arrange
-    with patch("terminal.api.panes.pane_crud.count_panes", return_value=4):
+    with patch("terminal.api.panes.pane_crud.count_panes", return_value=6):
         # Act
         response = test_app.get("/api/terminal/panes/count")
 

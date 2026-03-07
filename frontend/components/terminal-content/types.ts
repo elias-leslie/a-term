@@ -8,6 +8,7 @@ import type {
   TerminalCursorStyle,
   TerminalThemeId,
 } from '@/lib/hooks/use-terminal-settings'
+import type { LayoutMode } from '@/lib/constants/terminal'
 import type { KeyboardSizePreset } from '@/components/keyboard/types'
 import type { PaneLayout } from '@/types/pane-layout'
 import type {
@@ -56,6 +57,9 @@ export interface TerminalContentProps {
   isModeSwitching: boolean
   onSwapPanes: (slotIdA: string, slotIdB: string) => void
   onLayoutChange?: (layouts: PaneLayout[]) => void
+  layoutMode: LayoutMode
+  availableLayouts: LayoutMode[]
+  onLayoutModeChange: (mode: LayoutMode) => void
 
   // File upload
   fileInputRef: RefObject<HTMLInputElement | null>

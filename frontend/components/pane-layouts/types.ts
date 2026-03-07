@@ -7,4 +7,5 @@ export interface LayoutHelperProps {
   getMinSizePercent: (direction: 'horizontal' | 'vertical') => number
   handleLayoutChange: (layout: Layout) => void
   renderPane: (slot: TerminalSlot | PaneSlot, index: number) => React.ReactNode
+  orientation?: 'horizontal' | 'vertical'
 }
