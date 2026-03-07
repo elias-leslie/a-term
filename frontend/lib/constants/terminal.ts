@@ -62,14 +62,20 @@ export function getAvailableLayoutModes(
   paneCount: number,
   viewportWidth: number,
 ): LayoutMode[] {
-  if (paneCount <= 1) return ['split-horizontal']
-  if (paneCount === 2) return ['split-horizontal', 'split-vertical']
-  if (paneCount === 3) return ['split-horizontal', 'split-vertical']
-  if (paneCount === 4) {
+  // Guard: clamp to valid range so values above MAX_PANES don't fall through silently.
+  const count = Math.min(paneCount, MAX_PANES)
+
+  if (count <= 1) return ['split-horizontal']
+  if (count === 2) return ['split-horizontal', 'split-vertical']
+  if (count === 3) return ['split-horizontal', 'split-vertical']
+  if (count === 4) {
     return viewportWidth >= FOUR_COLUMN_LAYOUT_BREAKPOINT
       ? ['grid-2x2', 'grid-4x1']
       : ['grid-2x2']
   }
+  // paneCount === 5: grid-3x2 renders a 3×2 grid with one empty cell in the last slot.
+  if (count === 5) return ['grid-3x2']
+  // paneCount === 6 (MAX_PANES): grid-3x2 fills all six cells; grid-2x3 is an alternative orientation.
   return ['grid-3x2', 'grid-2x3']
 }
 
