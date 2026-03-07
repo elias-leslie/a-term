@@ -46,6 +46,7 @@ export function PaneStatusBadge({ status }: PaneStatusBadgeProps) {
   if (!status) return null
 
   const meta = STATUS_META[status]
+  if (!meta) return null
 
   return (
     <span
