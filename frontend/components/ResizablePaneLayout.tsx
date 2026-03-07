@@ -15,6 +15,7 @@ import {
   ThreePaneLayout,
   FourPaneLayout,
   WidePaneLayout,
+  ColumnPaneLayout,
 } from './pane-layouts'
 
 /**
@@ -23,8 +24,8 @@ import {
  * - 1 pane: full size
  * - 2 panes: side-by-side or stacked split
  * - 3 panes: top/bottom or left/right stack
- * - 4 panes: 2x2 grid
- * - 5-6 panes: 3x2 wide grid
+ * - 4 panes: 2x2 grid or 4 columns
+ * - 5-6 panes: 3x2 wide grid or 2x3 columns
  *
  * On mobile: always renders a single full-size pane (the active one).
  */
@@ -116,6 +117,18 @@ export function ResizablePaneLayout(props: ResizablePaneLayoutProps) {
   }
 
   if (paneCount <= 4) {
+    if (layoutMode === 'grid-4x1') {
+      return (
+        <ColumnPaneLayout
+          containerRef={containerRef}
+          displaySlots={displaySlots}
+          getMinSizePercent={getMinSizePercent}
+          handleLayoutChange={handleLayoutChange}
+          renderPane={renderPane}
+        />
+      )
+    }
+
     return (
       <FourPaneLayout
         containerRef={containerRef}
@@ -128,13 +141,23 @@ export function ResizablePaneLayout(props: ResizablePaneLayoutProps) {
   }
 
   return (
-    <WidePaneLayout
-      containerRef={containerRef}
-      displaySlots={displaySlots}
-      getMinSizePercent={getMinSizePercent}
-      handleLayoutChange={handleLayoutChange}
-      renderPane={renderPane}
-    />
+    layoutMode === 'grid-2x3' ? (
+      <ColumnPaneLayout
+        containerRef={containerRef}
+        displaySlots={displaySlots}
+        getMinSizePercent={getMinSizePercent}
+        handleLayoutChange={handleLayoutChange}
+        renderPane={renderPane}
+      />
+    ) : (
+      <WidePaneLayout
+        containerRef={containerRef}
+        displaySlots={displaySlots}
+        getMinSizePercent={getMinSizePercent}
+        handleLayoutChange={handleLayoutChange}
+        renderPane={renderPane}
+      />
+    )
   )
 }
 

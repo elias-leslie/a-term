@@ -38,10 +38,22 @@ const LAYOUT_OPTIONS: LayoutOption[] = [
     minWidth: GRID_MIN_WIDTHS['grid-2x2'],
   },
   {
+    mode: 'grid-4x1',
+    icon: LayoutPanelLeft,
+    title: '4 Columns',
+    minWidth: GRID_MIN_WIDTHS['grid-4x1'],
+  },
+  {
     mode: 'grid-3x2',
     icon: PanelsTopLeft,
     title: '3×2 Grid',
     minWidth: GRID_MIN_WIDTHS['grid-3x2'],
+  },
+  {
+    mode: 'grid-2x3',
+    icon: LayoutPanelTop,
+    title: '2×3 Grid',
+    minWidth: GRID_MIN_WIDTHS['grid-2x3'],
   },
 ]
 

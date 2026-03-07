@@ -24,6 +24,7 @@ vi.mock('./pane-layouts', () => ({
   }) => <div data-testid={`three-pane-${orientation ?? 'horizontal'}`} />,
   FourPaneLayout: () => <div data-testid="four-pane-layout" />,
   WidePaneLayout: () => <div data-testid="wide-pane-layout" />,
+  ColumnPaneLayout: () => <div data-testid="column-pane-layout" />,
 }))
 
 function makeProjectSlot(id: string): PaneSlot {
@@ -71,6 +72,44 @@ describe('ResizablePaneLayout', () => {
     )
 
     expect(screen.getByTestId('wide-pane-layout')).toBeInTheDocument()
+  })
+
+  it('uses the column layout for four wide columns', () => {
+    render(
+      <ResizablePaneLayout
+        slots={[
+          makeProjectSlot('1'),
+          makeProjectSlot('2'),
+          makeProjectSlot('3'),
+          makeProjectSlot('4'),
+        ]}
+        fontFamily="monospace"
+        fontSize={14}
+        layoutMode="grid-4x1"
+      />,
+    )
+
+    expect(screen.getByTestId('column-pane-layout')).toBeInTheDocument()
+  })
+
+  it('uses the column layout for the tall six-pane grid', () => {
+    render(
+      <ResizablePaneLayout
+        slots={[
+          makeProjectSlot('1'),
+          makeProjectSlot('2'),
+          makeProjectSlot('3'),
+          makeProjectSlot('4'),
+          makeProjectSlot('5'),
+          makeProjectSlot('6'),
+        ]}
+        fontFamily="monospace"
+        fontSize={14}
+        layoutMode="grid-2x3"
+      />,
+    )
+
+    expect(screen.getByTestId('column-pane-layout')).toBeInTheDocument()
   })
 
   it('uses the vertical split for stacked three-pane mode', () => {

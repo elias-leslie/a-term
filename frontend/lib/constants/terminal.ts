@@ -27,18 +27,23 @@ export type LayoutMode =
   | 'split-horizontal'
   | 'split-vertical'
   | 'grid-2x2'
+  | 'grid-4x1'
   | 'grid-3x2'
+  | 'grid-2x3'
 
 /** Grid layout types. */
 export type GridLayoutMode = Extract<LayoutMode, `grid-${string}`>
 
 /** Minimum viewport widths required for wider pane capacities. */
 export const ULTRAWIDE_PANE_BREAKPOINT = 1920
+export const FOUR_COLUMN_LAYOUT_BREAKPOINT = 1600
 
 /** Minimum viewport widths required for each grid layout mode (in pixels) */
 export const GRID_MIN_WIDTHS: Record<GridLayoutMode, number> = {
   'grid-2x2': 1280,
+  'grid-4x1': FOUR_COLUMN_LAYOUT_BREAKPOINT,
   'grid-3x2': ULTRAWIDE_PANE_BREAKPOINT,
+  'grid-2x3': ULTRAWIDE_PANE_BREAKPOINT,
 } as const
 
 /** Default pane capacity on standard desktop widths. */
@@ -55,13 +60,17 @@ export function getPaneCapacityForViewport(viewportWidth: number): number {
 
 export function getAvailableLayoutModes(
   paneCount: number,
-  _viewportWidth: number,
+  viewportWidth: number,
 ): LayoutMode[] {
   if (paneCount <= 1) return ['split-horizontal']
   if (paneCount === 2) return ['split-horizontal', 'split-vertical']
   if (paneCount === 3) return ['split-horizontal', 'split-vertical']
-  if (paneCount <= DEFAULT_DESKTOP_PANE_CAPACITY) return ['grid-2x2']
-  return ['grid-3x2']
+  if (paneCount === 4) {
+    return viewportWidth >= FOUR_COLUMN_LAYOUT_BREAKPOINT
+      ? ['grid-2x2', 'grid-4x1']
+      : ['grid-2x2']
+  }
+  return ['grid-3x2', 'grid-2x3']
 }
 
 export function getDefaultLayoutMode(

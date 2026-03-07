@@ -31,13 +31,21 @@ describe('getAvailableLayoutModes', () => {
     ])
   })
 
-  it('uses the standard grid for four panes', () => {
+  it('adds a four-column option on wide desktops', () => {
     expect(getAvailableLayoutModes(4, 1440)).toEqual(['grid-2x2'])
+    expect(getAvailableLayoutModes(4, 1600)).toEqual([
+      'grid-2x2',
+      'grid-4x1',
+    ])
   })
 
-  it('uses the wide grid for five and six panes on ultrawide viewports', () => {
-    expect(getAvailableLayoutModes(5, 1920)).toEqual(['grid-3x2'])
-    expect(getAvailableLayoutModes(6, 2560)).toEqual(['grid-3x2'])
+  it('offers both wide and tall grids for five and six panes', () => {
+    expect(getAvailableLayoutModes(5, 1920)).toEqual(['grid-3x2', 'grid-2x3'])
+    expect(getAvailableLayoutModes(6, 2560)).toEqual(['grid-3x2', 'grid-2x3'])
+  })
+
+  it('uses the standard grid for four-pane defaults', () => {
+    expect(getAvailableLayoutModes(4, 1440)).toEqual(['grid-2x2'])
   })
 })
 
