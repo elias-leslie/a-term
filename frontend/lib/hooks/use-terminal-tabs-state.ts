@@ -40,6 +40,7 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     panes,
     atLimit: panesAtLimit,
     isLoading: panesLoading,
+    hasLoadedOnce: panesLoadedOnce,
     swapPanePositions,
     removePane,
     setActiveMode,
@@ -117,7 +118,14 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     return session?.mode
   }, [activeSessionId, sessions])
   useLayoutAutoDowngrade(availableLayouts, layoutMode, setLayoutMode)
-  useAutoCreatePane({ panes, isLoading, isPaneCreating, createAdHocPane, switchToSession })
+  useAutoCreatePane({
+    panes,
+    isLoading,
+    hasLoadedOnce: panesLoadedOnce,
+    isPaneCreating,
+    createAdHocPane,
+    switchToSession,
+  })
   const tabEditingProps = useTabEditing({ onSave: async (sessionId: string, newName: string) => { await update(sessionId, { name: newName }) } })
 
   return {

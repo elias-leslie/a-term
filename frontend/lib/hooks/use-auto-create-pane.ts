@@ -7,6 +7,7 @@ import { generatePaneName } from './terminal-handler-utils'
 interface UseAutoCreatePaneProps {
   panes: Array<{ pane_type: string }>
   isLoading: boolean
+  hasLoadedOnce: boolean
   isPaneCreating: boolean
   createAdHocPane: (name: string) => Promise<{
     sessions: Array<{ id: string; mode: string }>
@@ -24,6 +25,7 @@ interface UseAutoCreatePaneProps {
 export function useAutoCreatePane({
   panes,
   isLoading,
+  hasLoadedOnce,
   isPaneCreating,
   createAdHocPane,
   switchToSession,
@@ -34,7 +36,14 @@ export function useAutoCreatePane({
 
   useEffect(() => {
     // Skip if still loading or already creating
-    if (isLoading || isPaneCreating || isAutoCreatingRef.current) return
+    if (
+      isLoading ||
+      !hasLoadedOnce ||
+      isPaneCreating ||
+      isAutoCreatingRef.current
+    ) {
+      return
+    }
 
     const prevLength = prevPanesLengthRef.current
     const currLength = panes.length
@@ -102,6 +111,7 @@ export function useAutoCreatePane({
     }
   }, [
     isLoading,
+    hasLoadedOnce,
     panes,
     isPaneCreating,
     createAdHocPane,

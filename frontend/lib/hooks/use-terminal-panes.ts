@@ -132,6 +132,7 @@ export function useTerminalPanes() {
     maxPanes,
     atLimit,
     isLoading,
+    hasLoadedOnce: data !== undefined,
     isError,
     error,
     createProjectPane,

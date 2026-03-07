@@ -44,6 +44,10 @@ describe('deriveActiveSessionId', () => {
   it('uses the project session when there is no valid URL session', () => {
     expect(deriveActiveSessionId(sessions, null, 'project-2')).toBe('session-2')
   })
+
+  it('uses the persisted session when URL state is missing and the session still exists', () => {
+    expect(deriveActiveSessionId(sessions, null, null, 'session-2')).toBe('session-2')
+  })
 })
 
 describe('shouldSyncSessionParam', () => {

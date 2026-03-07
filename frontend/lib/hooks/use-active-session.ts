@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   type ProjectTerminal,
   useProjectTerminals,
@@ -11,10 +11,13 @@ import {
   useTerminalSessions,
 } from './use-terminal-sessions'
 
+const LAST_ACTIVE_SESSION_KEY = 'terminal:last-active-session-id'
+
 export function deriveActiveSessionId(
   sessions: TerminalSession[],
   urlSessionId: string | null,
   urlProjectId: string | null,
+  persistedSessionId: string | null = null,
 ): string | null {
   if (sessions.length === 0) {
     return null
@@ -29,6 +32,10 @@ export function deriveActiveSessionId(
     if (projectSession) {
       return projectSession.id
     }
+  }
+
+  if (persistedSessionId && sessions.some((session) => session.id === persistedSessionId)) {
+    return persistedSessionId
   }
 
   return sessions[0]?.id ?? null
@@ -113,6 +120,10 @@ export interface UseActiveSessionResult {
 export function useActiveSession(): UseActiveSessionResult {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [persistedSessionId, setPersistedSessionId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null
+    return window.localStorage.getItem(LAST_ACTIVE_SESSION_KEY)
+  })
 
   // Get session data from existing hooks
   const { sessions, isLoading: sessionsLoading } = useTerminalSessions()
@@ -130,8 +141,13 @@ export function useActiveSession(): UseActiveSessionResult {
 
   // Derive active session ID from URL + available sessions
   const activeSessionId = useMemo(() => {
-    return deriveActiveSessionId(sessions, urlSessionId, urlProjectId)
-  }, [sessions, urlSessionId, urlProjectId])
+    return deriveActiveSessionId(
+      sessions,
+      urlSessionId,
+      urlProjectId,
+      persistedSessionId,
+    )
+  }, [sessions, urlSessionId, urlProjectId, persistedSessionId])
 
   // Get the active session object
   const activeSession = useMemo(() => {
@@ -154,6 +170,19 @@ export function useActiveSession(): UseActiveSessionResult {
     params.set('session', activeSessionId)
     router.replace(`?${params.toString()}`, { scroll: false })
   }, [activeSessionId, urlSessionId, searchParams, router])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    if (!activeSessionId) {
+      window.localStorage.removeItem(LAST_ACTIVE_SESSION_KEY)
+      setPersistedSessionId(null)
+      return
+    }
+
+    window.localStorage.setItem(LAST_ACTIVE_SESSION_KEY, activeSessionId)
+    setPersistedSessionId(activeSessionId)
+  }, [activeSessionId])
 
   // Switch to a different session by updating the URL
   const switchToSession = useCallback(
