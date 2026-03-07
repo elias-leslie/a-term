@@ -17,7 +17,11 @@ vi.mock('./pane-layouts', () => ({
   }: {
     orientation?: 'horizontal' | 'vertical'
   }) => <div data-testid={`two-pane-${orientation ?? 'horizontal'}`} />,
-  ThreePaneLayout: () => <div data-testid="three-pane-layout" />,
+  ThreePaneLayout: ({
+    orientation,
+  }: {
+    orientation?: 'horizontal' | 'vertical'
+  }) => <div data-testid={`three-pane-${orientation ?? 'horizontal'}`} />,
   FourPaneLayout: () => <div data-testid="four-pane-layout" />,
   WidePaneLayout: () => <div data-testid="wide-pane-layout" />,
 }))
@@ -67,5 +71,22 @@ describe('ResizablePaneLayout', () => {
     )
 
     expect(screen.getByTestId('wide-pane-layout')).toBeInTheDocument()
+  })
+
+  it('uses the vertical split for stacked three-pane mode', () => {
+    render(
+      <ResizablePaneLayout
+        slots={[
+          makeProjectSlot('1'),
+          makeProjectSlot('2'),
+          makeProjectSlot('3'),
+        ]}
+        fontFamily="monospace"
+        fontSize={14}
+        layoutMode="split-vertical"
+      />,
+    )
+
+    expect(screen.getByTestId('three-pane-vertical')).toBeInTheDocument()
   })
 })

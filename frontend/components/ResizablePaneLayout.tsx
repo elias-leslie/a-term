@@ -22,7 +22,7 @@ import {
  * Dynamically adapts grid based on pane count:
  * - 1 pane: full size
  * - 2 panes: side-by-side or stacked split
- * - 3 panes: 2+1 layout
+ * - 3 panes: top/bottom or left/right stack
  * - 4 panes: 2x2 grid
  * - 5-6 panes: 3x2 wide grid
  *
@@ -108,6 +108,9 @@ export function ResizablePaneLayout(props: ResizablePaneLayoutProps) {
         getMinSizePercent={getMinSizePercent}
         handleLayoutChange={handleLayoutChange}
         renderPane={renderPane}
+        orientation={
+          layoutMode === 'split-vertical' ? 'vertical' : 'horizontal'
+        }
       />
     )
   }

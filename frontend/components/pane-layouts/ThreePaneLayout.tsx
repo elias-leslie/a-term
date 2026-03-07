@@ -14,14 +14,19 @@ export function ThreePaneLayout({
   getMinSizePercent,
   handleLayoutChange,
   renderPane,
+  orientation = 'horizontal',
 }: LayoutHelperProps) {
-  const verticalGroupRef = useGroupRef()
-  const horizontalGroupRef = useGroupRef()
-
-  const topRowPanelIds: [string, string] = [
-    getSlotPanelId(displaySlots[0]),
-    getSlotPanelId(displaySlots[1]),
-  ]
+  const outerGroupRef = useGroupRef()
+  const innerGroupRef = useGroupRef()
+  const isVertical = orientation === 'vertical'
+  const primaryPanelIds: [string, string] = isVertical
+    ? [getSlotPanelId(displaySlots[1]), getSlotPanelId(displaySlots[2])]
+    : [getSlotPanelId(displaySlots[0]), getSlotPanelId(displaySlots[1])]
+  const secondaryPanelId = isVertical
+    ? getSlotPanelId(displaySlots[0])
+    : getSlotPanelId(displaySlots[2])
+  const outerPrimaryId = isVertical ? secondaryPanelId : 'top-row'
+  const outerSecondaryId = isVertical ? 'right-column' : secondaryPanelId
 
   return (
     <div
@@ -30,59 +35,59 @@ export function ThreePaneLayout({
       style={{ backgroundColor: 'var(--term-bg-deep)' }}
     >
       <Group
-        orientation="vertical"
-        groupRef={verticalGroupRef}
+        orientation={isVertical ? 'horizontal' : 'vertical'}
+        groupRef={outerGroupRef}
         className="h-full"
       >
         <Panel
-          id="top-row"
-          minSize={`${getMinSizePercent('vertical')}%`}
+          id={outerPrimaryId}
+          minSize={`${getMinSizePercent(isVertical ? 'horizontal' : 'vertical')}%`}
           defaultSize="50%"
         >
           <Group
-            orientation="horizontal"
+            orientation={isVertical ? 'vertical' : 'horizontal'}
             onLayoutChange={handleLayoutChange}
-            groupRef={horizontalGroupRef}
+            groupRef={innerGroupRef}
             className="h-full"
           >
             <Panel
-              id={topRowPanelIds[0]}
-              minSize={`${getMinSizePercent('horizontal')}%`}
+              id={primaryPanelIds[0]}
+              minSize={`${getMinSizePercent(isVertical ? 'vertical' : 'horizontal')}%`}
               defaultSize="50%"
               className="h-full"
             >
-              {renderPane(displaySlots[0], 0)}
+              {renderPane(displaySlots[isVertical ? 1 : 0], isVertical ? 1 : 0)}
             </Panel>
 
             <ResizeSeparator
-              orientation="horizontal"
-              groupRef={horizontalGroupRef}
-              adjacentPanelIds={topRowPanelIds}
+              orientation={isVertical ? 'vertical' : 'horizontal'}
+              groupRef={innerGroupRef}
+              adjacentPanelIds={primaryPanelIds}
             />
 
             <Panel
-              id={topRowPanelIds[1]}
-              minSize={`${getMinSizePercent('horizontal')}%`}
+              id={primaryPanelIds[1]}
+              minSize={`${getMinSizePercent(isVertical ? 'vertical' : 'horizontal')}%`}
               defaultSize="50%"
               className="h-full"
             >
-              {renderPane(displaySlots[1], 1)}
+              {renderPane(displaySlots[isVertical ? 2 : 1], isVertical ? 2 : 1)}
             </Panel>
           </Group>
         </Panel>
 
         <ResizeSeparator
-          orientation="vertical"
-          groupRef={verticalGroupRef}
-          adjacentPanelIds={['top-row', getSlotPanelId(displaySlots[2])]}
+          orientation={isVertical ? 'horizontal' : 'vertical'}
+          groupRef={outerGroupRef}
+          adjacentPanelIds={[outerPrimaryId, outerSecondaryId]}
         />
 
         <Panel
-          id={getSlotPanelId(displaySlots[2])}
-          minSize={`${getMinSizePercent('vertical')}%`}
+          id={outerSecondaryId}
+          minSize={`${getMinSizePercent(isVertical ? 'horizontal' : 'vertical')}%`}
           defaultSize="50%"
         >
-          {renderPane(displaySlots[2], 2)}
+          {renderPane(displaySlots[isVertical ? 0 : 2], isVertical ? 0 : 2)}
         </Panel>
       </Group>
     </div>

@@ -24,8 +24,14 @@ describe('getAvailableLayoutModes', () => {
     ])
   })
 
-  it('uses the standard grid for three and four panes', () => {
-    expect(getAvailableLayoutModes(3, 1440)).toEqual(['grid-2x2'])
+  it('offers both split orientations for three panes', () => {
+    expect(getAvailableLayoutModes(3, 1440)).toEqual([
+      'split-horizontal',
+      'split-vertical',
+    ])
+  })
+
+  it('uses the standard grid for four panes', () => {
     expect(getAvailableLayoutModes(4, 1440)).toEqual(['grid-2x2'])
   })
 
@@ -41,6 +47,7 @@ describe('getDefaultLayoutMode', () => {
   })
 
   it('defaults larger desktop layouts to the grid that fits them', () => {
+    expect(getDefaultLayoutMode(3, 1440)).toBe('split-horizontal')
     expect(getDefaultLayoutMode(4, 1440)).toBe('grid-2x2')
     expect(getDefaultLayoutMode(6, 2560)).toBe('grid-3x2')
   })

@@ -24,10 +24,8 @@ vi.mock('@/components/UnifiedTerminalHeader', () => ({
 
 function RenderHarness({
   slots,
-  activeSessionId,
 }: {
   slots: PaneSlot[]
-  activeSessionId?: string
 }) {
   const renderPane = usePaneRenderer({
     props: {
@@ -61,7 +59,6 @@ function RenderHarness({
         brightCyan: '#11ffff',
         brightWhite: '#f5f5f5',
       },
-      activeSessionId,
     },
     displaySlots: slots,
     paneCount: slots.length,
@@ -77,43 +74,7 @@ function RenderHarness({
 }
 
 describe('usePaneRenderer', () => {
-  it('marks only the active session terminal as visible', () => {
-    terminalProps.length = 0
-
-    const slots: PaneSlot[] = [
-      {
-        type: 'project',
-        paneId: 'pane-1',
-        projectId: 'project-1',
-        projectName: 'Project 1',
-        rootPath: '/tmp/project-1',
-        activeMode: 'shell',
-        activeSessionId: 'session-1',
-        sessionBadge: null,
-      },
-      {
-        type: 'project',
-        paneId: 'pane-2',
-        projectId: 'project-2',
-        projectName: 'Project 2',
-        rootPath: '/tmp/project-2',
-        activeMode: 'shell',
-        activeSessionId: 'session-2',
-        sessionBadge: null,
-      },
-    ]
-
-    render(<RenderHarness slots={slots} activeSessionId="session-2" />)
-
-    expect(screen.getByTestId('terminal-session-1')).toBeInTheDocument()
-    expect(screen.getByTestId('terminal-session-2')).toBeInTheDocument()
-    expect(terminalProps).toEqual([
-      { sessionId: 'session-1', isVisible: false },
-      { sessionId: 'session-2', isVisible: true },
-    ])
-  })
-
-  it('marks all terminals as visible when activeSessionId is undefined', () => {
+  it('keeps all rendered desktop terminals visible', () => {
     terminalProps.length = 0
 
     const slots: PaneSlot[] = [
@@ -141,6 +102,8 @@ describe('usePaneRenderer', () => {
 
     render(<RenderHarness slots={slots} />)
 
+    expect(screen.getByTestId('terminal-session-1')).toBeInTheDocument()
+    expect(screen.getByTestId('terminal-session-2')).toBeInTheDocument()
     expect(terminalProps).toEqual([
       { sessionId: 'session-1', isVisible: true },
       { sessionId: 'session-2', isVisible: true },

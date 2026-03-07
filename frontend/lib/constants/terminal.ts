@@ -59,6 +59,7 @@ export function getAvailableLayoutModes(
 ): LayoutMode[] {
   if (paneCount <= 1) return ['split-horizontal']
   if (paneCount === 2) return ['split-horizontal', 'split-vertical']
+  if (paneCount === 3) return ['split-horizontal', 'split-vertical']
   if (paneCount <= DEFAULT_DESKTOP_PANE_CAPACITY) return ['grid-2x2']
   return ['grid-3x2']
 }
