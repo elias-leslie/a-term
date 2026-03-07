@@ -12,6 +12,7 @@ from ..utils.tmux import get_scrollback
 logger = get_logger(__name__)
 
 SCROLLBACK_SYNC_DELAY_SECONDS = 0.05
+MAX_SCROLLBACK_CHARS = 64_000
 
 
 def normalize_scrollback(scrollback: str) -> str:
@@ -19,10 +20,30 @@ def normalize_scrollback(scrollback: str) -> str:
     return scrollback.replace("\r\n", "\n").replace("\n", "\r\n")
 
 
+def limit_scrollback(scrollback: str, max_chars: int = MAX_SCROLLBACK_CHARS) -> str:
+    """Trim large scrollback payloads to the newest tail for browser transport."""
+    if max_chars <= 0 or len(scrollback) <= max_chars:
+        return scrollback
+
+    trimmed = scrollback[-max_chars:]
+    first_newline = trimmed.find("\n")
+    if first_newline == -1:
+        return trimmed
+    return trimmed[first_newline + 1:]
+
+
+def prepare_scrollback_for_transport(
+    scrollback: str,
+    max_chars: int = MAX_SCROLLBACK_CHARS,
+) -> str:
+    """Normalize and bound tmux scrollback before sending it to the browser."""
+    return normalize_scrollback(limit_scrollback(scrollback, max_chars=max_chars))
+
+
 def build_scrollback_sync_payload(scrollback: str) -> str:
     return json.dumps({
         "__ctrl": True,
-        "scrollback_sync": normalize_scrollback(scrollback),
+        "scrollback_sync": prepare_scrollback_for_transport(scrollback),
     })
 
 
@@ -56,11 +77,13 @@ class ScrollbackSyncScheduler:
         tmux_session_name: str,
         *,
         delay_seconds: float = SCROLLBACK_SYNC_DELAY_SECONDS,
+        max_chars: int = MAX_SCROLLBACK_CHARS,
         get_scrollback_fn: Callable[[str], str | None] = get_scrollback,
     ) -> None:
         self._websocket = websocket
         self._tmux_session_name = tmux_session_name
         self._delay_seconds = delay_seconds
+        self._max_chars = max_chars
         self._get_scrollback = get_scrollback_fn
         self._task: asyncio.Task[None] | None = None
 
@@ -86,8 +109,17 @@ class ScrollbackSyncScheduler:
             )
             if not scrollback:
                 return
+            bounded_scrollback = prepare_scrollback_for_transport(
+                scrollback,
+                max_chars=self._max_chars,
+            )
+            if not bounded_scrollback:
+                return
             await self._websocket.send_text(
-                build_scrollback_sync_payload(scrollback),
+                json.dumps({
+                    "__ctrl": True,
+                    "scrollback_sync": bounded_scrollback,
+                }),
             )
         except asyncio.CancelledError:
             raise

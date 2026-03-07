@@ -15,7 +15,7 @@ from ...services.pty_manager import read_pty_output, spawn_pty_for_tmux
 from ...services.scrollback_sync import (
     ScrollbackSyncOutputTracker,
     ScrollbackSyncScheduler,
-    normalize_scrollback,
+    prepare_scrollback_for_transport,
 )
 from ...storage import agent_tools as agent_tools_store
 from ...utils.tmux import get_scrollback, is_agent_running_in_session
@@ -50,9 +50,15 @@ async def _setup_connection(
 
     scrollback = get_scrollback(tmux_session_name)
     if scrollback:
-        scrollback = normalize_scrollback(scrollback)
-        await websocket.send_text(scrollback)
-        logger.info("scrollback_sent", session_id=session_id, bytes=len(scrollback))
+        prepared_scrollback = prepare_scrollback_for_transport(scrollback)
+        if prepared_scrollback:
+            await websocket.send_text(prepared_scrollback)
+            logger.info(
+                "scrollback_sent",
+                session_id=session_id,
+                bytes=len(prepared_scrollback),
+                original_bytes=len(scrollback),
+            )
 
     return session, tmux_session_name, master_fd, pid
 
