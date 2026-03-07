@@ -84,11 +84,11 @@ Complete checklist for testing all terminal workflows and behaviors.
 - [ ] Second ad-hoc named "Ad-Hoc Terminal [2]"
 - [ ] Third ad-hoc named "Ad-Hoc Terminal [3]"
 
-### Pane Limit (4 max)
+### Pane Limit (viewport-dependent)
 
-- [ ] With the viewport pane limit reached, + buttons are disabled
+- [ ] With viewport pane limit reached, + buttons are disabled
 - [ ] Terminal Manager shows "at limit" state
-- [ ] Cannot create 5th pane
+- [ ] Cannot exceed viewport capacity (4 standard, 6 ultrawide)
 
 ---
 

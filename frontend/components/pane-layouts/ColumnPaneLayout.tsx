@@ -6,10 +6,12 @@ import { ResizeSeparator } from './ResizeSeparator'
 import type { LayoutHelperProps } from './types'
 
 function buildColumns(displaySlots: LayoutHelperProps['displaySlots']) {
+  // grid-4x1 mode: each slot gets its own column
   if (displaySlots.length === 4) {
     return displaySlots.map((slot) => [slot])
   }
 
+  // Other counts: split slots into two columns (left-heavy)
   const leftColumnSize = Math.ceil(displaySlots.length / 2)
   return [
     displaySlots.slice(0, leftColumnSize),

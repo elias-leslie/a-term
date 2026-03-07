@@ -82,9 +82,7 @@ export function useTerminalSessions() {
 
   const deleteMutation = useMutation({
     mutationFn: deleteSession,
-    onSuccess: () => {
-      invalidate()
-    },
+    onSuccess: invalidate,
   })
 
   const resetMutation = useMutation({

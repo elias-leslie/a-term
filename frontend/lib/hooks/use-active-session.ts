@@ -163,12 +163,9 @@ export function useActiveSession(): UseActiveSessionResult {
     if (!shouldSyncSessionParam(activeSessionId, urlSessionId)) {
       return
     }
-    if (!activeSessionId) {
-      return
-    }
 
     const params = new URLSearchParams(searchParamsString)
-    params.set('session', activeSessionId)
+    params.set('session', activeSessionId!)
     router.replace(`?${params.toString()}`, { scroll: false })
   }, [activeSessionId, urlSessionId, searchParamsString, router])
 

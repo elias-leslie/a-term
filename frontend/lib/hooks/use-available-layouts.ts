@@ -59,9 +59,10 @@ export function usePaneCapacity(): number {
 /**
  * Helper hook to check if any grid layout is available.
  *
+ * @param paneCount - Number of panes to check grid availability for (defaults to 4)
  * @returns true if at least one grid layout mode is available
  */
-export function useGridLayoutAvailable(): boolean {
-  const availableLayouts = useAvailableLayouts(4)
+export function useGridLayoutAvailable(paneCount = 4): boolean {
+  const availableLayouts = useAvailableLayouts(paneCount)
   return availableLayouts.some((mode) => mode.startsWith('grid-'))
 }

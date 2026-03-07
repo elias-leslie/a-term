@@ -51,7 +51,11 @@ export function usePaneLayoutGroups(storageKey: string) {
   const getGroupSizes = useCallback(
     (groupId: string, panelCount: number, defaultSize: number) => {
       const stored = groups[groupId]
-      if (stored && stored.length === panelCount) {
+      if (
+        stored &&
+        stored.length === panelCount &&
+        stored.every((v) => Number.isFinite(v))
+      ) {
         return stored
       }
       return Array.from({ length: panelCount }, () => defaultSize)

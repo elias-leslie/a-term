@@ -176,7 +176,7 @@ export ANDROID_HOME="${SDK_ROOT}"
 export PATH="\$PATH:${SDK_ROOT}/cmdline-tools/latest/bin:${SDK_ROOT}/platform-tools:${SDK_ROOT}/emulator"
 EMULATOR_CMD="${SDK_ROOT}/emulator/emulator -avd ${AVD_NAME} -gpu swiftshader_indirect"
 if command -v sg >/dev/null 2>&1 && getent group kvm | grep -Eq "(^|:|,)\${USER}(,|$)"; then
-  exec sg kvm -c "\${EMULATOR_CMD} \$@"
+  exec sg kvm -c "\${EMULATOR_CMD} \$(printf '%q ' "\$@")"
 fi
 exec "${SDK_ROOT}/emulator/emulator" -avd "${AVD_NAME}" -gpu swiftshader_indirect "\$@"
 EOF

@@ -253,8 +253,8 @@ def _replace_agent_session(pane: dict[str, Any], pane_id: str, agent_tool_slug: 
     )
 
 
-@limiter.limit("20/minute")
 @router.put("/api/terminal/panes/{pane_id}/agent-tool", response_model=PaneResponse)
+@limiter.limit("20/minute")
 async def switch_agent_tool(request: Request, pane_id: str, body: SwitchAgentToolRequest) -> PaneResponse:
     """Switch the agent tool on a pane.
 
