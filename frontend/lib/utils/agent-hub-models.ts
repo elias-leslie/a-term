@@ -49,7 +49,8 @@ async function fetchModelsFromApi(): Promise<AgentHubCatalogModel[]> {
     if (!response.ok) throw new Error(`Failed to fetch models: ${response.status}`)
     const data: AgentHubModelsResponse = await response.json()
     return data.models || []
-  } catch {
+  } catch (error) {
+    console.error('Failed to fetch agent hub models', error)
     return []
   }
 }
@@ -104,7 +105,7 @@ export async function getPromptCleanerModel(): Promise<string> {
     if (model) return model.id
   }
 
-  return 'haiku'
+  return 'claude-haiku-4-5'
 }
 
 export function clearAgentHubModelCache(): void {

@@ -57,12 +57,7 @@ export function getWsUrl(path: string): string {
 
   // Non-local browser hosts must use same-origin /ws routing.
   // This covers production plus emulator/device access such as 10.0.2.2:3002.
-  if (originHost) {
-    return `${protocol}//${originHost}${path}`
-  }
-
-  // Fallback
-  return `ws://localhost:${PORTS.backend}${path}`
+  return `${protocol}//${originHost}${path}`
 }
 
 /**

@@ -6,3 +6,6 @@ Agent tool commands and process names are now stored in the agent_tools DB table
 
 # Shell mode constant - agent tool modes are dynamic (agent_tools.slug)
 SHELL_MODE = "shell"
+
+# Maximum number of panes allowed
+MAX_PANES = 4

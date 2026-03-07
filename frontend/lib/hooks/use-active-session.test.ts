@@ -48,6 +48,10 @@ describe('deriveActiveSessionId', () => {
   it('uses the persisted session when URL state is missing and the session still exists', () => {
     expect(deriveActiveSessionId(sessions, null, null, 'session-2')).toBe('session-2')
   })
+
+  it('returns null when sessions array is empty', () => {
+    expect(deriveActiveSessionId([], 'session-1', null)).toBe(null)
+  })
 })
 
 describe('shouldSyncSessionParam', () => {
@@ -61,5 +65,9 @@ describe('shouldSyncSessionParam', () => {
 
   it('does not sync when the URL already matches the active session', () => {
     expect(shouldSyncSessionParam('session-1', 'session-1')).toBe(false)
+  })
+
+  it('does not sync when activeSessionId is null', () => {
+    expect(shouldSyncSessionParam(null, 'session-1')).toBe(false)
   })
 })

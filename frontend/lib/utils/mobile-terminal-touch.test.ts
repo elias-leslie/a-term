@@ -13,6 +13,9 @@ describe('getMobileTerminalTouchStyles', () => {
     })
   })
 
+})
+
+describe('applyMobileTerminalTouchStyles', () => {
   it('applies touch-safe scrolling styles to the xterm touch surfaces', () => {
     const container = document.createElement('div')
     const screen = document.createElement('div')

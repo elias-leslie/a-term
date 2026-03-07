@@ -161,7 +161,7 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
           terminalRef.current?.reset()
         },
         onMessage: (data) => {
-          if (!terminalRef.current || !isVisibleRef.current) return
+          if (!terminalRef.current) return
           enqueueWrite(data)
         },
         onScrollbackSync: (scrollback) => {

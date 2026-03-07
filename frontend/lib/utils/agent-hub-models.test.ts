@@ -37,7 +37,7 @@ describe('agent-hub-models', () => {
   })
 
   it('falls back to built-in Claude aliases when the catalog is unavailable', async () => {
-    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network unavailable')))
 
     await expect(getClaudeModelOptions()).resolves.toEqual([
       { id: 'opus', label: 'Opus', command: '/model opus\r' },

@@ -55,29 +55,16 @@ export function getTouchScrollLineDelta(
 function getConsumedTouchScrollPixels(lineDelta: number, cellHeight: number): number {
   if (lineDelta === 0 || cellHeight <= 0) return 0
   const effectiveCellHeight = cellHeight / MOBILE_TOUCH_SCROLL_SENSITIVITY
-  return Math.sign(lineDelta) * Math.abs(lineDelta) * effectiveCellHeight
+  return lineDelta * effectiveCellHeight
 }
 
 export function refreshTerminalViewport(terminal: Terminal): void {
   const start = 0
   const end = Math.max(terminal.rows - 1, 0)
-  const renderService = (
-    terminal as Terminal & {
-      _core?: {
-        _renderService?: {
-          refreshRows?: (start: number, end: number) => void
-        }
-      }
-    }
-  )._core?._renderService
 
-  // xterm's public refresh can leave touch-driven scrollLines() visually stale
-  // on mobile; refreshRows repaints the newly selected viewport rows.
-  if (typeof renderService?.refreshRows === 'function') {
-    renderService.refreshRows(start, end)
-    return
-  }
-
+  // Force a repaint of all visible rows after programmatic scrollLines() calls.
+  // Without this, touch-driven scrolling on mobile can leave the viewport
+  // visually stale until the next render cycle.
   terminal.refresh(start, end)
 }
 

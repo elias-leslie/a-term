@@ -27,7 +27,7 @@ function RenderHarness({
   activeSessionId,
 }: {
   slots: PaneSlot[]
-  activeSessionId: string
+  activeSessionId?: string
 }) {
   const renderPane = usePaneRenderer({
     props: {
@@ -109,6 +109,40 @@ describe('usePaneRenderer', () => {
     expect(screen.getByTestId('terminal-session-2')).toBeInTheDocument()
     expect(terminalProps).toEqual([
       { sessionId: 'session-1', isVisible: false },
+      { sessionId: 'session-2', isVisible: true },
+    ])
+  })
+
+  it('marks all terminals as visible when activeSessionId is undefined', () => {
+    terminalProps.length = 0
+
+    const slots: PaneSlot[] = [
+      {
+        type: 'project',
+        paneId: 'pane-1',
+        projectId: 'project-1',
+        projectName: 'Project 1',
+        rootPath: '/tmp/project-1',
+        activeMode: 'shell',
+        activeSessionId: 'session-1',
+        sessionBadge: null,
+      },
+      {
+        type: 'project',
+        paneId: 'pane-2',
+        projectId: 'project-2',
+        projectName: 'Project 2',
+        rootPath: '/tmp/project-2',
+        activeMode: 'shell',
+        activeSessionId: 'session-2',
+        sessionBadge: null,
+      },
+    ]
+
+    render(<RenderHarness slots={slots} />)
+
+    expect(terminalProps).toEqual([
+      { sessionId: 'session-1', isVisible: true },
       { sessionId: 'session-2', isVisible: true },
     ])
   })

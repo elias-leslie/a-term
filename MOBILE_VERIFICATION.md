@@ -1,6 +1,6 @@
 # Mobile Verification
 
-Repeatable Android verification for Terminal lives in [`scripts/mobile-verification.sh`](/home/kasadis/terminal/scripts/mobile-verification.sh).
+Repeatable Android verification for Terminal lives in [`scripts/mobile-verification.sh`](scripts/mobile-verification.sh).
 
 The script now launches the emulator directly from the SDK, uses `sg kvm` automatically when the current shell has stale group membership, and defaults to headless mode for automation.
 
@@ -11,7 +11,7 @@ The script now launches the emulator directly from the SDK, uses `sg kvm` automa
 - `adb` installed
 - `agent-browser` installed for CDP-driven inspection
 
-Install the emulator stack with [`scripts/install-android-emulator.sh`](/home/kasadis/terminal/scripts/install-android-emulator.sh) when needed.
+Install the emulator stack with [`scripts/install-android-emulator.sh`](scripts/install-android-emulator.sh) when needed.
 
 ## Fast Path
 
@@ -20,7 +20,7 @@ bash ~/terminal/scripts/mobile-verification.sh workflow
 bash ~/terminal/scripts/mobile-verification.sh browser
 ```
 
-That does three things:
+That does four things:
 
 1. Checks whether `adb`, `agent-browser`, `sg`, and the emulator binary exist.
 2. Starts the emulator when needed and waits for `adb=device` plus `sys.boot_completed=1`.

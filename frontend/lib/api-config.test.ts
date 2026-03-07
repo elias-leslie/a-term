@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { getWsUrl } from './api-config'
+import { buildApiUrl, getApiBaseUrl, getWsUrl } from './api-config'
 
 const originalLocation = window.location
 
@@ -39,6 +39,20 @@ describe('api-config', () => {
 
     expect(getWsUrl('/ws/terminal/session-1')).toBe(
       'wss://terminal.summitflow.dev/ws/terminal/session-1',
+    )
+  })
+
+  it('getApiBaseUrl returns empty string on client-side for same-origin routing', () => {
+    setLocation('http://localhost:3002/')
+
+    expect(getApiBaseUrl()).toBe('')
+  })
+
+  it('buildApiUrl concatenates base URL with path on client-side', () => {
+    setLocation('http://localhost:3002/')
+
+    expect(buildApiUrl('/api/terminal/sessions')).toBe(
+      '/api/terminal/sessions',
     )
   })
 })

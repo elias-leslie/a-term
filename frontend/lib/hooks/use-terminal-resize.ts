@@ -10,7 +10,7 @@ export interface TerminalResizeOptions {
   wsRef: React.MutableRefObject<WebSocket | null>
 }
 
-type ViewportEventTarget = Pick<
+export type ViewportEventTarget = Pick<
   Window,
   'addEventListener' | 'removeEventListener'
 >
@@ -20,10 +20,10 @@ export function attachViewportResizeListeners(
   viewport: ViewportEventTarget | null = window.visualViewport,
 ) {
   window.addEventListener('resize', onViewportChange, { passive: true })
-  window.addEventListener('orientationchange', onViewportChange)
+  window.addEventListener('orientationchange', onViewportChange, { passive: true })
 
-  viewport?.addEventListener('resize', onViewportChange)
-  viewport?.addEventListener('scroll', onViewportChange)
+  viewport?.addEventListener('resize', onViewportChange, { passive: true })
+  viewport?.addEventListener('scroll', onViewportChange, { passive: true })
 
   return () => {
     window.removeEventListener('resize', onViewportChange)

@@ -9,6 +9,7 @@ from typing import Any, Literal
 
 import psycopg.sql
 
+from ..constants import MAX_PANES
 from ._pane_helpers import (
     _compute_session_number,
     _get_next_pane_order,
@@ -29,8 +30,6 @@ from .pane_db_helpers import (
 )
 from .pane_sessions import fetch_all_sessions_by_pane, fetch_sessions_for_pane
 from .pane_validation import validate_pane_type_and_project
-
-MAX_PANES = 4
 
 
 # Import lazily to avoid circular imports

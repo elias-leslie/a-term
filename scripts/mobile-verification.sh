@@ -64,8 +64,7 @@ tap_first_matching_node() {
     local node
     node="$(
       printf '%s' "${xml}" \
-        | sed 's/></>\
-</g' \
+        | awk '{gsub(/</, "\n<"); print}' \
         | grep -F "${pattern}" \
         | head -n1
     )"
@@ -113,9 +112,9 @@ doctor() {
   fi
 }
 
-build_emulator_command() {
+_base_emulator_cmd() {
   local emulator_bin="${ANDROID_SDK_ROOT}/emulator/emulator"
-  local -a cmd=(
+  _EMU_CMD=(
     "${emulator_bin}"
     -avd "${AVD_NAME}"
     -gpu swiftshader_indirect
@@ -124,42 +123,35 @@ build_emulator_command() {
   )
 
   if [[ "${HEADLESS_MODE}" == "1" ]]; then
-    cmd+=(-no-window -no-audio)
+    _EMU_CMD+=(-no-window -no-audio)
   fi
+}
+
+build_emulator_command() {
+  _base_emulator_cmd
 
   if command -v sg >/dev/null 2>&1 && getent group kvm | grep -Eq "(^|:|,)${USER}(,|$)"; then
-    printf "sg kvm -c '%q" "${cmd[0]}"
+    printf "sg kvm -c '%q" "${_EMU_CMD[0]}"
     local arg
-    for arg in "${cmd[@]:1}"; do
+    for arg in "${_EMU_CMD[@]:1}"; do
       printf " %q" "${arg}"
     done
     printf "'"
     return
   fi
 
-  printf "%q" "${cmd[0]}"
+  printf "%q" "${_EMU_CMD[0]}"
   local arg
-  for arg in "${cmd[@]:1}"; do
+  for arg in "${_EMU_CMD[@]:1}"; do
     printf " %q" "${arg}"
   done
 }
 
 launch_emulator_detached() {
-  local emulator_bin="${ANDROID_SDK_ROOT}/emulator/emulator"
-  local -a cmd=(
-    "${emulator_bin}"
-    -avd "${AVD_NAME}"
-    -gpu swiftshader_indirect
-    -no-boot-anim
-    -no-metrics
-  )
-
-  if [[ "${HEADLESS_MODE}" == "1" ]]; then
-    cmd+=(-no-window -no-audio)
-  fi
+  _base_emulator_cmd
 
   local quoted_cmd
-  printf -v quoted_cmd "%q " "${cmd[@]}"
+  printf -v quoted_cmd "%q " "${_EMU_CMD[@]}"
   quoted_cmd="${quoted_cmd% }"
 
   if command -v sg >/dev/null 2>&1 && getent group kvm | grep -Eq "(^|:|,)${USER}(,|$)"; then
@@ -167,7 +159,7 @@ launch_emulator_detached() {
     return
   fi
 
-  setsid -f "${cmd[@]}" >/tmp/terminal-android-emulator.log 2>&1
+  setsid -f "${_EMU_CMD[@]}" >/tmp/terminal-android-emulator.log 2>&1
 }
 
 start_emulator() {
@@ -185,7 +177,8 @@ start_emulator() {
   launch_emulator_detached
   sleep 2
 
-  if ! pgrep -af "qemu-system-x86_64-headless|emulator .*${AVD_NAME}" >/dev/null; then
+  if ! pgrep -af "qemu-system-(x86_64|aarch64)(-headless)?|emulator.*(${AVD_NAME}|-avd)" >/dev/null \
+    && ! adb devices 2>/dev/null | awk '$1 ~ /^emulator-/ && $2 == "device" { found=1 } END { exit found ? 0 : 1 }'; then
     echo "Emulator launch failed. Check /tmp/terminal-android-emulator.log for details." >&2
     exit 1
   fi

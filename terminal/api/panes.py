@@ -18,6 +18,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 
+from ..constants import MAX_PANES
 from ..rate_limit import limiter
 from ..services.lifecycle_core import _kill_tmux_session, create_session, delete_session
 from ..services.pane_service import (
@@ -50,8 +51,6 @@ from .validators import (
 )
 
 router = APIRouter(tags=["Terminal Panes"])
-
-MAX_PANES = 4
 
 
 @router.get("/api/terminal/panes", response_model=PaneListResponse)

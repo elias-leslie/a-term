@@ -43,11 +43,15 @@ def prepare_scrollback_for_transport(
     )
 
 
+def _make_scrollback_payload(scrollback_data: str) -> dict[str, Any]:
+    """Return the canonical scrollback-sync control dict."""
+    return {"__ctrl": True, "scrollback_sync": scrollback_data}
+
+
 def build_scrollback_sync_payload(scrollback: str) -> str:
-    return json.dumps({
-        "__ctrl": True,
-        "scrollback_sync": prepare_scrollback_for_transport(scrollback),
-    })
+    return json.dumps(
+        _make_scrollback_payload(prepare_scrollback_for_transport(scrollback)),
+    )
 
 
 class ScrollbackSyncOutputTracker:
@@ -119,10 +123,7 @@ class ScrollbackSyncScheduler:
             if not bounded_scrollback:
                 return
             await self._websocket.send_text(
-                json.dumps({
-                    "__ctrl": True,
-                    "scrollback_sync": bounded_scrollback,
-                }),
+                json.dumps(_make_scrollback_payload(bounded_scrollback)),
             )
         except asyncio.CancelledError:
             raise
