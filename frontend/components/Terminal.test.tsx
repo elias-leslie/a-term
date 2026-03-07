@@ -8,14 +8,18 @@ type TerminalHookOptions = Parameters<
 
 const websocketState: {
   options: TerminalHookOptions | null
-  connect: ReturnType<typeof vi.fn> | null
-  disconnect: ReturnType<typeof vi.fn> | null
+  connect: ReturnType<typeof vi.fn>
+  disconnect: ReturnType<typeof vi.fn>
   connectCalls: number
   disconnectCalls: number
 } = {
   options: null,
-  connect: null,
-  disconnect: null,
+  connect: vi.fn(() => {
+    websocketState.connectCalls += 1
+  }),
+  disconnect: vi.fn(() => {
+    websocketState.disconnectCalls += 1
+  }),
   connectCalls: 0,
   disconnectCalls: 0,
 }
@@ -51,22 +55,14 @@ const fakeTerminal = {
 
 vi.mock('../lib/hooks/use-terminal-websocket', () => ({
   useTerminalWebSocket: (options: TerminalHookOptions) => {
-    const connect = vi.fn(() => {
-      websocketState.connectCalls += 1
-    })
-    const disconnect = vi.fn(() => {
-      websocketState.disconnectCalls += 1
-    })
     websocketState.options = options
-    websocketState.connect = connect
-    websocketState.disconnect = disconnect
     return {
       status: 'connected',
       wsRef: { current: null },
       reconnect: vi.fn(),
       sendInput: vi.fn(),
-      connect,
-      disconnect,
+      connect: websocketState.connect,
+      disconnect: websocketState.disconnect,
     }
   },
 }))
@@ -104,8 +100,8 @@ vi.mock('../lib/utils/device', () => ({
 describe('TerminalComponent', () => {
   afterEach(() => {
     websocketState.options = null
-    websocketState.connect = null
-    websocketState.disconnect = null
+    websocketState.connect.mockClear()
+    websocketState.disconnect.mockClear()
     websocketState.connectCalls = 0
     websocketState.disconnectCalls = 0
     operationCallbacks.length = 0
@@ -173,5 +169,23 @@ describe('TerminalComponent', () => {
     rerender(<TerminalComponent sessionId="session-3" isVisible />)
 
     expect(websocketState.connectCalls).toBeGreaterThanOrEqual(1)
+  })
+
+  it('does not reconnect or disconnect a visible terminal during ordinary rerenders', () => {
+    const { rerender } = render(<TerminalComponent sessionId="session-4" isVisible />)
+
+    const connectCallsBeforeRerender = websocketState.connectCalls
+    const disconnectCallsBeforeRerender = websocketState.disconnectCalls
+
+    rerender(
+      <TerminalComponent
+        sessionId="session-4"
+        isVisible
+        className="terminal-rerender"
+      />,
+    )
+
+    expect(websocketState.connectCalls).toBe(connectCallsBeforeRerender)
+    expect(websocketState.disconnectCalls).toBe(disconnectCallsBeforeRerender)
   })
 })

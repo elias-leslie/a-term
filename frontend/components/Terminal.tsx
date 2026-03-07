@@ -265,16 +265,15 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
     // Keep inactive panes disconnected so background sessions do not keep
     // streaming and repainting while another pane is active.
     useEffect(() => {
-      if (!isVisible) {
-        disconnect()
+      if (isVisible) {
+        connect()
         return
       }
 
-      connect()
-      return () => {
-        disconnect()
-      }
+      disconnect()
     }, [connect, disconnect, isVisible])
+
+    useEffect(() => disconnect, [disconnect])
 
     return (
       <div className={clsx('relative overflow-hidden', className)}>
