@@ -273,7 +273,6 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
       disconnect()
     }, [connect, disconnect, isVisible])
 
-    useEffect(() => disconnect, [disconnect])
 
     return (
       <div className={clsx('relative overflow-hidden', className)}>
