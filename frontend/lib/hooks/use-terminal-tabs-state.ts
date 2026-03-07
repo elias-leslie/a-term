@@ -58,9 +58,11 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
   } = useTerminalPanes()
 
   const viewportPaneCapacity = usePaneCapacity()
+  const initialPaneCount = 1
+  const initialViewportWidth = 0
   const [layoutMode, setLayoutMode] = useLocalStorageState<LayoutMode>(
     'terminal-layout-mode',
-    getDefaultLayoutMode(1, 0),
+    getDefaultLayoutMode(initialPaneCount, initialViewportWidth),
   )
   const activeSessionProjectId = useMemo(() => getActiveSessionProjectId(activeSessionId, sessions), [activeSessionId, sessions])
   const { fontId, fontSize, fontFamily, scrollback, cursorStyle, cursorBlink, themeId, theme, setFontId, setFontSize, setScrollback, setCursorStyle, setCursorBlink, setThemeId } = useTerminalSettings(activeSessionProjectId)
