@@ -8,7 +8,6 @@ import type { ConnectionStatus, TerminalHandle } from '@/components/Terminal'
 import { useAgentPolling } from '@/lib/hooks/use-agent-polling'
 import { useAgentTools } from '@/lib/hooks/use-agent-tools'
 import { useProjectModeSwitch } from '@/lib/hooks/use-project-mode-switch'
-import type { ProjectTerminal } from '@/lib/hooks/use-project-terminals'
 import { useProjectTerminals } from '@/lib/hooks/use-project-terminals'
 import type { TerminalSession } from '@/lib/hooks/use-terminal-sessions'
 import { useTerminalSessions } from '@/lib/hooks/use-terminal-sessions'
@@ -16,7 +15,6 @@ import {
   addAdHocPaneAction,
   addProjectPaneAction,
   closeAllPanesAction,
-  handleProjectTabClickAction,
 } from './terminal-handler-actions'
 import type {
   UseTerminalHandlersProps,
@@ -26,7 +24,6 @@ import type {
 export function useTerminalHandlers({
   projectId: _projectId,
   projectPath: _projectPath,
-  sessions,
   adHocSessions: _adHocSessions,
   projectTerminals,
   activeSessionId,
@@ -126,20 +123,6 @@ export function useTerminalHandlers({
     ],
   )
 
-  const handleProjectTabClick = useCallback(
-    (pt: ProjectTerminal) =>
-      handleProjectTabClickAction(
-        pt,
-        panes,
-        sessions,
-        panesAtLimit,
-        createProjectPane,
-        navigateToSession,
-        startAgent,
-      ),
-    [panes, sessions, panesAtLimit, createProjectPane, navigateToSession, startAgent],
-  )
-
   const handleProjectModeChange = useCallback(
     async (
       projectIdArg: string,
@@ -168,7 +151,6 @@ export function useTerminalHandlers({
     handleLayoutModeChange,
     handleAddTab,
     handleNewTerminalForProject,
-    handleProjectTabClick,
     handleProjectModeChange,
     handleCloseAll,
     setTerminalRef,

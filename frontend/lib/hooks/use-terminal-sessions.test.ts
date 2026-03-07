@@ -89,27 +89,6 @@ describe('useTerminalSessions', () => {
     )
   })
 
-  it('sets activeId to first session automatically', async () => {
-    const body = JSON.stringify({ items: mockSessions, total: 2 })
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      text: async () => body,
-      json: async () => JSON.parse(body),
-    })
-
-    const { result } = renderHook(() => useTerminalSessions(), {
-      wrapper: createWrapper(),
-    })
-
-    await waitFor(() => {
-      expect(result.current.sessions).toHaveLength(2)
-    })
-
-    await waitFor(() => {
-      expect(result.current.activeId).toBe('session-1')
-    })
-  })
-
   it('handles API errors gracefully', async () => {
     const errorBody = JSON.stringify({ detail: 'Server error' })
     mockFetch.mockResolvedValueOnce({

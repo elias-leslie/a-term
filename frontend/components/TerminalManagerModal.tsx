@@ -1,7 +1,8 @@
 'use client'
 
+import * as Dialog from '@radix-ui/react-dialog'
 import { Folder, Plus, Terminal, X } from 'lucide-react'
-import { useMemo } from 'react'
+import { useDeferredValue, useMemo, useState } from 'react'
 import { useHoverStyle } from '@/lib/hooks/use-hover-style'
 import {
   type ProjectSetting,
@@ -129,6 +130,8 @@ export function TerminalManagerModal({
   panes,
 }: TerminalManagerModalProps) {
   const { projects } = useProjectSettings()
+  const [searchQuery, setSearchQuery] = useState('')
+  const deferredSearchQuery = useDeferredValue(searchQuery)
 
   // Count panes per project (only project panes, not ad-hoc)
   const paneCountByProject = useMemo(() => {
@@ -146,6 +149,25 @@ export function TerminalManagerModal({
     return panes.filter((p) => p.pane_type === 'adhoc').length
   }, [panes])
 
+  const normalizedSearch = deferredSearchQuery.trim().toLowerCase()
+  const visibleProjects = useMemo(() => {
+    const sortedProjects = [...projects].sort((a, b) => {
+      const paneDelta =
+        (paneCountByProject[b.id] || 0) - (paneCountByProject[a.id] || 0)
+      if (paneDelta !== 0) return paneDelta
+      return a.name.localeCompare(b.name)
+    })
+
+    if (!normalizedSearch) {
+      return sortedProjects
+    }
+
+    return sortedProjects.filter((project) => {
+      const haystack = `${project.name} ${project.root_path ?? ''}`.toLowerCase()
+      return haystack.includes(normalizedSearch)
+    })
+  }, [projects, paneCountByProject, normalizedSearch])
+
   // Hover styles for close button
   const closeButtonHover = useHoverStyle({
     hoverBg: 'var(--term-bg-surface)',
@@ -157,81 +179,141 @@ export function TerminalManagerModal({
   // Handle clicking a project - create new terminal for it
   const handleProjectClick = (project: ProjectSetting) => {
     onCreateProjectTerminal(project.id, project.root_path)
+    setSearchQuery('')
     onClose()
   }
 
   // Handle creating generic terminal
   const handleCreateGeneric = () => {
     onCreateGenericTerminal()
+    setSearchQuery('')
     onClose()
   }
 
-  if (!isOpen) return null
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setSearchQuery('')
+      onClose()
+    }
+  }
 
   return (
-    <>
-      {/* Overlay - z-10000 to escape parent stacking contexts */}
-      <div
-        className="fixed inset-0 z-[10000]"
-        style={{
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-          backdropFilter: 'blur(4px)',
-        }}
-        onClick={onClose}
-      />
-
-      {/* Modal - z-10001 above overlay */}
-      <div
-        data-testid="terminal-manager-modal"
-        className="fixed z-[10001] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[480px] rounded-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150"
-        style={{
-          backgroundColor: 'var(--term-bg-elevated)',
-          border: '1px solid var(--term-border-active)',
-          boxShadow: '0 8px 48px rgba(0, 0, 0, 0.6)',
-        }}
-      >
-        {/* Header */}
-        <div
-          className="flex items-center justify-between px-5 py-4"
-          style={{ borderBottom: '1px solid var(--term-border)' }}
+    <Dialog.Root open={isOpen} onOpenChange={handleOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay
+          className="fixed inset-0 z-[10000]"
+          style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            backdropFilter: 'blur(4px)',
+          }}
+        />
+        <Dialog.Content
+          data-testid="terminal-manager-modal"
+          className="fixed z-[10001] left-1/2 top-1/2 w-[min(92vw,560px)] max-h-[min(80vh,720px)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg animate-in fade-in zoom-in-95 duration-150"
+          style={{
+            backgroundColor: 'var(--term-bg-elevated)',
+            border: '1px solid var(--term-border-active)',
+            boxShadow: '0 8px 48px rgba(0, 0, 0, 0.6)',
+          }}
+          onOpenAutoFocus={(event) => {
+            event.preventDefault()
+            const input = document.getElementById('terminal-manager-search')
+            input instanceof HTMLInputElement && input.focus()
+          }}
         >
-          <h2
-            className="text-xs font-medium tracking-widest"
-            style={{
-              color: 'var(--term-text-muted)',
-              fontFamily: 'var(--font-mono)',
-            }}
+          <div
+            className="flex items-center justify-between px-5 py-4"
+            style={{ borderBottom: '1px solid var(--term-border)' }}
           >
-            TERMINALS
-          </h2>
-          <button
-            data-testid="terminal-manager-modal-close"
-            onClick={onClose}
-            className="flex items-center justify-center w-11 h-11 rounded transition-colors"
-            onMouseEnter={closeButtonHover.onMouseEnter}
-            onMouseLeave={closeButtonHover.onMouseLeave}
-            style={closeButtonHover.style}
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-3 max-h-[400px] overflow-y-auto">
-          {/* Projects section */}
-          {projects.length > 0 && (
-            <>
-              <div
-                className="text-xs font-medium mb-2 px-2"
+            <div className="min-w-0">
+              <Dialog.Title
+                className="text-xs font-medium tracking-widest"
                 style={{
                   color: 'var(--term-text-muted)',
                   fontFamily: 'var(--font-mono)',
                 }}
               >
-                PROJECTS
-              </div>
-              <div className="space-y-1">
-                {projects.map((project) => (
+                TERMINALS
+              </Dialog.Title>
+              <Dialog.Description
+                className="mt-1 text-xs"
+                style={{ color: 'var(--term-text-muted)' }}
+              >
+                Launch a project terminal or open a fresh ad-hoc shell.
+              </Dialog.Description>
+            </div>
+            <Dialog.Close asChild>
+              <button
+                data-testid="terminal-manager-modal-close"
+                className="flex items-center justify-center w-11 h-11 rounded transition-colors"
+                onMouseEnter={closeButtonHover.onMouseEnter}
+                onMouseLeave={closeButtonHover.onMouseLeave}
+                style={closeButtonHover.style}
+                aria-label="Close terminal manager"
+              >
+                <X size={18} />
+              </button>
+            </Dialog.Close>
+          </div>
+
+          <div className="p-4">
+            <label
+              htmlFor="terminal-manager-search"
+              className="mb-2 block text-[11px] font-medium uppercase tracking-[0.14em]"
+              style={{
+                color: 'var(--term-text-muted)',
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
+              Search Projects
+            </label>
+            <input
+              id="terminal-manager-search"
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Filter by project name or path"
+              className="w-full rounded-md px-3 py-2.5 text-sm outline-none transition-colors"
+              style={{
+                backgroundColor: 'var(--term-bg-surface)',
+                border: '1px solid var(--term-border)',
+                color: 'var(--term-text-primary)',
+                fontFamily: 'var(--font-mono)',
+              }}
+            />
+          </div>
+
+          <div className="px-4 pb-4">
+            <div
+              className="mb-2 flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.14em]"
+              style={{
+                color: 'var(--term-text-muted)',
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
+              <span>Quick Start</span>
+              <span>{visibleProjects.length} project{visibleProjects.length === 1 ? '' : 's'}</span>
+            </div>
+
+            <div
+              className="rounded-lg p-2"
+              style={{
+                backgroundColor: 'rgba(10, 14, 20, 0.35)',
+                border: '1px solid var(--term-border)',
+              }}
+            >
+              <GenericTerminalButton
+                paneCount={adHocPaneCount}
+                onClick={handleCreateGeneric}
+              />
+
+              <div
+                className="my-2 h-px"
+                style={{ backgroundColor: 'var(--term-border)' }}
+              />
+
+              <div className="max-h-[320px] overflow-y-auto space-y-1 pr-1">
+                {visibleProjects.map((project) => (
                   <ProjectButton
                     key={project.id}
                     project={project}
@@ -240,30 +322,28 @@ export function TerminalManagerModal({
                   />
                 ))}
               </div>
-            </>
-          )}
 
-          {projects.length === 0 && (
-            <p
-              className="text-sm text-center py-4"
-              style={{ color: 'var(--term-text-muted)' }}
-            >
-              No projects found
-            </p>
-          )}
+              {projects.length === 0 && (
+                <p
+                  className="px-3 py-6 text-center text-sm"
+                  style={{ color: 'var(--term-text-muted)' }}
+                >
+                  No projects found yet. You can still open an ad-hoc shell.
+                </p>
+              )}
 
-          {/* New Generic Terminal button */}
-          <div
-            className="mt-3 pt-3"
-            style={{ borderTop: '1px solid var(--term-border)' }}
-          >
-            <GenericTerminalButton
-              paneCount={adHocPaneCount}
-              onClick={handleCreateGeneric}
-            />
+              {projects.length > 0 && visibleProjects.length === 0 && (
+                <p
+                  className="px-3 py-6 text-center text-sm"
+                  style={{ color: 'var(--term-text-muted)' }}
+                >
+                  No projects match "{searchQuery.trim()}".
+                </p>
+              )}
+            </div>
           </div>
-        </div>
-      </div>
-    </>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }

@@ -30,8 +30,12 @@ describe('attachViewportResizeListeners', () => {
     window.dispatchEvent(new Event('orientationchange'))
 
     expect(callback).toHaveBeenCalledTimes(2)
-    expect(addEventListener).toHaveBeenCalledWith('resize', callback)
-    expect(addEventListener).toHaveBeenCalledWith('scroll', callback)
+    expect(addEventListener).toHaveBeenCalledWith('resize', callback, {
+      passive: true,
+    })
+    expect(addEventListener).toHaveBeenCalledWith('scroll', callback, {
+      passive: true,
+    })
 
     const windowRemoveSpy = vi.spyOn(window, 'removeEventListener')
 

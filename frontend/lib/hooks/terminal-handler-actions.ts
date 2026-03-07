@@ -1,15 +1,9 @@
-import { getProjectSessionId } from '@/lib/utils/session'
 import type { ProjectTerminal } from '@/lib/hooks/use-project-terminals'
 import type { TerminalPane } from '@/lib/hooks/use-terminal-panes'
-import type { TerminalSession } from '@/lib/hooks/use-terminal-sessions'
 import {
-  createProjectPaneHelper,
-  navigateToPaneHelper,
-} from './terminal-handler-helpers'
-import {
-  findSessionByMode,
   generateAdHocPaneName,
   generateProjectPaneName,
+  findSessionByMode,
   waitForTmuxInit,
 } from './terminal-handler-utils'
 
@@ -86,45 +80,6 @@ export async function addProjectPaneAction(
     }
   } catch (error) {
     console.error('Failed to create project pane:', error)
-  }
-}
-
-/**
- * Handle project tab click - navigate to existing pane or create new one
- */
-export async function handleProjectTabClickAction(
-  pt: ProjectTerminal,
-  panes: TerminalPane[],
-  sessions: TerminalSession[],
-  panesAtLimit: boolean,
-  createProjectPane: (
-    paneName: string,
-    projectId: string,
-    workingDir?: string,
-  ) => Promise<TerminalPane>,
-  navigateToSession: (sessionId: string) => void,
-  startAgent: (sessionId: string) => Promise<boolean>,
-): Promise<void> {
-  // Legacy path (backwards compatibility)
-  const legacySessionId = getProjectSessionId(pt)
-  if (legacySessionId) {
-    navigateToSession(legacySessionId)
-    return
-  }
-
-  // Find existing pane or create new one
-  const pane = panes.find((p) => p.project_id === pt.projectId)
-  if (pane) {
-    await navigateToPaneHelper(pane, sessions, navigateToSession, startAgent)
-  } else {
-    await createProjectPaneHelper(
-      pt,
-      panes,
-      panesAtLimit,
-      createProjectPane,
-      navigateToSession,
-      startAgent,
-    )
   }
 }
 

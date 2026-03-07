@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import { apiFetch } from '../api-fetch'
 import { buildApiUrl } from '../api-config'
 
@@ -62,7 +62,6 @@ const invalidatePanesAndSessions = (queryClient: ReturnType<typeof useQueryClien
 /** Hook for managing terminal sessions with backend sync */
 export function useTerminalSessions() {
   const queryClient = useQueryClient()
-  const [activeId, setActiveId] = useState<string | null>(null)
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['terminal-sessions'] })
 
   const {
@@ -75,13 +74,6 @@ export function useTerminalSessions() {
     queryFn: fetchSessions,
   })
 
-  // Set active ID to first session if none is active (must be in useEffect to avoid setState during render)
-  useEffect(() => {
-    if (!activeId && sessions.length > 0) {
-      setActiveId(sessions[0].id)
-    }
-  }, [activeId, sessions])
-
   const updateMutation = useMutation({
     mutationFn: ({ sessionId, ...request }: UpdateSessionRequest & { sessionId: string }) =>
       updateSession(sessionId, request),
@@ -90,12 +82,8 @@ export function useTerminalSessions() {
 
   const deleteMutation = useMutation({
     mutationFn: deleteSession,
-    onSuccess: (_, deletedId) => {
+    onSuccess: () => {
       invalidate()
-      if (activeId === deletedId) {
-        const remaining = sessions.filter((s) => s.id !== deletedId)
-        setActiveId(remaining[0]?.id ?? null)
-      }
     },
   })
 
@@ -113,7 +101,6 @@ export function useTerminalSessions() {
         ['terminal-sessions'],
         (old) => (old ? [...old.filter((s) => s.id !== oldSessionId), newSession] : [newSession]),
       )
-      setActiveId(newSession.id)
     },
     onError: (_err, _oldSessionId, ctx) =>
       ctx?.previousSessions &&
@@ -146,8 +133,6 @@ export function useTerminalSessions() {
 
   return {
     sessions,
-    activeId,
-    setActiveId,
     update,
     remove,
     reset,

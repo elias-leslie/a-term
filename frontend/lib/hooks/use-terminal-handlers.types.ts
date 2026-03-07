@@ -1,14 +1,16 @@
 import type { LayoutMode } from '@/components/LayoutModeButton'
 import type { KeyboardSizePreset } from '@/components/SettingsDropdown'
 import type { ConnectionStatus, TerminalHandle } from '@/components/Terminal'
-import type { ProjectTerminal, useProjectTerminals } from './use-project-terminals'
+import type {
+  ProjectTerminal,
+  useProjectTerminals,
+} from './use-project-terminals'
 import type { TerminalPane } from './use-terminal-panes'
 import type { TerminalSession, useTerminalSessions } from './use-terminal-sessions'
 
 export interface UseTerminalHandlersProps {
   projectId?: string
   projectPath?: string
-  sessions: TerminalSession[]
   adHocSessions: TerminalSession[]
   projectTerminals: ProjectTerminal[]
   activeSessionId: string | null
@@ -46,7 +48,6 @@ export interface UseTerminalHandlersReturn {
     mode: string,
     rootPath?: string | null,
   ) => Promise<void>
-  handleProjectTabClick: (pt: ProjectTerminal) => Promise<void>
   handleProjectModeChange: (
     projectId: string,
     newMode: string,

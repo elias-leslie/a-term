@@ -69,7 +69,6 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     handleLayoutModeChange,
     handleAddTab,
     handleNewTerminalForProject,
-    handleProjectTabClick,
     handleProjectModeChange,
     handleCloseAll,
     setTerminalRef,
@@ -84,7 +83,6 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
   } = useTerminalHandlers({
     projectId,
     projectPath,
-    sessions,
     adHocSessions,
     projectTerminals,
     activeSessionId,
@@ -187,7 +185,6 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     handleLayoutModeChange,
     handleAddTab,
     handleNewTerminalForProject,
-    handleProjectTabClick,
     handleProjectModeChange,
     handleCloseAll,
     resetProject,
