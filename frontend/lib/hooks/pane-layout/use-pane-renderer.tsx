@@ -145,7 +145,6 @@ export function usePaneRenderer({
                 cursorStyle={cursorStyle}
                 cursorBlink={cursorBlink}
                 theme={theme}
-                isVisible
                 onStatusChange={(status) => onStatusChange?.(sessionId, status)}
               />
             ) : (

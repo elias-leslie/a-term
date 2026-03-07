@@ -105,8 +105,8 @@ describe('usePaneRenderer', () => {
     expect(screen.getByTestId('terminal-session-1')).toBeInTheDocument()
     expect(screen.getByTestId('terminal-session-2')).toBeInTheDocument()
     expect(terminalProps).toEqual([
-      { sessionId: 'session-1', isVisible: true },
-      { sessionId: 'session-2', isVisible: true },
+      { sessionId: 'session-1', isVisible: undefined },
+      { sessionId: 'session-2', isVisible: undefined },
     ])
   })
 })
