@@ -262,13 +262,19 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
       [status, reconnect, sendInput],
     )
 
-    // Connect to WebSocket on mount
+    // Keep inactive panes disconnected so background sessions do not keep
+    // streaming and repainting while another pane is active.
     useEffect(() => {
+      if (!isVisible) {
+        disconnect()
+        return
+      }
+
       connect()
       return () => {
         disconnect()
       }
-    }, [connect, disconnect])
+    }, [connect, disconnect, isVisible])
 
     return (
       <div className={clsx('relative overflow-hidden', className)}>

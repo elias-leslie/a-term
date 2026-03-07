@@ -33,6 +33,7 @@ interface UsePaneRendererOptions {
     | 'theme'
     | 'onStatusChange'
     | 'onVoice'
+    | 'activeSessionId'
   >
   displaySlots: (TerminalSlot | PaneSlot)[]
   paneCount: number
@@ -68,6 +69,7 @@ export function usePaneRenderer({
     theme,
     onStatusChange,
     onVoice,
+    activeSessionId,
   } = props
 
   const renderPane = useCallback(
@@ -75,6 +77,7 @@ export function usePaneRenderer({
       const sessionId = getSlotSessionId(slot)
       const workingDir = getSlotWorkingDir(slot)
       const panelId = getSlotPanelId(slot)
+      const isVisible = !activeSessionId || sessionId === activeSessionId
 
       return (
         <div
@@ -133,6 +136,7 @@ export function usePaneRenderer({
                 cursorStyle={cursorStyle}
                 cursorBlink={cursorBlink}
                 theme={theme}
+                isVisible={isVisible}
                 onStatusChange={(status) => onStatusChange?.(sessionId, status)}
               />
             ) : (
@@ -171,6 +175,7 @@ export function usePaneRenderer({
       theme,
       onStatusChange,
       onVoice,
+      activeSessionId,
     ],
   )
 

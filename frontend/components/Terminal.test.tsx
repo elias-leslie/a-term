@@ -8,8 +8,16 @@ type TerminalHookOptions = Parameters<
 
 const websocketState: {
   options: TerminalHookOptions | null
+  connect: ReturnType<typeof vi.fn> | null
+  disconnect: ReturnType<typeof vi.fn> | null
+  connectCalls: number
+  disconnectCalls: number
 } = {
   options: null,
+  connect: null,
+  disconnect: null,
+  connectCalls: 0,
+  disconnectCalls: 0,
 }
 
 const fakeFitAddon = {
@@ -43,14 +51,22 @@ const fakeTerminal = {
 
 vi.mock('../lib/hooks/use-terminal-websocket', () => ({
   useTerminalWebSocket: (options: TerminalHookOptions) => {
+    const connect = vi.fn(() => {
+      websocketState.connectCalls += 1
+    })
+    const disconnect = vi.fn(() => {
+      websocketState.disconnectCalls += 1
+    })
     websocketState.options = options
+    websocketState.connect = connect
+    websocketState.disconnect = disconnect
     return {
       status: 'connected',
       wsRef: { current: null },
       reconnect: vi.fn(),
       sendInput: vi.fn(),
-      connect: vi.fn(),
-      disconnect: vi.fn(),
+      connect,
+      disconnect,
     }
   },
 }))
@@ -88,6 +104,10 @@ vi.mock('../lib/utils/device', () => ({
 describe('TerminalComponent', () => {
   afterEach(() => {
     websocketState.options = null
+    websocketState.connect = null
+    websocketState.disconnect = null
+    websocketState.connectCalls = 0
+    websocketState.disconnectCalls = 0
     operationCallbacks.length = 0
     fakeFitAddon.proposeDimensions.mockClear()
     fakeTerminal.reset.mockClear()
@@ -140,5 +160,18 @@ describe('TerminalComponent', () => {
 
     expect(fakeTerminal.reset).not.toHaveBeenCalled()
     expect(fakeTerminal.write).not.toHaveBeenCalled()
+  })
+
+  it('disconnects hidden terminals and reconnects them when visible again', () => {
+    const { rerender } = render(
+      <TerminalComponent sessionId="session-3" isVisible={false} />,
+    )
+
+    expect(websocketState.connectCalls).toBe(0)
+    expect(websocketState.disconnectCalls).toBeGreaterThanOrEqual(1)
+
+    rerender(<TerminalComponent sessionId="session-3" isVisible />)
+
+    expect(websocketState.connectCalls).toBeGreaterThanOrEqual(1)
   })
 })
