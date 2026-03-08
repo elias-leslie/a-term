@@ -29,10 +29,15 @@ describe('useAutoCreatePane', () => {
       }),
     )
 
-    await new Promise((r) => setTimeout(r, 50))
     expect(mockFetch).not.toHaveBeenCalled()
     expect(createAdHocPane).not.toHaveBeenCalled()
     expect(switchToSession).not.toHaveBeenCalled()
+
+    await waitFor(() => {
+      expect(mockFetch).not.toHaveBeenCalled()
+      expect(createAdHocPane).not.toHaveBeenCalled()
+      expect(switchToSession).not.toHaveBeenCalled()
+    }, { timeout: 100 })
   })
 
   it('auto-creates exactly one ad-hoc pane after an empty initial load is confirmed', async () => {

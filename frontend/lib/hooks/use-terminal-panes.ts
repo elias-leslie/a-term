@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
+import { MAX_PANES } from '@/lib/constants/terminal'
 import * as api from './terminal-panes-api'
 import { findSessionByMode } from './terminal-handler-utils'
 import type {
@@ -24,7 +25,7 @@ export function useTerminalPanes() {
   })
 
   const panes = data?.items ?? []
-  const maxPanes = data?.max_panes ?? 6
+  const maxPanes = data?.max_panes ?? MAX_PANES
   const atLimit = panes.length >= maxPanes
 
   const createMutation = useMutation({

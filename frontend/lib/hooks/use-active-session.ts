@@ -120,10 +120,9 @@ export interface UseActiveSessionResult {
 export function useActiveSession(): UseActiveSessionResult {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [persistedSessionId, setPersistedSessionId] = useState<string | null>(() => {
-    if (typeof window === 'undefined') return null
-    return window.localStorage.getItem(LAST_ACTIVE_SESSION_KEY)
-  })
+  const [persistedSessionId, setPersistedSessionId] = useState<string | null>(
+    () => window.localStorage.getItem(LAST_ACTIVE_SESSION_KEY)
+  )
 
   // Get session data from existing hooks
   const { sessions, isLoading: sessionsLoading } = useTerminalSessions()

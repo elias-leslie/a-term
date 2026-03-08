@@ -14,7 +14,10 @@ function readPaneLayoutGroups(storageKey: string): PaneLayoutGroups {
 
   try {
     const stored = localStorage.getItem(storageKey)
-    return stored ? (JSON.parse(stored) as PaneLayoutGroups) : {}
+    if (!stored) return {}
+    const parsed = JSON.parse(stored)
+    if (typeof parsed !== 'object' || parsed === null) return {}
+    return parsed as PaneLayoutGroups
   } catch {
     return {}
   }

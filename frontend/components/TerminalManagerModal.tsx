@@ -338,7 +338,7 @@ export function TerminalManagerModal({
                   className="px-3 py-6 text-center text-sm"
                   style={{ color: 'var(--term-text-muted)' }}
                 >
-                  No projects match "{searchQuery.trim()}".
+                  No projects match "{deferredSearchQuery.trim()}".
                 </p>
               )}
             </div>

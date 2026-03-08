@@ -267,7 +267,7 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
     useEffect(() => {
       if (isVisible) {
         connect()
-        return
+        return () => disconnect()
       }
 
       disconnect()

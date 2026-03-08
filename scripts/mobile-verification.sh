@@ -177,8 +177,13 @@ start_emulator() {
   launch_emulator_detached
   sleep 2
 
-  if ! pgrep -af "qemu-system-(x86_64|aarch64)(-headless)?|emulator.*(${AVD_NAME}|-avd)" >/dev/null \
-    && ! adb devices 2>/dev/null | awk '$1 ~ /^emulator-/ && $2 == "device" { found=1 } END { exit found ? 0 : 1 }'; then
+  local emulator_running=0
+  if pgrep -af "qemu-system-(x86_64|aarch64)(-headless)?|emulator.*(${AVD_NAME}|-avd)" >/dev/null; then
+    emulator_running=1
+  elif adb devices 2>/dev/null | awk '$1 ~ /^emulator-/ && $2 == "device" { found=1 } END { exit found ? 0 : 1 }'; then
+    emulator_running=1
+  fi
+  if [[ "${emulator_running}" -eq 0 ]]; then
     echo "Emulator launch failed. Check /tmp/terminal-android-emulator.log for details." >&2
     exit 1
   fi

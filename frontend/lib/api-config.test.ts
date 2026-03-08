@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { buildApiUrl, getApiBaseUrl, getWsUrl } from './api-config'
 
 const originalLocation = window.location
@@ -54,5 +54,43 @@ describe('api-config', () => {
     expect(buildApiUrl('/api/terminal/sessions')).toBe(
       '/api/terminal/sessions',
     )
+  })
+
+  it('uses backend localhost websocket for 127.0.0.1 development', () => {
+    setLocation('http://127.0.0.1:3002/')
+
+    expect(getWsUrl('/ws/terminal/session-1')).toBe(
+      'ws://localhost:8002/ws/terminal/session-1',
+    )
+  })
+
+  describe('server-side (no window)', () => {
+    const originalWindow = globalThis.window
+
+    beforeEach(() => {
+      // Simulate server-side by removing window
+      // @ts-expect-error -- deliberately removing window for SSR simulation
+      delete globalThis.window
+    })
+
+    afterEach(() => {
+      globalThis.window = originalWindow
+    })
+
+    it('getApiBaseUrl returns localhost backend URL on server-side', () => {
+      expect(getApiBaseUrl()).toBe('http://localhost:8002')
+    })
+
+    it('buildApiUrl returns full localhost URL on server-side', () => {
+      expect(buildApiUrl('/api/terminal/sessions')).toBe(
+        'http://localhost:8002/api/terminal/sessions',
+      )
+    })
+
+    it('getWsUrl returns localhost websocket URL on server-side', () => {
+      expect(getWsUrl('/ws/terminal/session-1')).toBe(
+        'ws://localhost:8002/ws/terminal/session-1',
+      )
+    })
   })
 })

@@ -57,6 +57,7 @@ export function PaneStatusBadge({ status }: PaneStatusBadgeProps) {
         border: `1px solid ${meta.glow}`,
       }}
       title={`Pane status: ${meta.label}`}
+      aria-label={`Pane status: ${meta.label}`}
     >
       <span
         className="h-1.5 w-1.5 rounded-full"
