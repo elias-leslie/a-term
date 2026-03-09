@@ -4,9 +4,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 import type { KeyboardSizePreset } from '@/components/SettingsDropdown'
 import type { ConnectionStatus, TerminalHandle } from '@/components/Terminal'
+import type { LayoutMode } from '@/lib/constants/terminal'
 import { useAgentPolling } from '@/lib/hooks/use-agent-polling'
 import { useAgentTools } from '@/lib/hooks/use-agent-tools'
-import type { LayoutMode } from '@/lib/constants/terminal'
 import { useProjectModeSwitch } from '@/lib/hooks/use-project-mode-switch'
 import { useProjectTerminals } from '@/lib/hooks/use-project-terminals'
 import type { TerminalSession } from '@/lib/hooks/use-terminal-sessions'
@@ -84,11 +84,13 @@ export function useTerminalHandlers({
   )
   const handleKeyboardInput = useCallback(
     (data: string) =>
-      activeSessionId && terminalRefs.current.get(activeSessionId)?.sendInput(data),
+      activeSessionId &&
+      terminalRefs.current.get(activeSessionId)?.sendInput(data),
     [activeSessionId, terminalRefs],
   )
   const handleReconnect = useCallback(
-    () => activeSessionId && terminalRefs.current.get(activeSessionId)?.reconnect(),
+    () =>
+      activeSessionId && terminalRefs.current.get(activeSessionId)?.reconnect(),
     [activeSessionId, terminalRefs],
   )
   const handleLayoutModeChange = useCallback(
@@ -96,7 +98,13 @@ export function useTerminalHandlers({
     [setLayoutMode],
   )
   const handleAddTab = useCallback(
-    () => addAdHocPaneAction(panes, panesAtLimit, createAdHocPane, navigateToSession),
+    () =>
+      addAdHocPaneAction(
+        panes,
+        panesAtLimit,
+        createAdHocPane,
+        navigateToSession,
+      ),
     [panes, panesAtLimit, createAdHocPane, navigateToSession],
   )
 
@@ -130,16 +138,31 @@ export function useTerminalHandlers({
       projectSessions: TerminalSession[],
       rootPath: string | null,
       paneId?: string,
-    ) => switchProjectMode({ projectId: projectIdArg, mode: newMode, projectSessions, rootPath, paneId }),
+    ) =>
+      switchProjectMode({
+        projectId: projectIdArg,
+        mode: newMode,
+        projectSessions,
+        rootPath,
+        paneId,
+      }),
     [switchProjectMode],
   )
   const handleCloseAll = useCallback(
-    () => closeAllPanesAction(panes, removePane, createAdHocPane, navigateToSession),
+    () =>
+      closeAllPanesAction(
+        panes,
+        removePane,
+        createAdHocPane,
+        navigateToSession,
+      ),
     [panes, removePane, createAdHocPane, navigateToSession],
   )
   const setTerminalRef = useCallback(
     (sessionId: string, handle: TerminalHandle | null) =>
-      handle ? terminalRefs.current.set(sessionId, handle) : terminalRefs.current.delete(sessionId),
+      handle
+        ? terminalRefs.current.set(sessionId, handle)
+        : terminalRefs.current.delete(sessionId),
     [terminalRefs],
   )
 

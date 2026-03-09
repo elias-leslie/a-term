@@ -69,16 +69,16 @@ export function useAutoCreatePane({
           .then((data) => {
             if (!data) return
             if (data.count === 0) {
-              return createAdHocPane(generatePaneName('Ad-Hoc Terminal', adHocCount)).then(
-                (newPane) => {
-                  const shellSession = newPane.sessions.find(
-                    (s) => s.mode === 'shell',
-                  )
-                  if (shellSession) {
-                    switchToSession(shellSession.id)
-                  }
-                },
-              )
+              return createAdHocPane(
+                generatePaneName('Ad-Hoc Terminal', adHocCount),
+              ).then((newPane) => {
+                const shellSession = newPane.sessions.find(
+                  (s) => s.mode === 'shell',
+                )
+                if (shellSession) {
+                  switchToSession(shellSession.id)
+                }
+              })
             }
           })
           .catch((error) => {

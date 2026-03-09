@@ -1,6 +1,6 @@
+import type { TerminalPane } from '@/lib/hooks/terminal-panes-types'
 import type { TerminalSession } from '@/lib/hooks/use-terminal-sessions'
 import { getSlotPanelId, type PaneSlot, panesToSlots } from '@/lib/utils/slot'
-import type { TerminalPane } from '@/lib/hooks/terminal-panes-types'
 
 /**
  * Get active session's project_id for per-project settings

@@ -162,13 +162,8 @@ export function useProjectSettings() {
 
   // Mutation: switch project mode
   const switchModeMutation = useMutation({
-    mutationFn: ({
-      projectId,
-      mode,
-    }: {
-      projectId: string
-      mode: string
-    }) => switchProjectMode(projectId, mode),
+    mutationFn: ({ projectId, mode }: { projectId: string; mode: string }) =>
+      switchProjectMode(projectId, mode),
     onMutate: async ({ projectId, mode }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['terminal-projects'] })

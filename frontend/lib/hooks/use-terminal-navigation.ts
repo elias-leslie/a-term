@@ -31,8 +31,7 @@ export function useTerminalNavigation({
   const findActiveSlot = useCallback(() => {
     return terminalSlots.find(
       (slot) =>
-        (slot.type === 'project' &&
-          slot.activeSessionId === activeSessionId) ||
+        (slot.type === 'project' && slot.activeSessionId === activeSessionId) ||
         (slot.type === 'adhoc' && slot.sessionId === activeSessionId),
     )
   }, [terminalSlots, activeSessionId])

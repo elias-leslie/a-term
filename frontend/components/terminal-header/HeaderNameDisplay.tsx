@@ -1,8 +1,8 @@
 'use client'
 
-import { memo } from 'react'
 import { clsx } from 'clsx'
 import { ChevronDown } from 'lucide-react'
+import { memo } from 'react'
 import { getSlotName, type TerminalSlot } from '@/lib/utils/slot'
 import { PaneSwapDropdown } from '../PaneSwapDropdown'
 

@@ -50,7 +50,10 @@ function ModeIcon({
       <Loader2
         width={iconSize}
         height={iconSize}
-        style={{ color: accentColor, animation: 'mode-toggle-spin 0.8s linear infinite' }}
+        style={{
+          color: accentColor,
+          animation: 'mode-toggle-spin 0.8s linear infinite',
+        }}
       />
     )
   if (isAgentMode)
@@ -69,7 +72,10 @@ function ModeIcon({
       width={iconSize}
       height={iconSize}
       style={{
-        color: isHovered && !isDisabled ? 'var(--term-text-primary)' : 'var(--term-text-muted)',
+        color:
+          isHovered && !isDisabled
+            ? 'var(--term-text-primary)'
+            : 'var(--term-text-muted)',
       }}
     />
   )
@@ -106,10 +112,21 @@ export const ModeToggle = memo(function ModeToggle({
     async (e: React.MouseEvent) => {
       e.stopPropagation()
       if (isDisabled) return
-      if (hasMultipleTools) { setShowPopover((prev) => !prev); return }
-      const oppositeMode: TerminalMode = isAgentMode ? 'shell' : defaultTool?.slug ?? fallbackAgentSlug
+      if (hasMultipleTools) {
+        setShowPopover((prev) => !prev)
+        return
+      }
+      const oppositeMode: TerminalMode = isAgentMode
+        ? 'shell'
+        : (defaultTool?.slug ?? fallbackAgentSlug)
       setInternalLoading(true)
-      try { await onChange(oppositeMode) } catch (error) { console.error('Failed to switch mode:', error) } finally { setInternalLoading(false) }
+      try {
+        await onChange(oppositeMode)
+      } catch (error) {
+        console.error('Failed to switch mode:', error)
+      } finally {
+        setInternalLoading(false)
+      }
     },
     [isAgentMode, onChange, isDisabled, hasMultipleTools, defaultTool],
   )
@@ -119,7 +136,13 @@ export const ModeToggle = memo(function ModeToggle({
       setShowPopover(false)
       if (mode === value) return
       setInternalLoading(true)
-      try { await onChange(mode) } catch (error) { console.error('Failed to switch mode:', error) } finally { setInternalLoading(false) }
+      try {
+        await onChange(mode)
+      } catch (error) {
+        console.error('Failed to switch mode:', error)
+      } finally {
+        setInternalLoading(false)
+      }
     },
     [onChange, value],
   )
@@ -128,7 +151,7 @@ export const ModeToggle = memo(function ModeToggle({
     ? 'Switching mode...'
     : isAgentMode
       ? `${activeTool?.name ?? 'Agent'} mode — click for ${hasMultipleTools ? 'options' : 'Shell'}`
-      : `Shell mode — click for ${hasMultipleTools ? 'options' : defaultTool?.name ?? 'Agent'}`
+      : `Shell mode — click for ${hasMultipleTools ? 'options' : (defaultTool?.name ?? 'Agent')}`
 
   const size = isMobile ? 32 : 26
   const iconSize = isMobile ? 16 : 14
@@ -146,16 +169,26 @@ export const ModeToggle = memo(function ModeToggle({
           onMouseLeave={() => setIsHovered(false)}
           className="mode-toggle-btn"
           style={{
-            position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: size, height: size, borderRadius: 6, border: '1px solid',
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: size,
+            height: size,
+            borderRadius: 6,
+            border: '1px solid',
             cursor: isDisabled ? 'not-allowed' : 'pointer',
             transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
             backgroundColor: isAgentMode
               ? `color-mix(in srgb, ${accentColor} 8%, transparent)`
-              : isHovered && !isDisabled ? 'var(--term-bg-elevated)' : 'var(--term-bg-surface)',
+              : isHovered && !isDisabled
+                ? 'var(--term-bg-elevated)'
+                : 'var(--term-bg-surface)',
             borderColor: isAgentMode
               ? 'var(--term-accent-muted)'
-              : isHovered && !isDisabled ? 'var(--term-border-active)' : 'var(--term-border)',
+              : isHovered && !isDisabled
+                ? 'var(--term-border-active)'
+                : 'var(--term-border)',
             boxShadow: isAgentMode
               ? `0 0 8px color-mix(in srgb, ${accentColor} 20%, transparent), inset 0 0 12px color-mix(in srgb, ${accentColor} 10%, transparent)`
               : 'none',
@@ -168,16 +201,62 @@ export const ModeToggle = memo(function ModeToggle({
           {isAgentMode && !isCurrentlyLoading && (
             <span
               className="mode-toggle-glow"
-              style={{ position: 'absolute', inset: -2, borderRadius: 8, border: `1px solid ${accentColor}`, opacity: 0.3, animation: 'mode-toggle-pulse 2s ease-in-out infinite' }}
+              style={{
+                position: 'absolute',
+                inset: -2,
+                borderRadius: 8,
+                border: `1px solid ${accentColor}`,
+                opacity: 0.3,
+                animation: 'mode-toggle-pulse 2s ease-in-out infinite',
+              }}
             />
           )}
-          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'transform 0.2s ease, color 0.2s ease', transform: isHovered && !isDisabled && !isCurrentlyLoading ? 'scale(1.1)' : 'scale(1)' }}>
-            <ModeIcon isCurrentlyLoading={isCurrentlyLoading} isAgentMode={isAgentMode} isHovered={isHovered} isDisabled={isDisabled} accentColor={accentColor} iconSize={iconSize} />
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'transform 0.2s ease, color 0.2s ease',
+              transform:
+                isHovered && !isDisabled && !isCurrentlyLoading
+                  ? 'scale(1.1)'
+                  : 'scale(1)',
+            }}
+          >
+            <ModeIcon
+              isCurrentlyLoading={isCurrentlyLoading}
+              isAgentMode={isAgentMode}
+              isHovered={isHovered}
+              isDisabled={isDisabled}
+              accentColor={accentColor}
+              iconSize={iconSize}
+            />
           </span>
-          <span style={{ position: 'absolute', bottom: 2, right: 2, width: 4, height: 4, borderRadius: '50%', backgroundColor: isAgentMode ? accentColor : 'var(--term-text-muted)', opacity: isAgentMode ? 1 : 0.4, transition: 'all 0.2s ease', boxShadow: isAgentMode ? `0 0 4px ${accentColor}` : 'none' }} />
+          <span
+            style={{
+              position: 'absolute',
+              bottom: 2,
+              right: 2,
+              width: 4,
+              height: 4,
+              borderRadius: '50%',
+              backgroundColor: isAgentMode
+                ? accentColor
+                : 'var(--term-text-muted)',
+              opacity: isAgentMode ? 1 : 0.4,
+              transition: 'all 0.2s ease',
+              boxShadow: isAgentMode ? `0 0 4px ${accentColor}` : 'none',
+            }}
+          />
         </button>
         {showPopover && hasMultipleTools && (
-          <ModeTogglePopover buttonRef={buttonRef} value={value} agentTools={agentTools} onClose={() => setShowPopover(false)} onSelectMode={handleSelectMode} />
+          <ModeTogglePopover
+            buttonRef={buttonRef}
+            value={value}
+            agentTools={agentTools}
+            onClose={() => setShowPopover(false)}
+            onSelectMode={handleSelectMode}
+          />
         )}
       </div>
     </>

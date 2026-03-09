@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react'
 import { useTranscription } from '@agent-hub/passport-client'
+import { useCallback, useState } from 'react'
+import { useTerminalKeyboardShortcuts } from '@/components/KeyboardShortcuts'
 import { useLayoutPersistence } from './use-layout-persistence'
 import { usePromptCleaner } from './use-prompt-cleaner'
 import { useTerminalActionHandlers } from './use-terminal-action-handlers'
@@ -7,7 +8,6 @@ import { useTerminalModals } from './use-terminal-modals'
 import { useTerminalNavigation } from './use-terminal-navigation'
 import { useTerminalSlotHandlers } from './use-terminal-slot-handlers'
 import { useTerminalTabsState } from './use-terminal-tabs-state'
-import { useTerminalKeyboardShortcuts } from '@/components/KeyboardShortcuts'
 
 function getVoiceWsUrl(): string {
   if (typeof window === 'undefined') return ''

@@ -1,4 +1,4 @@
-import type { TerminalPane, PaneSession } from '@/lib/hooks/use-terminal-panes'
+import type { PaneSession, TerminalPane } from '@/lib/hooks/use-terminal-panes'
 import type { TerminalSession } from '@/lib/hooks/use-terminal-sessions'
 
 // Init delay for tmux session
@@ -58,7 +58,9 @@ export function shouldStartAgent(
     pane.active_mode !== 'shell' &&
     targetSession.is_alive &&
     // Note: claude_state field name is intentional - it's the field returned by the backend for agent state
-    !sessions.find((s) => s.id === targetSession.id && s.claude_state === 'running')
+    !sessions.find(
+      (s) => s.id === targetSession.id && s.claude_state === 'running',
+    )
   )
 }
 

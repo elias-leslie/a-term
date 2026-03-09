@@ -1,5 +1,5 @@
-import type { ConnectionStatus, TerminalHandle } from '@/components/Terminal'
 import type { KeyboardSizePreset } from '@/components/SettingsDropdown'
+import type { ConnectionStatus, TerminalHandle } from '@/components/Terminal'
 import type { LayoutMode } from '@/lib/constants/terminal'
 
 export interface UseTerminalTabsStateProps {
@@ -14,7 +14,9 @@ export interface TerminalRefsMap {
 
 export interface TerminalStatusState {
   terminalStatuses: Map<string, ConnectionStatus>
-  setTerminalStatuses: React.Dispatch<React.SetStateAction<Map<string, ConnectionStatus>>>
+  setTerminalStatuses: React.Dispatch<
+    React.SetStateAction<Map<string, ConnectionStatus>>
+  >
 }
 
 export interface LayoutState {

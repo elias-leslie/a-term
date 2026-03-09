@@ -1,10 +1,13 @@
 'use client'
 
+import type {
+  TranscriptionError,
+  TranscriptionStatus,
+} from '@agent-hub/passport-client'
 import { clsx } from 'clsx'
 import { Keyboard, Mic, MicOff, Send, X } from 'lucide-react'
-import type { TranscriptionError, TranscriptionStatus } from '@agent-hub/passport-client'
-import { SHORT_ERROR_MESSAGES } from './voiceErrorMessages'
 import styles from '../VoiceTranscriptPanel.module.css'
+import { SHORT_ERROR_MESSAGES } from './voiceErrorMessages'
 
 interface VoiceMobilePanelProps {
   editedText: string
@@ -36,7 +39,7 @@ export function VoiceMobilePanel({
 
   const statusMessage =
     status === 'error' && error
-      ? SHORT_ERROR_MESSAGES[error] ?? 'Error'
+      ? (SHORT_ERROR_MESSAGES[error] ?? 'Error')
       : isListening
         ? 'Listening...'
         : isProcessing
@@ -149,18 +152,14 @@ export function VoiceMobilePanel({
             cursor: isProcessing ? 'not-allowed' : 'pointer',
             transition: 'all 0.2s',
             border: `2px solid ${
-              showPulse
-                ? 'var(--term-error)'
-                : 'var(--term-accent)'
+              showPulse ? 'var(--term-error)' : 'var(--term-accent)'
             }`,
             background: showPulse
               ? 'rgba(248, 81, 73, 0.15)'
               : showSendIcon
                 ? 'rgba(0, 255, 159, 0.15)'
                 : 'rgba(0, 255, 159, 0.08)',
-            color: showPulse
-              ? 'var(--term-error)'
-              : 'var(--term-accent)',
+            color: showPulse ? 'var(--term-error)' : 'var(--term-accent)',
             opacity: isProcessing ? 0.5 : 1,
           }}
         >

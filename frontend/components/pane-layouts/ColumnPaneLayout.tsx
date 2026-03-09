@@ -43,7 +43,11 @@ function ColumnGroup({
   }
 
   const panelIds = slots.map((slot) => getSlotPanelId(slot))
-  const panelSizes = getStoredGroupLayout(groupId, slots.length, 100 / slots.length)
+  const panelSizes = getStoredGroupLayout(
+    groupId,
+    slots.length,
+    100 / slots.length,
+  )
 
   return (
     <Group
@@ -123,7 +127,9 @@ export function ColumnPaneLayout({
           const startIndex = columns
             .slice(0, columnIndex)
             .reduce((total, nextColumn) => total + nextColumn.length, 0)
-          const columnKey = columnSlots.map((slot) => getSlotPanelId(slot)).join('-')
+          const columnKey = columnSlots
+            .map((slot) => getSlotPanelId(slot))
+            .join('-')
           const columnNode = (
             <ColumnGroup
               key={columnKey}

@@ -1,14 +1,16 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ComponentProps } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ModifierProvider } from './ModifierContext'
 import { ControlBar } from './ControlBar'
+import { ModifierProvider } from './ModifierContext'
 
 vi.mock('@/lib/utils/agent-hub-models', () => ({
   getClaudeModelOptions: vi.fn().mockResolvedValue([]),
 }))
 
-function renderControlBar(overrides: Partial<ComponentProps<typeof ControlBar>> = {}) {
+function renderControlBar(
+  overrides: Partial<ComponentProps<typeof ControlBar>> = {},
+) {
   const onSend = vi.fn()
   const onReconnect = vi.fn()
 
@@ -57,10 +59,14 @@ describe('ControlBar', () => {
       connectionStatus: 'disconnected',
     })
 
-    const reconnectButton = await screen.findByRole('button', { name: 'Reconnect' })
+    const reconnectButton = await screen.findByRole('button', {
+      name: 'Reconnect',
+    })
     fireEvent.click(reconnectButton)
 
     expect(onReconnect).toHaveBeenCalledTimes(1)
-    expect(screen.getByText('Reconnect to resume this terminal')).toBeInTheDocument()
+    expect(
+      screen.getByText('Reconnect to resume this terminal'),
+    ).toBeInTheDocument()
   })
 })

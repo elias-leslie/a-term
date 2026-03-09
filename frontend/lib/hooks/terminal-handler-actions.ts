@@ -1,9 +1,9 @@
 import type { ProjectTerminal } from '@/lib/hooks/use-project-terminals'
 import type { TerminalPane } from '@/lib/hooks/use-terminal-panes'
 import {
+  findSessionByMode,
   generateAdHocPaneName,
   generateProjectPaneName,
-  findSessionByMode,
   waitForTmuxInit,
 } from './terminal-handler-utils'
 
@@ -13,7 +13,10 @@ import {
 export async function addAdHocPaneAction(
   panes: TerminalPane[],
   panesAtLimit: boolean,
-  createAdHocPane: (paneName: string, workingDir?: string) => Promise<TerminalPane>,
+  createAdHocPane: (
+    paneName: string,
+    workingDir?: string,
+  ) => Promise<TerminalPane>,
   navigateToSession: (sessionId: string) => void,
 ): Promise<void> {
   if (panesAtLimit) return
@@ -53,7 +56,9 @@ export async function addProjectPaneAction(
   // Resolve working directory
   let workingDir = rootPath
   if (workingDir === undefined) {
-    const project = projectTerminals.find((p) => p.projectId === targetProjectId)
+    const project = projectTerminals.find(
+      (p) => p.projectId === targetProjectId,
+    )
     if (!project) return
     workingDir = project.rootPath
   }
@@ -89,7 +94,10 @@ export async function addProjectPaneAction(
 export async function closeAllPanesAction(
   panes: TerminalPane[],
   removePane: (paneId: string) => Promise<void>,
-  createAdHocPane: (paneName: string, workingDir?: string) => Promise<TerminalPane>,
+  createAdHocPane: (
+    paneName: string,
+    workingDir?: string,
+  ) => Promise<TerminalPane>,
   navigateToSession: (sessionId: string) => void,
 ): Promise<void> {
   for (const pane of panes) {

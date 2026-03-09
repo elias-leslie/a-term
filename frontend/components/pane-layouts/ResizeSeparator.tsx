@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback } from 'react'
-import { Separator, type GroupImperativeHandle } from 'react-resizable-panels'
+import { type GroupImperativeHandle, Separator } from 'react-resizable-panels'
 
 interface ResizeSeparatorProps {
   orientation: 'horizontal' | 'vertical'

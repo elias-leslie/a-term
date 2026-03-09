@@ -8,8 +8,7 @@ export const MOBILE_TERMINAL_TOUCH_SURFACE_SELECTORS = [
   '.xterm-scrollable-element',
 ] as const
 
-export const MOBILE_TERMINAL_VIEWPORT_CLASS =
-  'mobile-terminal-viewport'
+export const MOBILE_TERMINAL_VIEWPORT_CLASS = 'mobile-terminal-viewport'
 
 /**
  * Allow vertical touch panning inside the terminal while still blocking
