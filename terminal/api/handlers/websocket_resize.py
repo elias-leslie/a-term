@@ -12,6 +12,30 @@ from .websocket_messages import handle_websocket_message
 logger = get_logger(__name__)
 
 
+async def _poll_for_resize(
+    websocket: WebSocket,
+    master_fd: int,
+    session_id: str,
+    tmux_session_name: str,
+) -> bool:
+    """Poll WebSocket messages until a resize event is received or disconnected."""
+    while True:
+        message = await websocket.receive()
+        if message["type"] == "websocket.disconnect":
+            return False
+        resize_result = await handle_websocket_message(
+            message, master_fd, session_id, tmux_session_name
+        )
+        if resize_result is not None:
+            logger.info(
+                "initial_resize_received",
+                session_id=session_id,
+                cols=resize_result[0],
+                rows=resize_result[1],
+            )
+            return True
+
+
 async def wait_for_initial_resize(
     websocket: WebSocket,
     master_fd: int,
@@ -35,23 +59,10 @@ async def wait_for_initial_resize(
         True if resize was received, False if timeout occurred
     """
     try:
-        async with asyncio.timeout(timeout):
-            while True:
-                message = await websocket.receive()
-                if message["type"] == "websocket.disconnect":
-                    return False
-
-                resize_result = await handle_websocket_message(
-                    message, master_fd, session_id, tmux_session_name
-                )
-                if resize_result is not None:
-                    logger.info(
-                        "initial_resize_received",
-                        session_id=session_id,
-                        cols=resize_result[0],
-                        rows=resize_result[1],
-                    )
-                    return True
+        return await asyncio.wait_for(
+            _poll_for_resize(websocket, master_fd, session_id, tmux_session_name),
+            timeout=timeout,
+        )
     except TimeoutError:
         logger.warning(
             "initial_resize_timeout",
