@@ -144,6 +144,39 @@ describe('TerminalComponent', () => {
     )
   })
 
+
+  it('drops in-flight write side effects after resetting before reconnect sync', async () => {
+    render(<TerminalComponent sessionId="session-reset" />)
+
+    websocketState.options?.onMessage?.('stale output')
+    await Promise.resolve()
+
+    expect(fakeTerminal.write).toHaveBeenCalledTimes(1)
+    expect(fakeTerminal.write).toHaveBeenNthCalledWith(
+      1,
+      'stale output',
+      expect.any(Function),
+    )
+
+    websocketState.options?.onBeforeReconnectData?.()
+    websocketState.options?.onTerminalMessage?.('fresh output')
+    await Promise.resolve()
+
+    expect(fakeTerminal.reset).toHaveBeenCalledTimes(1)
+    expect(fakeTerminal.write).toHaveBeenCalledTimes(2)
+    expect(fakeTerminal.write).toHaveBeenNthCalledWith(
+      2,
+      'fresh output\r\n',
+      expect.any(Function),
+    )
+
+    operationCallbacks.shift()?.()
+    operationCallbacks.shift()?.()
+    await Promise.resolve()
+
+    expect(fakeTerminal.scrollToLine).not.toHaveBeenCalled()
+  })
+
   it('skips snapshot replacement when it would erase locally typed prompt input', async () => {
     fakeTerminal.buffer.active.getLine.mockReturnValue({
       translateToString: (): string => 'kasadis@host:~$ ec',

@@ -20,18 +20,22 @@ export function useTerminalWriteQueue({
   isVisibleRef,
 }: UseTerminalWriteQueueOptions): UseTerminalWriteQueueReturn {
   const pendingWriteRef = useRef(Promise.resolve())
+  const resetGenerationRef = useRef(0)
 
   const enqueueTerminalWrite = useCallback(
-    (operation: (term: XtermTerminal, resolve: () => void) => void) => {
+    (operation: (term: XtermTerminal, resolve: () => void, isStale: () => boolean) => void) => {
+      const generation = resetGenerationRef.current
+      const isStale = () => generation !== resetGenerationRef.current
+
       pendingWriteRef.current = pendingWriteRef.current.then(
         () =>
           new Promise<void>((resolve) => {
             const term = terminalRef.current
-            if (!term || !isVisibleRef.current) {
+            if (!term || !isVisibleRef.current || isStale()) {
               resolve()
               return
             }
-            operation(term, resolve)
+            operation(term, resolve, isStale)
           }),
       )
     },
@@ -65,13 +69,13 @@ export function useTerminalWriteQueue({
 
   const enqueueWrite = useCallback(
     (data: string) => {
-      enqueueTerminalWrite((term, resolve) => {
+      enqueueTerminalWrite((term, resolve, isStale) => {
         const buffer = term.buffer.active
         const savedViewportY = buffer.viewportY
         const isScrolledUp = buffer.viewportY < buffer.baseY
 
         term.write(data, () => {
-          if (isScrolledUp && terminalRef.current) {
+          if (!isStale() && isScrolledUp && terminalRef.current) {
             terminalRef.current.scrollToLine(savedViewportY)
           }
           resolve()
@@ -83,7 +87,7 @@ export function useTerminalWriteQueue({
 
   const applySnapshot = useCallback(
     (snapshot: string) => {
-      enqueueTerminalWrite((term, resolve) => {
+      enqueueTerminalWrite((term, resolve, isStale) => {
         if (hasPendingPromptInput(term, snapshot)) {
           resolve()
           return
@@ -93,7 +97,7 @@ export function useTerminalWriteQueue({
         const linesFromBottom = buffer.baseY - buffer.viewportY
         term.reset()
         term.write(snapshot, () => {
-          if (terminalRef.current && linesFromBottom > 0) {
+          if (!isStale() && terminalRef.current && linesFromBottom > 0) {
             const nextBuffer = terminalRef.current.buffer.active
             terminalRef.current.scrollToLine(
               Math.max(nextBuffer.baseY - linesFromBottom, 0),
@@ -107,6 +111,7 @@ export function useTerminalWriteQueue({
   )
 
   const resetQueue = useCallback(() => {
+    resetGenerationRef.current += 1
     pendingWriteRef.current = Promise.resolve()
   }, [])
 
