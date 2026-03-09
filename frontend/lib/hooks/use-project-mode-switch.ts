@@ -35,10 +35,7 @@ interface UseProjectModeSwitchOptions {
   /** Panes array (new architecture) */
   panes: TerminalPane[]
   /** Function to set active mode on a pane */
-  setActiveMode: (
-    paneId: string,
-    mode: string,
-  ) => Promise<TerminalPane>
+  setActiveMode: (paneId: string, mode: string) => Promise<TerminalPane>
   /** Function to switch agent tool on a pane (kills old tmux, creates new session) */
   switchAgentTool?: (paneId: string, slug: string) => Promise<unknown>
 }
@@ -129,7 +126,9 @@ export function useProjectModeSwitch({
 
       if (pane) {
         // Check if we need to swap agent tool sessions (switching between different agent tools)
-        const currentAgentSession = pane.sessions.find((s) => s.mode !== 'shell')
+        const currentAgentSession = pane.sessions.find(
+          (s) => s.mode !== 'shell',
+        )
         const isAgentToAgentSwitch =
           mode !== 'shell' &&
           currentAgentSession &&
@@ -143,8 +142,12 @@ export function useProjectModeSwitch({
           await switchAgentTool(pane.id, mode)
           // Refetch the pane to get the new session
           await queryClient.invalidateQueries({ queryKey: ['terminal-panes'] })
-          await queryClient.invalidateQueries({ queryKey: ['terminal-sessions'] })
-          const freshData = queryClient.getQueryData<PaneListResponse>(['terminal-panes'])
+          await queryClient.invalidateQueries({
+            queryKey: ['terminal-sessions'],
+          })
+          const freshData = queryClient.getQueryData<PaneListResponse>([
+            'terminal-panes',
+          ])
           updatedPane = freshData?.items.find((p) => p.id === pane.id) ?? pane
         } else {
           // Simple toggle (shell ↔ agent): just update active_mode

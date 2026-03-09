@@ -3,11 +3,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { MAX_PANES } from '@/lib/constants/terminal'
-import * as api from './terminal-panes-api'
 import { findSessionByMode } from './terminal-handler-utils'
+import * as api from './terminal-panes-api'
 import type {
-  TerminalPane,
   PaneListResponse,
+  TerminalPane,
   UpdatePaneRequest,
 } from './terminal-panes-types'
 
@@ -36,7 +36,8 @@ export function useTerminalPanes() {
   const updateMutation = useMutation({
     mutationFn: ({ paneId, ...req }: UpdatePaneRequest & { paneId: string }) =>
       api.updatePane(paneId, req),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['terminal-panes'] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['terminal-panes'] }),
   })
 
   const deleteMutation = useMutation({
@@ -48,15 +49,20 @@ export function useTerminalPanes() {
     mutationFn: api.swapPanes,
     onMutate: async ({ pane_id_a, pane_id_b }) => {
       await queryClient.cancelQueries({ queryKey: ['terminal-panes'] })
-      const previous = queryClient.getQueryData<PaneListResponse>(['terminal-panes'])
+      const previous = queryClient.getQueryData<PaneListResponse>([
+        'terminal-panes',
+      ])
 
       if (previous) {
         const paneA = previous.items.find((p) => p.id === pane_id_a)
         const paneB = previous.items.find((p) => p.id === pane_id_b)
         if (paneA && paneB) {
           const items = previous.items.map((p) =>
-            p.id === pane_id_a ? { ...p, pane_order: paneB.pane_order } :
-            p.id === pane_id_b ? { ...p, pane_order: paneA.pane_order } : p
+            p.id === pane_id_a
+              ? { ...p, pane_order: paneB.pane_order }
+              : p.id === pane_id_b
+                ? { ...p, pane_order: paneA.pane_order }
+                : p,
           )
           items.sort((a, b) => a.pane_order - b.pane_order)
           queryClient.setQueryData(['terminal-panes'], { ...previous, items })
@@ -64,49 +70,67 @@ export function useTerminalPanes() {
       }
       return { previous }
     },
-    onError: (_e, _v, ctx) => ctx?.previous && queryClient.setQueryData(['terminal-panes'], ctx.previous),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['terminal-panes'] }),
+    onError: (_e, _v, ctx) =>
+      ctx?.previous &&
+      queryClient.setQueryData(['terminal-panes'], ctx.previous),
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: ['terminal-panes'] }),
   })
 
   const layoutMutation = useMutation({ mutationFn: api.updateAllLayouts })
 
   const createProjectPane = useCallback(
     (name: string, projectId: string, workingDir?: string) =>
-      createMutation.mutateAsync({ pane_type: 'project', pane_name: name, project_id: projectId, working_dir: workingDir }),
-    [createMutation]
+      createMutation.mutateAsync({
+        pane_type: 'project',
+        pane_name: name,
+        project_id: projectId,
+        working_dir: workingDir,
+      }),
+    [createMutation],
   )
 
   const createAdHocPane = useCallback(
     (name: string, workingDir?: string) =>
-      createMutation.mutateAsync({ pane_type: 'adhoc', pane_name: name, working_dir: workingDir }),
-    [createMutation]
+      createMutation.mutateAsync({
+        pane_type: 'adhoc',
+        pane_name: name,
+        working_dir: workingDir,
+      }),
+    [createMutation],
   )
 
   const setActiveMode = useCallback(
     (paneId: string, mode: string) =>
       updateMutation.mutateAsync({ paneId, active_mode: mode }),
-    [updateMutation]
+    [updateMutation],
   )
 
   const renamePane = useCallback(
     (paneId: string, newName: string) =>
       updateMutation.mutateAsync({ paneId, pane_name: newName }),
-    [updateMutation]
+    [updateMutation],
   )
 
   const removePane = useCallback(
     (paneId: string) => deleteMutation.mutateAsync(paneId),
-    [deleteMutation]
+    [deleteMutation],
   )
 
   const swapPanePositions = useCallback(
     (paneIdA: string, paneIdB: string) =>
       swapMutation.mutateAsync({ pane_id_a: paneIdA, pane_id_b: paneIdB }),
-    [swapMutation]
+    [swapMutation],
   )
 
   const saveLayouts = useCallback(
-    (layouts: Array<{ paneId: string; widthPercent?: number; heightPercent?: number }>) =>
+    (
+      layouts: Array<{
+        paneId: string
+        widthPercent?: number
+        heightPercent?: number
+      }>,
+    ) =>
       layoutMutation.mutateAsync({
         layouts: layouts.map((l) => ({
           pane_id: l.paneId,
@@ -114,18 +138,18 @@ export function useTerminalPanes() {
           height_percent: l.heightPercent,
         })),
       }),
-    [layoutMutation]
+    [layoutMutation],
   )
 
   const getActiveSessionId = useCallback(
-    (pane: TerminalPane) => pane.sessions.find((s) => s.mode === pane.active_mode)?.id ?? null,
-    []
+    (pane: TerminalPane) =>
+      pane.sessions.find((s) => s.mode === pane.active_mode)?.id ?? null,
+    [],
   )
 
   const getSessionByMode = useCallback(
-    (pane: TerminalPane, mode: string) =>
-      findSessionByMode(pane, mode) ?? null,
-    []
+    (pane: TerminalPane, mode: string) => findSessionByMode(pane, mode) ?? null,
+    [],
   )
 
   return {
@@ -154,9 +178,9 @@ export function useTerminalPanes() {
 }
 
 export type {
-  TerminalPane,
-  PaneSession,
   CreatePaneRequest,
-  UpdatePaneRequest,
+  PaneSession,
   SwapPanesRequest,
+  TerminalPane,
+  UpdatePaneRequest,
 } from './terminal-panes-types'

@@ -1,9 +1,11 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { usePaneRenderer } from './use-pane-renderer'
 import type { PaneSlot } from '@/lib/utils/slot'
+import { usePaneRenderer } from './use-pane-renderer'
 
-const terminalProps = vi.hoisted(() => [] as Array<{ sessionId: string; isVisible?: boolean }>)
+const terminalProps = vi.hoisted(
+  () => [] as Array<{ sessionId: string; isVisible?: boolean }>,
+)
 
 vi.mock('@/components/Terminal', () => ({
   TerminalComponent: ({
@@ -22,11 +24,7 @@ vi.mock('@/components/UnifiedTerminalHeader', () => ({
   UnifiedTerminalHeader: () => <div data-testid="terminal-header" />,
 }))
 
-function RenderHarness({
-  slots,
-}: {
-  slots: PaneSlot[]
-}) {
+function RenderHarness({ slots }: { slots: PaneSlot[] }) {
   const renderPane = usePaneRenderer({
     props: {
       isMobile: false,

@@ -1,7 +1,7 @@
+import type { ConnectionStatus } from '@/components/terminal.types'
+import type { LayoutMode } from '@/lib/constants/terminal'
 import type { TerminalSlot } from '@/lib/utils/slot'
 import type { TerminalMode } from '../ModeToggle'
-import type { LayoutMode } from '@/lib/constants/terminal'
-import type { ConnectionStatus } from '@/components/terminal.types'
 
 export interface UnifiedTerminalHeaderProps {
   slot: TerminalSlot

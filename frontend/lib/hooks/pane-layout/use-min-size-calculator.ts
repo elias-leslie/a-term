@@ -1,8 +1,8 @@
 import { useCallback } from 'react'
 import {
-  MIN_PANE_WIDTH_PX,
-  MIN_PANE_HEIGHT_PX,
   DEFAULT_MIN_SIZE_PERCENT,
+  MIN_PANE_HEIGHT_PX,
+  MIN_PANE_WIDTH_PX,
 } from '@/types/pane-layout'
 
 /**

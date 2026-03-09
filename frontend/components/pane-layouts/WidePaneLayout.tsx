@@ -24,7 +24,11 @@ function WidePaneRow({
 }) {
   const rowGroupRef = useGroupRef()
   const panelIds = slots.map((slot) => getSlotPanelId(slot))
-  const panelSizes = getStoredGroupLayout(groupId, slots.length, 100 / slots.length)
+  const panelSizes = getStoredGroupLayout(
+    groupId,
+    slots.length,
+    100 / slots.length,
+  )
 
   return (
     <Group
@@ -75,7 +79,9 @@ export function WidePaneLayout({
   const topRowSlots = displaySlots.slice(0, 3)
   const bottomRowSlots = displaySlots.slice(3)
   const rootPanelIds =
-    bottomRowSlots.length > 0 ? ['wide-top-row', 'wide-bottom-row'] : ['wide-top-row']
+    bottomRowSlots.length > 0
+      ? ['wide-top-row', 'wide-bottom-row']
+      : ['wide-top-row']
   const rootSizes = getStoredGroupLayout(
     'wide-pane-root',
     rootPanelIds.length,
@@ -90,7 +96,10 @@ export function WidePaneLayout({
     >
       <Group
         orientation="vertical"
-        onLayoutChange={createGroupLayoutChangeHandler('wide-pane-root', rootPanelIds)}
+        onLayoutChange={createGroupLayoutChangeHandler(
+          'wide-pane-root',
+          rootPanelIds,
+        )}
         groupRef={verticalGroupRef}
         className="h-full"
       >

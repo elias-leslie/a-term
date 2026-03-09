@@ -1,10 +1,10 @@
 'use client'
 
+import type { LayoutMode } from '@/lib/constants/terminal'
 import type { PaneSlot, TerminalSlot } from '@/lib/utils/slot'
 import type { TerminalMode } from './ModeToggle'
 import { type PaneLayout, ResizablePaneLayout } from './ResizablePaneLayout'
 import type { TerminalComponent, TerminalHandle } from './Terminal'
-import type { LayoutMode } from '@/lib/constants/terminal'
 import type { ConnectionStatus } from './terminal.types'
 
 interface TerminalLayoutRendererProps {

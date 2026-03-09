@@ -10,10 +10,7 @@ import {
   useRef,
 } from 'react'
 import '@xterm/xterm/css/xterm.css'
-import {
-  PHOSPHOR_THEME,
-  SCROLLBACK,
-} from '../lib/constants/terminal'
+import { PHOSPHOR_THEME, SCROLLBACK } from '../lib/constants/terminal'
 import { useTerminalInstance } from '../lib/hooks/use-terminal-instance'
 import { useTerminalResize } from '../lib/hooks/use-terminal-resize'
 import { useTerminalScrolling } from '../lib/hooks/use-terminal-scrolling'
@@ -62,7 +59,12 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
     }, [isVisible])
 
     const enqueueTerminalWrite = useCallback(
-      (operation: (term: InstanceType<typeof Terminal>, resolve: () => void) => void) => {
+      (
+        operation: (
+          term: InstanceType<typeof Terminal>,
+          resolve: () => void,
+        ) => void,
+      ) => {
         pendingWriteRef.current = pendingWriteRef.current.then(
           () =>
             new Promise<void>((resolve) => {
@@ -272,7 +274,6 @@ export const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
 
       disconnect()
     }, [connect, disconnect, isVisible])
-
 
     return (
       <div className={clsx('relative overflow-hidden', className)}>

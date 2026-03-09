@@ -97,7 +97,15 @@ export function useTerminalWebSocket({
     onScrollbackSyncRef.current = onScrollbackSync
     onBeforeReconnectDataRef.current = onBeforeReconnectData
     getDimensionsRef.current = getDimensions
-  }, [onStatusChange, onDisconnect, onMessage, onTerminalMessage, onScrollbackSync, onBeforeReconnectData, getDimensions])
+  }, [
+    onStatusChange,
+    onDisconnect,
+    onMessage,
+    onTerminalMessage,
+    onScrollbackSync,
+    onBeforeReconnectData,
+    getDimensions,
+  ])
 
   // Notify parent of status changes
   useEffect(() => {
@@ -107,31 +115,39 @@ export function useTerminalWebSocket({
   // Track mounted state for cleanup
   useEffect(() => {
     mountedRef.current = true
-    return () => { mountedRef.current = false }
+    return () => {
+      mountedRef.current = false
+    }
   }, [])
 
   const connect = useCallback(() => {
     if (connectingRef.current) return
     connectingRef.current = true
 
-    openWebSocketConnection(sessionId, workingDir, {
-      wsRef,
-      mountedRef,
-      connectingRef,
-      hasConnectedRef,
-      retryCountRef,
-      timeoutIdRef,
-      retryTimeoutRef,
-      connectRef,
-    }, {
-      onTerminalMessage: (msg) => onTerminalMessageRef.current?.(msg),
-      onMessage: (data) => onMessageRef.current?.(data),
-      onScrollbackSync: (scrollback) => onScrollbackSyncRef.current?.(scrollback),
-      onBeforeReconnectData: () => onBeforeReconnectDataRef.current?.(),
-      onDisconnect: () => onDisconnectRef.current?.(),
-      getDimensions: () => getDimensionsRef.current?.() ?? null,
-      setStatus: (s) => setStatus(s as ConnectionStatus),
-    })
+    openWebSocketConnection(
+      sessionId,
+      workingDir,
+      {
+        wsRef,
+        mountedRef,
+        connectingRef,
+        hasConnectedRef,
+        retryCountRef,
+        timeoutIdRef,
+        retryTimeoutRef,
+        connectRef,
+      },
+      {
+        onTerminalMessage: (msg) => onTerminalMessageRef.current?.(msg),
+        onMessage: (data) => onMessageRef.current?.(data),
+        onScrollbackSync: (scrollback) =>
+          onScrollbackSyncRef.current?.(scrollback),
+        onBeforeReconnectData: () => onBeforeReconnectDataRef.current?.(),
+        onDisconnect: () => onDisconnectRef.current?.(),
+        getDimensions: () => getDimensionsRef.current?.() ?? null,
+        setStatus: (s) => setStatus(s as ConnectionStatus),
+      },
+    )
   }, [sessionId, workingDir])
 
   // Keep ref in sync for recursive timeout calls
@@ -141,9 +157,18 @@ export function useTerminalWebSocket({
 
   const disconnect = useCallback(() => {
     connectingRef.current = false
-    if (timeoutIdRef.current) { clearTimeout(timeoutIdRef.current); timeoutIdRef.current = null }
-    if (retryTimeoutRef.current) { clearTimeout(retryTimeoutRef.current); retryTimeoutRef.current = null }
-    if (wsRef.current) { wsRef.current.close(); wsRef.current = null }
+    if (timeoutIdRef.current) {
+      clearTimeout(timeoutIdRef.current)
+      timeoutIdRef.current = null
+    }
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current)
+      retryTimeoutRef.current = null
+    }
+    if (wsRef.current) {
+      wsRef.current.close()
+      wsRef.current = null
+    }
   }, [])
 
   const reconnect = useCallback(() => {
@@ -161,7 +186,11 @@ export function useTerminalWebSocket({
   }, [])
 
   // Cleanup on unmount
-  useEffect(() => { return () => { disconnect() } }, [disconnect])
+  useEffect(() => {
+    return () => {
+      disconnect()
+    }
+  }, [disconnect])
 
   return { status, wsRef, reconnect, sendInput, connect, disconnect }
 }

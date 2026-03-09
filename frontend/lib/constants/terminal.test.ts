@@ -33,10 +33,7 @@ describe('getAvailableLayoutModes', () => {
 
   it('adds a four-column option on wide desktops', () => {
     expect(getAvailableLayoutModes(4, 1440)).toEqual(['grid-2x2'])
-    expect(getAvailableLayoutModes(4, 1600)).toEqual([
-      'grid-2x2',
-      'grid-4x1',
-    ])
+    expect(getAvailableLayoutModes(4, 1600)).toEqual(['grid-2x2', 'grid-4x1'])
   })
 
   it('offers both wide and tall grids for five and six panes', () => {

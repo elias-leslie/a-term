@@ -38,7 +38,9 @@ describe('deriveActiveSessionId', () => {
   })
 
   it('falls back to the first live session when the URL session is stale', () => {
-    expect(deriveActiveSessionId(sessions, 'stale-session', null)).toBe('session-1')
+    expect(deriveActiveSessionId(sessions, 'stale-session', null)).toBe(
+      'session-1',
+    )
   })
 
   it('uses the project session when there is no valid URL session', () => {
@@ -46,7 +48,9 @@ describe('deriveActiveSessionId', () => {
   })
 
   it('uses the persisted session when URL state is missing and the session still exists', () => {
-    expect(deriveActiveSessionId(sessions, null, null, 'session-2')).toBe('session-2')
+    expect(deriveActiveSessionId(sessions, null, null, 'session-2')).toBe(
+      'session-2',
+    )
   })
 
   it('returns null when sessions array is empty', () => {

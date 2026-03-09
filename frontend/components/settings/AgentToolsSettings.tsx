@@ -2,10 +2,7 @@
 
 import { Plus } from 'lucide-react'
 import { useCallback, useState } from 'react'
-import {
-  type AgentTool,
-  useAgentTools,
-} from '@/lib/hooks/use-agent-tools'
+import { type AgentTool, useAgentTools } from '@/lib/hooks/use-agent-tools'
 import { EMPTY_FORM, ToolForm, type ToolFormData } from './ToolForm'
 import { ToolRow } from './ToolRow'
 
@@ -72,11 +69,17 @@ export function AgentToolsSettings() {
   )
 
   return (
-    <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--term-border)' }}>
+    <div
+      className="mt-4 pt-4"
+      style={{ borderTop: '1px solid var(--term-border)' }}
+    >
       <div className="flex items-center justify-between mb-2">
         <span
           className="text-[10px] font-medium tracking-wider"
-          style={{ color: 'var(--term-text-muted)', fontFamily: 'var(--font-mono)' }}
+          style={{
+            color: 'var(--term-text-muted)',
+            fontFamily: 'var(--font-mono)',
+          }}
         >
           AGENT TOOLS
         </span>
@@ -84,7 +87,10 @@ export function AgentToolsSettings() {
           <button
             onClick={() => setShowAddForm(true)}
             className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] hover:bg-white/5 transition-colors"
-            style={{ color: 'var(--term-accent)', fontFamily: 'var(--font-mono)' }}
+            style={{
+              color: 'var(--term-accent)',
+              fontFamily: 'var(--font-mono)',
+            }}
           >
             <Plus size={10} />
             Add
@@ -130,7 +136,10 @@ export function AgentToolsSettings() {
         )}
 
         {agentTools.length === 0 && !showAddForm && (
-          <div className="text-[10px] text-center py-2" style={{ color: 'var(--term-text-muted)' }}>
+          <div
+            className="text-[10px] text-center py-2"
+            style={{ color: 'var(--term-text-muted)' }}
+          >
             No agent tools configured
           </div>
         )}

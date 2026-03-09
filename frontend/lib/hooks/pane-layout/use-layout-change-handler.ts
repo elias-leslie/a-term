@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import type { Layout } from 'react-resizable-panels'
 import type { PaneSlot, TerminalSlot } from '@/lib/utils/slot'
-import { isPaneSlot, getPaneId, getSlotPanelId } from '@/lib/utils/slot'
+import { getPaneId, getSlotPanelId, isPaneSlot } from '@/lib/utils/slot'
 import type { PaneLayout } from '@/types/pane-layout'
 
 /**

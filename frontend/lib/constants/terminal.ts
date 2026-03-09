@@ -83,7 +83,9 @@ export function getDefaultLayoutMode(
   paneCount: number,
   viewportWidth: number,
 ): LayoutMode {
-  return getAvailableLayoutModes(paneCount, viewportWidth)[0] ?? 'split-horizontal'
+  return (
+    getAvailableLayoutModes(paneCount, viewportWidth)[0] ?? 'split-horizontal'
+  )
 }
 
 /** Phosphor terminal theme colors */

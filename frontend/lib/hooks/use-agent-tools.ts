@@ -56,14 +56,18 @@ async function fetchAgentTools(): Promise<AgentTool[]> {
   return res.json()
 }
 
-async function createAgentTool(input: CreateAgentToolInput): Promise<AgentTool> {
+async function createAgentTool(
+  input: CreateAgentToolInput,
+): Promise<AgentTool> {
   const res = await fetch(buildApiUrl('/api/terminal/agent-tools'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   })
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ detail: 'Failed to create agent tool' }))
+    const error = await res
+      .json()
+      .catch(() => ({ detail: 'Failed to create agent tool' }))
     throw new Error(error.detail || 'Failed to create agent tool')
   }
   return res.json()
@@ -79,7 +83,9 @@ async function updateAgentTool(
     body: JSON.stringify(input),
   })
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ detail: 'Failed to update agent tool' }))
+    const error = await res
+      .json()
+      .catch(() => ({ detail: 'Failed to update agent tool' }))
     throw new Error(error.detail || 'Failed to update agent tool')
   }
   return res.json()
@@ -90,7 +96,9 @@ async function deleteAgentTool(toolId: string): Promise<void> {
     method: 'DELETE',
   })
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ detail: 'Failed to delete agent tool' }))
+    const error = await res
+      .json()
+      .catch(() => ({ detail: 'Failed to delete agent tool' }))
     throw new Error(error.detail || 'Failed to delete agent tool')
   }
 }
@@ -108,7 +116,9 @@ async function switchPaneAgentTool(
     },
   )
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ detail: 'Failed to switch agent tool' }))
+    const error = await res
+      .json()
+      .catch(() => ({ detail: 'Failed to switch agent tool' }))
     throw new Error(error.detail || 'Failed to switch agent tool')
   }
   return res.json()
@@ -143,7 +153,10 @@ export function useAgentTools() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ toolId, ...input }: UpdateAgentToolInput & { toolId: string }) =>
+    mutationFn: ({
+      toolId,
+      ...input
+    }: UpdateAgentToolInput & { toolId: string }) =>
       updateAgentTool(toolId, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['agent-tools'] })

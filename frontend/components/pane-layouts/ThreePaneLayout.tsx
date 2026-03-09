@@ -45,10 +45,10 @@ export function ThreePaneLayout({
     >
       <Group
         orientation={isVertical ? 'horizontal' : 'vertical'}
-        onLayoutChange={createGroupLayoutChangeHandler(
-          outerGroupId,
-          [outerPrimaryId, outerSecondaryId],
-        )}
+        onLayoutChange={createGroupLayoutChangeHandler(outerGroupId, [
+          outerPrimaryId,
+          outerSecondaryId,
+        ])}
         groupRef={outerGroupRef}
         className="h-full"
       >

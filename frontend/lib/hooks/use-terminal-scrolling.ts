@@ -48,11 +48,17 @@ export function getTouchScrollLineDelta(
   if (cellHeight <= 0 || pixelDeltaY === 0) return 0
 
   const effectiveCellHeight = cellHeight / MOBILE_TOUCH_SCROLL_SENSITIVITY
-  const lines = Math.max(1, Math.floor(Math.abs(pixelDeltaY) / effectiveCellHeight))
+  const lines = Math.max(
+    1,
+    Math.floor(Math.abs(pixelDeltaY) / effectiveCellHeight),
+  )
   return pixelDeltaY > 0 ? lines : -lines
 }
 
-function getConsumedTouchScrollPixels(lineDelta: number, cellHeight: number): number {
+function getConsumedTouchScrollPixels(
+  lineDelta: number,
+  cellHeight: number,
+): number {
   if (lineDelta === 0 || cellHeight <= 0) return 0
   const effectiveCellHeight = cellHeight / MOBILE_TOUCH_SCROLL_SENSITIVITY
   return lineDelta * effectiveCellHeight

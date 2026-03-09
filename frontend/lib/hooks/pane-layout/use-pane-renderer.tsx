@@ -1,12 +1,12 @@
 import { useCallback } from 'react'
-import type { PaneSlot, TerminalSlot } from '@/lib/utils/slot'
-import {
-  getSlotSessionId,
-  getSlotWorkingDir,
-  getSlotPanelId,
-} from '@/lib/utils/slot'
 import { TerminalComponent } from '@/components/Terminal'
 import { UnifiedTerminalHeader } from '@/components/UnifiedTerminalHeader'
+import type { PaneSlot, TerminalSlot } from '@/lib/utils/slot'
+import {
+  getSlotPanelId,
+  getSlotSessionId,
+  getSlotWorkingDir,
+} from '@/lib/utils/slot'
 import type { ResizablePaneLayoutProps } from '@/types/pane-layout'
 
 interface UsePaneRendererOptions {
@@ -109,7 +109,9 @@ export function usePaneRenderer({
               onModeSwitch ? (mode) => onModeSwitch(slot, mode) : undefined
             }
             isModeSwitching={isModeSwitching}
-            onVoice={onVoice ? () => onVoice(sessionId ?? undefined) : undefined}
+            onVoice={
+              onVoice ? () => onVoice(sessionId ?? undefined) : undefined
+            }
             isMobile={isMobile}
             allSlots={paneCount > 1 ? displaySlots : undefined}
             onSwapWith={
@@ -125,7 +127,9 @@ export function usePaneRenderer({
             layoutMode={layoutMode}
             availableLayouts={availableLayouts}
             onLayoutModeChange={onLayoutModeChange}
-            connectionStatus={sessionId ? terminalStatuses?.get(sessionId) : undefined}
+            connectionStatus={
+              sessionId ? terminalStatuses?.get(sessionId) : undefined
+            }
           />
 
           <div

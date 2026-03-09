@@ -1,6 +1,6 @@
-import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { createElement } from 'react'
+import { describe, expect, it, vi } from 'vitest'
 import { HeaderIconButton } from './HeaderIconButton'
 
 describe('HeaderIconButton', () => {
@@ -23,11 +23,7 @@ describe('HeaderIconButton', () => {
     const handleClick = vi.fn()
     const icon = createElement('span', null, 'X')
     render(
-      <HeaderIconButton
-        icon={icon}
-        onClick={handleClick}
-        tooltip="Click me"
-      />,
+      <HeaderIconButton icon={icon} onClick={handleClick} tooltip="Click me" />,
     )
 
     fireEvent.click(screen.getByTitle('Click me'))
@@ -52,11 +48,7 @@ describe('HeaderIconButton', () => {
   it('applies default variant styling when no variant specified', () => {
     const icon = createElement('span', null, 'X')
     render(
-      <HeaderIconButton
-        icon={icon}
-        onClick={vi.fn()}
-        tooltip="Settings"
-      />,
+      <HeaderIconButton icon={icon} onClick={vi.fn()} tooltip="Settings" />,
     )
 
     const button = screen.getByTitle('Settings')

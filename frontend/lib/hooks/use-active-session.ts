@@ -28,13 +28,18 @@ export function deriveActiveSessionId(
   }
 
   if (urlProjectId) {
-    const projectSession = sessions.find((session) => session.project_id === urlProjectId)
+    const projectSession = sessions.find(
+      (session) => session.project_id === urlProjectId,
+    )
     if (projectSession) {
       return projectSession.id
     }
   }
 
-  if (persistedSessionId && sessions.some((session) => session.id === persistedSessionId)) {
+  if (
+    persistedSessionId &&
+    sessions.some((session) => session.id === persistedSessionId)
+  ) {
     return persistedSessionId
   }
 
@@ -121,7 +126,7 @@ export function useActiveSession(): UseActiveSessionResult {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [persistedSessionId, setPersistedSessionId] = useState<string | null>(
-    () => window.localStorage.getItem(LAST_ACTIVE_SESSION_KEY)
+    () => window.localStorage.getItem(LAST_ACTIVE_SESSION_KEY),
   )
 
   // Get session data from existing hooks

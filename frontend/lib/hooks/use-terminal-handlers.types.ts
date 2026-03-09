@@ -1,12 +1,15 @@
-import type { LayoutMode } from '@/lib/constants/terminal'
 import type { KeyboardSizePreset } from '@/components/SettingsDropdown'
 import type { ConnectionStatus, TerminalHandle } from '@/components/Terminal'
+import type { LayoutMode } from '@/lib/constants/terminal'
 import type {
   ProjectTerminal,
   useProjectTerminals,
 } from './use-project-terminals'
 import type { TerminalPane } from './use-terminal-panes'
-import type { TerminalSession, useTerminalSessions } from './use-terminal-sessions'
+import type {
+  TerminalSession,
+  useTerminalSessions,
+} from './use-terminal-sessions'
 
 export interface UseTerminalHandlersProps {
   projectId?: string
@@ -28,11 +31,11 @@ export interface UseTerminalHandlersProps {
     projectId: string,
     workingDir?: string,
   ) => Promise<TerminalPane>
-  createAdHocPane: (paneName: string, workingDir?: string) => Promise<TerminalPane>
-  setActiveMode: (
-    paneId: string,
-    mode: string,
+  createAdHocPane: (
+    paneName: string,
+    workingDir?: string,
   ) => Promise<TerminalPane>
+  setActiveMode: (paneId: string, mode: string) => Promise<TerminalPane>
   removePane: (paneId: string) => Promise<void>
 }
 

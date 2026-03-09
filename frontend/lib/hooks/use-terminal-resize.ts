@@ -1,6 +1,6 @@
-import { useCallback, useEffect } from 'react'
-import type { Terminal } from '@xterm/xterm'
 import type { FitAddon } from '@xterm/addon-fit'
+import type { Terminal } from '@xterm/xterm'
+import { useCallback, useEffect } from 'react'
 import { RESIZE_DEBOUNCE_MS } from '../constants/terminal'
 
 export interface TerminalResizeOptions {
@@ -20,7 +20,9 @@ export function attachViewportResizeListeners(
   viewport: ViewportEventTarget | null = window.visualViewport,
 ) {
   window.addEventListener('resize', onViewportChange, { passive: true })
-  window.addEventListener('orientationchange', onViewportChange, { passive: true })
+  window.addEventListener('orientationchange', onViewportChange, {
+    passive: true,
+  })
 
   viewport?.addEventListener('resize', onViewportChange, { passive: true })
   viewport?.addEventListener('scroll', onViewportChange, { passive: true })
