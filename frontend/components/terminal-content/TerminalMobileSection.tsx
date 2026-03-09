@@ -1,10 +1,10 @@
+import type { ConnectionStatus } from '@/components/terminal.types'
+import type { KeyboardSizePreset } from '@/components/keyboard/types'
 import type {
   TranscriptionError,
   TranscriptionStatus,
 } from '@agent-hub/passport-client'
 import { MobileKeyboard } from '@/components/keyboard/MobileKeyboard'
-import type { KeyboardSizePreset } from '@/components/keyboard/types'
-import type { ConnectionStatus } from '@/components/terminal.types'
 import { VoiceTranscriptPanel } from '@/components/VoiceTranscriptPanel'
 
 interface TerminalMobileSectionProps {

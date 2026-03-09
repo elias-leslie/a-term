@@ -1,10 +1,10 @@
 'use client'
 
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   TranscriptionError,
   TranscriptionStatus,
 } from '@agent-hub/passport-client'
-import { useCallback, useEffect, useRef, useState } from 'react'
 import { VoiceDesktopPanel } from './voice/VoiceDesktopPanel'
 import { VoiceMobilePanel } from './voice/VoiceMobilePanel'
 

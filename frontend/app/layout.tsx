@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next'
-import { JetBrains_Mono } from 'next/font/google'
 import Script from 'next/script'
+import { JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
 
@@ -35,10 +35,7 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta
-          name="apple-mobile-web-app-status-bar-style"
-          content="black-translucent"
-        />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Terminal" />
       </head>
       <body className={`${jetbrainsMono.variable} antialiased bg-slate-900`}>

@@ -5,11 +5,11 @@ import {
   Grid2x2,
   LayoutPanelLeft,
   LayoutPanelTop,
-  type LucideIcon,
   PanelsTopLeft,
+  type LucideIcon,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { GRID_MIN_WIDTHS, type LayoutMode } from '@/lib/constants/terminal'
+import { type LayoutMode, GRID_MIN_WIDTHS } from '@/lib/constants/terminal'
 import { useClickOutside } from '@/lib/hooks/use-click-outside'
 import { useDropdownPosition } from '@/lib/hooks/use-dropdown-position'
 
@@ -116,14 +116,8 @@ export function LayoutModeButtons({
     [filteredOptions.length, highlightedIndex],
   )
 
-  const handleButtonKeyDown = (
-    event: React.KeyboardEvent<HTMLButtonElement>,
-  ) => {
-    if (
-      event.key === 'ArrowDown' ||
-      event.key === 'Enter' ||
-      event.key === ' '
-    ) {
+  const handleButtonKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
       setIsOpen(true)
     }

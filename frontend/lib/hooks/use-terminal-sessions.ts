@@ -2,8 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
-import { buildApiUrl } from '../api-config'
 import { apiFetch } from '../api-fetch'
+import { buildApiUrl } from '../api-config'
 
 export interface TerminalSession {
   id: string
@@ -49,18 +49,12 @@ const deleteSession = async (sessionId: string): Promise<void> => {
 }
 
 const resetSession = (sessionId: string) =>
-  apiFetch<TerminalSession>(`/api/terminal/sessions/${sessionId}/reset`, {
-    method: 'POST',
-  })
+  apiFetch<TerminalSession>(`/api/terminal/sessions/${sessionId}/reset`, { method: 'POST' })
 
 const resetAllSessions = () =>
-  apiFetch<{ reset_count: number }>('/api/terminal/reset-all', {
-    method: 'POST',
-  })
+  apiFetch<{ reset_count: number }>('/api/terminal/reset-all', { method: 'POST' })
 
-const invalidatePanesAndSessions = (
-  queryClient: ReturnType<typeof useQueryClient>,
-) => {
+const invalidatePanesAndSessions = (queryClient: ReturnType<typeof useQueryClient>) => {
   queryClient.invalidateQueries({ queryKey: ['terminal-panes'] })
   queryClient.invalidateQueries({ queryKey: ['terminal-sessions'] })
 }
@@ -68,8 +62,7 @@ const invalidatePanesAndSessions = (
 /** Hook for managing terminal sessions with backend sync */
 export function useTerminalSessions() {
   const queryClient = useQueryClient()
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ['terminal-sessions'] })
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['terminal-sessions'] })
 
   const {
     data: sessions = [],
@@ -82,10 +75,7 @@ export function useTerminalSessions() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({
-      sessionId,
-      ...request
-    }: UpdateSessionRequest & { sessionId: string }) =>
+    mutationFn: ({ sessionId, ...request }: UpdateSessionRequest & { sessionId: string }) =>
       updateSession(sessionId, request),
     onSuccess: invalidate,
   })
@@ -101,18 +91,13 @@ export function useTerminalSessions() {
       await queryClient.cancelQueries({ queryKey: ['terminal-sessions'] })
       return {
         oldSessionId,
-        previousSessions: queryClient.getQueryData<TerminalSession[]>([
-          'terminal-sessions',
-        ]),
+        previousSessions: queryClient.getQueryData<TerminalSession[]>(['terminal-sessions']),
       }
     },
     onSuccess: (newSession, oldSessionId) => {
       queryClient.setQueryData<TerminalSession[]>(
         ['terminal-sessions'],
-        (old) =>
-          old
-            ? [...old.filter((s) => s.id !== oldSessionId), newSession]
-            : [newSession],
+        (old) => (old ? [...old.filter((s) => s.id !== oldSessionId), newSession] : [newSession]),
       )
     },
     onError: (_err, _oldSessionId, ctx) =>
@@ -142,10 +127,7 @@ export function useTerminalSessions() {
     [resetMutation],
   )
 
-  const resetAll = useCallback(
-    () => resetAllMutation.mutateAsync(),
-    [resetAllMutation],
-  )
+  const resetAll = useCallback(() => resetAllMutation.mutateAsync(), [resetAllMutation])
 
   return {
     sessions,

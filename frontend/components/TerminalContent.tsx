@@ -1,9 +1,9 @@
 import { clsx } from 'clsx'
-import { PromptCleaner } from './PromptCleaner'
-import { SettingsDropdown } from './SettingsDropdown'
+import type { TerminalContentProps } from './terminal-content/types'
 import { TerminalFileSection } from './terminal-content/TerminalFileSection'
 import { TerminalMobileSection } from './terminal-content/TerminalMobileSection'
-import type { TerminalContentProps } from './terminal-content/types'
+import { PromptCleaner } from './PromptCleaner'
+import { SettingsDropdown } from './SettingsDropdown'
 import { VoiceTranscriptPanel } from './VoiceTranscriptPanel'
 
 export type { TerminalContentProps }
@@ -83,12 +83,7 @@ export function TerminalContent({
   className,
 }: TerminalContentProps) {
   return (
-    <div
-      className={clsx(
-        'flex flex-col h-full min-h-0 overflow-visible',
-        className,
-      )}
-    >
+    <div className={clsx('flex flex-col h-full min-h-0 overflow-visible', className)}>
       {/* Settings dropdown - all settings controls */}
       <SettingsDropdown
         fontId={fontId}

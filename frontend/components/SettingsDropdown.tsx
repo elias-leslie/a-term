@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useMemo, useRef } from 'react'
-import { useClickOutside } from '@/lib/hooks/use-click-outside'
 import {
   TERMINAL_CURSOR_STYLES,
   TERMINAL_FONT_SIZES,
@@ -14,12 +13,13 @@ import {
   type TerminalScrollback,
   type TerminalThemeId,
 } from '@/lib/hooks/use-terminal-settings'
-import { AgentToolsSettings } from './settings/AgentToolsSettings'
-import { SettingButtonGroup } from './settings/SettingButtonGroup'
-import { SettingCheckbox } from './settings/SettingCheckbox'
-import { SettingSelect } from './settings/SettingSelect'
+import { useClickOutside } from '@/lib/hooks/use-click-outside'
 import { SettingsButton } from './settings/SettingsButton'
 import { SettingsPanel } from './settings/SettingsPanel'
+import { SettingSelect } from './settings/SettingSelect'
+import { SettingButtonGroup } from './settings/SettingButtonGroup'
+import { AgentToolsSettings } from './settings/AgentToolsSettings'
+import { SettingCheckbox } from './settings/SettingCheckbox'
 
 // Keyboard size type
 export type KeyboardSizePreset = 'small' | 'medium' | 'large'
@@ -91,20 +91,17 @@ export function SettingsDropdown({
     label: `${size}px`,
   }))
 
-  const themeOptions = Object.entries(TERMINAL_THEMES).map(
-    ([id, { name }]) => ({
-      value: id,
-      label: name,
-    }),
-  )
+  const themeOptions = Object.entries(TERMINAL_THEMES).map(([id, { name }]) => ({
+    value: id,
+    label: name,
+  }))
 
   const scrollbackOptions = TERMINAL_SCROLLBACK_OPTIONS.map((opt) => ({
     value: opt.value,
     label: opt.label,
   }))
 
-  const showKeyboardSettings =
-    isMobile && keyboardSize !== undefined && setKeyboardSize
+  const showKeyboardSettings = isMobile && keyboardSize !== undefined && setKeyboardSize
 
   return (
     <div className={renderTrigger ? 'relative ml-2' : ''}>

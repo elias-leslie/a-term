@@ -36,9 +36,11 @@ const fakeTerminal = {
       baseY: 100,
       viewportY: 100,
       cursorY: 0,
-      getLine: vi.fn((): { translateToString: () => string } => ({
-        translateToString: () => 'kasadis@host:~$ ',
-      })),
+      getLine: vi.fn(
+        (): { translateToString: () => string } => ({
+          translateToString: () => 'kasadis@host:~$ ',
+        }),
+      ),
     },
   },
   reset: vi.fn(),
@@ -170,9 +172,7 @@ describe('TerminalComponent', () => {
   })
 
   it('does not reconnect or disconnect a visible terminal during ordinary rerenders', () => {
-    const { rerender } = render(
-      <TerminalComponent sessionId="session-4" isVisible />,
-    )
+    const { rerender } = render(<TerminalComponent sessionId="session-4" isVisible />)
 
     const connectCallsBeforeRerender = websocketState.connectCalls
     const disconnectCallsBeforeRerender = websocketState.disconnectCalls

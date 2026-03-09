@@ -1,24 +1,21 @@
+import type { RefObject } from 'react'
+import type { TerminalSlot } from '@/lib/utils/slot'
+import type { TerminalHandle, ConnectionStatus } from '@/components/terminal.types'
+import type {
+  TerminalFontId,
+  TerminalFontSize,
+  TerminalScrollback,
+  TerminalCursorStyle,
+  TerminalThemeId,
+} from '@/lib/hooks/use-terminal-settings'
+import type { LayoutMode } from '@/lib/constants/terminal'
+import type { KeyboardSizePreset } from '@/components/keyboard/types'
+import type { PaneLayout } from '@/types/pane-layout'
 import type {
   TranscriptionError,
   TranscriptionStatus,
 } from '@agent-hub/passport-client'
-import type { RefObject } from 'react'
-import type { KeyboardSizePreset } from '@/components/keyboard/types'
 import type { TerminalLayoutRenderer } from '@/components/TerminalLayoutRenderer'
-import type {
-  ConnectionStatus,
-  TerminalHandle,
-} from '@/components/terminal.types'
-import type { LayoutMode } from '@/lib/constants/terminal'
-import type {
-  TerminalCursorStyle,
-  TerminalFontId,
-  TerminalFontSize,
-  TerminalScrollback,
-  TerminalThemeId,
-} from '@/lib/hooks/use-terminal-settings'
-import type { TerminalSlot } from '@/lib/utils/slot'
-import type { PaneLayout } from '@/types/pane-layout'
 
 export interface TerminalContentProps {
   // Terminal state

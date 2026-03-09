@@ -1,22 +1,13 @@
-import { clsx } from 'clsx'
 import type { RefObject } from 'react'
+import { clsx } from 'clsx'
+import type { TerminalSlot } from '@/lib/utils/slot'
+import type { TerminalHandle, ConnectionStatus } from '@/components/terminal.types'
+import type { LayoutMode } from '@/lib/constants/terminal'
+import type { TerminalFontSize, TerminalScrollback } from '@/lib/hooks/use-terminal-settings'
+import type { PaneLayout } from '@/types/pane-layout'
 import { FileUploadDropzone } from '@/components/FileUploadDropzone'
 import { TerminalLayoutRenderer } from '@/components/TerminalLayoutRenderer'
-import type {
-  ConnectionStatus,
-  TerminalHandle,
-} from '@/components/terminal.types'
-import {
-  UploadErrorToast,
-  UploadProgressToast,
-} from '@/components/UploadStatusToast'
-import type { LayoutMode } from '@/lib/constants/terminal'
-import type {
-  TerminalFontSize,
-  TerminalScrollback,
-} from '@/lib/hooks/use-terminal-settings'
-import type { TerminalSlot } from '@/lib/utils/slot'
-import type { PaneLayout } from '@/types/pane-layout'
+import { UploadErrorToast, UploadProgressToast } from '@/components/UploadStatusToast'
 
 interface TerminalFileSectionProps {
   terminalSlots: TerminalSlot[]

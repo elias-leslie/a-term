@@ -84,12 +84,7 @@ export function useLayoutPersistence({
   )
 
   // Clear debounce timer on unmount to prevent state updates after unmount
-  useEffect(
-    () => () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
-    },
-    [],
-  )
+  useEffect(() => () => { if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current) }, [])
 
   return {
     handleLayoutChange,

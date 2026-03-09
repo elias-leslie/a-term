@@ -80,9 +80,7 @@ export function openWebSocketConnection(
   } catch {
     connectingRef.current = false
     setStatus('error')
-    onTerminalMessage?.(
-      '\r\n\x1b[31mFailed to create WebSocket connection\x1b[0m',
-    )
+    onTerminalMessage?.('\r\n\x1b[31mFailed to create WebSocket connection\x1b[0m')
     return
   }
   wsRef.current = ws
@@ -106,9 +104,7 @@ export function openWebSocketConnection(
       }, delay)
     } else {
       setStatus('timeout')
-      onTerminalMessage?.(
-        '\r\n\x1b[31mConnection timeout after maximum retries\x1b[0m',
-      )
+      onTerminalMessage?.('\r\n\x1b[31mConnection timeout after maximum retries\x1b[0m')
       onDisconnect?.()
     }
   }, CONNECTION_TIMEOUT)
@@ -131,12 +127,7 @@ export function openWebSocketConnection(
 
     const dims = getDimensions?.()
     if (dims) {
-      ws.send(
-        JSON.stringify({
-          __ctrl: true,
-          resize: { cols: dims.cols, rows: dims.rows },
-        }),
-      )
+      ws.send(JSON.stringify({ __ctrl: true, resize: { cols: dims.cols, rows: dims.rows } }))
     }
   }
 
@@ -172,13 +163,9 @@ export function openWebSocketConnection(
       setStatus('session_dead')
       try {
         const reason = JSON.parse(event.reason)
-        onTerminalMessage?.(
-          `\r\n\x1b[31m${reason.message || 'Session not found'}\x1b[0m`,
-        )
+        onTerminalMessage?.(`\r\n\x1b[31m${reason.message || 'Session not found'}\x1b[0m`)
       } catch {
-        onTerminalMessage?.(
-          '\r\n\x1b[31mSession not found or could not be restored\x1b[0m',
-        )
+        onTerminalMessage?.('\r\n\x1b[31mSession not found or could not be restored\x1b[0m')
       }
     } else {
       setStatus('disconnected')

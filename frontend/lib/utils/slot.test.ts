@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import type { AdHocSlot, ProjectSlot } from './slot'
 import {
-  findActiveSlot,
-  getPaneId,
   getSlotBaseName,
   getSlotName,
   getSlotPanelId,
   getSlotSessionId,
   getSlotWorkingDir,
+  findActiveSlot,
   isPaneSlot,
+  getPaneId,
   type PaneSlot,
 } from './slot'
 
@@ -178,9 +178,7 @@ describe('findActiveSlot', () => {
   })
 
   it('returns null when no session matches', () => {
-    expect(
-      findActiveSlot('nonexistent', projectTerminals, adHocSessions),
-    ).toBeNull()
+    expect(findActiveSlot('nonexistent', projectTerminals, adHocSessions)).toBeNull()
   })
 })
 

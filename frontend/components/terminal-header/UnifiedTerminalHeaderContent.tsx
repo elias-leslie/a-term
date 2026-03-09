@@ -3,8 +3,8 @@
 import { clsx } from 'clsx'
 import { Mic, Paperclip, RefreshCw, Settings, Sparkles, X } from 'lucide-react'
 import { memo } from 'react'
-import { LayoutModeButtons } from '@/components/LayoutModeButton'
 import { useAgentTools } from '@/lib/hooks/use-agent-tools'
+import { LayoutModeButtons } from '@/components/LayoutModeButton'
 import { ModeToggle } from '../ModeToggle'
 import { PaneOverflowMenu } from '../PaneOverflowMenu'
 import { AddTerminalButton } from './AddTerminalButton'
@@ -95,12 +95,12 @@ export const UnifiedTerminalHeaderContent = memo(
           onLayoutModeChange &&
           availableLayouts &&
           availableLayouts.length > 1 && (
-            <LayoutModeButtons
-              layoutMode={layoutMode}
-              onLayoutChange={onLayoutModeChange}
-              availableLayouts={availableLayouts}
-            />
-          )}
+          <LayoutModeButtons
+            layoutMode={layoutMode}
+            onLayoutChange={onLayoutModeChange}
+            availableLayouts={availableLayouts}
+          />
+        )}
 
         {/* Spacer */}
         <div className="flex-1" />

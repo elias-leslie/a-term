@@ -1,11 +1,5 @@
+import { type MutableRefObject, useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import {
-  type MutableRefObject,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
 import type { TerminalMode } from '@/components/ModeToggle'
 import type { TerminalHandle } from '@/components/Terminal'
 import type { TerminalSession } from '@/lib/hooks/use-terminal-sessions'
@@ -25,7 +19,10 @@ interface UseTerminalSlotHandlersParams {
   remove: (sessionId: string) => Promise<void>
   // Pane-based operations (new architecture)
   removePane?: (paneId: string) => Promise<void>
-  handleNewTerminalForProject: (projectId: string, mode: string) => void
+  handleNewTerminalForProject: (
+    projectId: string,
+    mode: string,
+  ) => void
   setShowCleaner: (show: boolean) => void
   setCleanerRawPrompt: (prompt: string) => void
   // For mode switching
@@ -58,9 +55,7 @@ export function useTerminalSlotHandlers({
   const [isModeSwitching, setIsModeSwitching] = useState(false)
   // Ref to avoid stale closure on sessions in handleSlotModeSwitch
   const sessionsRef = useRef(sessions)
-  useEffect(() => {
-    sessionsRef.current = sessions
-  }, [sessions])
+  useEffect(() => { sessionsRef.current = sessions }, [sessions])
   // Handler for switching to a slot's terminal
   const handleSlotSwitch = useCallback(
     (slot: TerminalSlot) => {
@@ -76,8 +71,7 @@ export function useTerminalSlotHandlers({
   // Resets ONLY the visible session (shell OR claude, not both)
   const handleSlotReset = useCallback(
     async (slot: TerminalSlot) => {
-      const sessionId =
-        slot.type === 'project' ? slot.activeSessionId : slot.sessionId
+      const sessionId = slot.type === 'project' ? slot.activeSessionId : slot.sessionId
       if (!sessionId) return
 
       const newSession = await reset(sessionId)

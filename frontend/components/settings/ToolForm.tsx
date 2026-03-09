@@ -75,9 +75,7 @@ export function ToolForm({
     e.preventDefault()
     if (!form.name || !form.command || !form.process_name) return
     if (!form.slug) {
-      setError(
-        'Name must contain at least one letter or number (slug cannot be empty)',
-      )
+      setError('Name must contain at least one letter or number (slug cannot be empty)')
       return
     }
     setSubmitting(true)
@@ -92,108 +90,41 @@ export function ToolForm({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-2 p-2 rounded"
-      style={{ backgroundColor: 'var(--term-bg-surface)' }}
-    >
+    <form onSubmit={handleSubmit} className="space-y-2 p-2 rounded" style={{ backgroundColor: 'var(--term-bg-surface)' }}>
       <div>
         <label style={labelStyle}>Name *</label>
-        <input
-          style={inputStyle}
-          value={form.name}
-          onChange={(e) => handleNameChange(e.target.value)}
-          placeholder="OpenCode"
-        />
+        <input style={inputStyle} value={form.name} onChange={(e) => handleNameChange(e.target.value)} placeholder="OpenCode" />
       </div>
       <div>
         <label style={labelStyle}>Slug {isEdit && '(read-only)'}</label>
-        <input
-          style={{ ...inputStyle, opacity: isEdit ? 0.5 : 1 }}
-          value={form.slug}
-          onChange={(e) =>
-            !isEdit && setForm((f) => ({ ...f, slug: e.target.value }))
-          }
-          readOnly={isEdit}
-          placeholder="opencode"
-        />
+        <input style={{ ...inputStyle, opacity: isEdit ? 0.5 : 1 }} value={form.slug} onChange={(e) => !isEdit && setForm((f) => ({ ...f, slug: e.target.value }))} readOnly={isEdit} placeholder="opencode" />
       </div>
       <div>
         <label style={labelStyle}>Command *</label>
-        <input
-          style={inputStyle}
-          value={form.command}
-          onChange={(e) => setForm((f) => ({ ...f, command: e.target.value }))}
-          placeholder="opencode"
-        />
+        <input style={inputStyle} value={form.command} onChange={(e) => setForm((f) => ({ ...f, command: e.target.value }))} placeholder="opencode" />
       </div>
       <div>
         <label style={labelStyle}>Process Name *</label>
-        <input
-          style={inputStyle}
-          value={form.process_name}
-          onChange={(e) =>
-            setForm((f) => ({ ...f, process_name: e.target.value }))
-          }
-          placeholder="opencode"
-        />
+        <input style={inputStyle} value={form.process_name} onChange={(e) => setForm((f) => ({ ...f, process_name: e.target.value }))} placeholder="opencode" />
       </div>
       <div>
         <label style={labelStyle}>Description</label>
-        <input
-          style={inputStyle}
-          value={form.description}
-          onChange={(e) =>
-            setForm((f) => ({ ...f, description: e.target.value }))
-          }
-          placeholder="Optional description"
-        />
+        <input style={inputStyle} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Optional description" />
       </div>
       <div>
         <label style={labelStyle}>Color</label>
         <div className="flex items-center gap-2">
-          <input
-            type="color"
-            value={form.color}
-            onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
-            style={{
-              width: 28,
-              height: 22,
-              border: 'none',
-              cursor: 'pointer',
-              background: 'transparent',
-            }}
-          />
-          <input
-            style={{ ...inputStyle, flex: 1 }}
-            value={form.color}
-            onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
-            placeholder="#00FF9F"
-          />
+          <input type="color" value={form.color} onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))} style={{ width: 28, height: 22, border: 'none', cursor: 'pointer', background: 'transparent' }} />
+          <input style={{ ...inputStyle, flex: 1 }} value={form.color} onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))} placeholder="#00FF9F" />
         </div>
       </div>
-      {error && (
-        <div className="text-[10px]" style={{ color: '#ff6b6b' }}>
-          {error}
-        </div>
-      )}
+      {error && <div className="text-[10px]" style={{ color: '#ff6b6b' }}>{error}</div>}
       <div className="flex gap-2 pt-1">
         <button
           type="submit"
-          disabled={
-            submitting ||
-            !form.name ||
-            !form.command ||
-            !form.process_name ||
-            !form.slug
-          }
+          disabled={submitting || !form.name || !form.command || !form.process_name || !form.slug}
           className="flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-colors"
-          style={{
-            backgroundColor: 'var(--term-accent)',
-            color: 'var(--term-bg)',
-            opacity: submitting ? 0.5 : 1,
-            fontFamily: 'var(--font-mono)',
-          }}
+          style={{ backgroundColor: 'var(--term-accent)', color: 'var(--term-bg)', opacity: submitting ? 0.5 : 1, fontFamily: 'var(--font-mono)' }}
         >
           <Check size={10} />
           {isEdit ? 'Save' : 'Add'}
@@ -202,12 +133,7 @@ export function ToolForm({
           type="button"
           onClick={onCancel}
           className="flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-colors"
-          style={{
-            backgroundColor: 'transparent',
-            border: '1px solid var(--term-border)',
-            color: 'var(--term-text-muted)',
-            fontFamily: 'var(--font-mono)',
-          }}
+          style={{ backgroundColor: 'transparent', border: '1px solid var(--term-border)', color: 'var(--term-text-muted)', fontFamily: 'var(--font-mono)' }}
         >
           <X size={10} />
           Cancel

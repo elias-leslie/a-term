@@ -24,19 +24,12 @@ export function ModeTogglePopover({
 
   useEffect(() => {
     const rect = buttonRef.current?.getBoundingClientRect()
-    setPosition(
-      rect ? { top: rect.bottom + 4, left: rect.left } : { top: 0, left: 0 },
-    )
+    setPosition(rect ? { top: rect.bottom + 4, left: rect.left } : { top: 0, left: 0 })
   }, [buttonRef])
 
   return (
     <>
-      <div
-        className="fixed inset-0 z-[9999]"
-        onClick={onClose}
-        role="presentation"
-        aria-hidden="true"
-      />
+      <div className="fixed inset-0 z-[9999]" onClick={onClose} role="presentation" aria-hidden="true" />
       <div
         className="fixed z-[10000] rounded-lg overflow-hidden animate-in fade-in slide-in-from-top-1 duration-100"
         style={{
@@ -52,10 +45,7 @@ export function ModeTogglePopover({
           onClick={() => onSelectMode('shell')}
           className="flex items-center gap-2 w-full px-3 py-2 text-left text-xs hover:bg-white/5 transition-colors"
           style={{
-            color:
-              value === 'shell'
-                ? 'var(--term-accent)'
-                : 'var(--term-text-secondary)',
+            color: value === 'shell' ? 'var(--term-accent)' : 'var(--term-text-secondary)',
             fontFamily: 'var(--font-mono)',
           }}
         >
@@ -78,9 +68,7 @@ export function ModeTogglePopover({
           >
             <Sparkles size={12} />
             <span>{tool.name}</span>
-            {value === tool.slug && (
-              <span className="ml-auto text-[10px]">●</span>
-            )}
+            {value === tool.slug && <span className="ml-auto text-[10px]">●</span>}
           </button>
         ))}
       </div>

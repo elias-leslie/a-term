@@ -1,9 +1,9 @@
-import type { FitAddon } from '@xterm/addon-fit'
-import type { Terminal } from '@xterm/xterm'
 import { useEffect, useRef } from 'react'
+import type { Terminal } from '@xterm/xterm'
+import type { FitAddon } from '@xterm/addon-fit'
+import { setupTerminalMouseHandling } from './use-terminal-mouse-handling'
 import { isMobileDevice } from '../utils/device'
 import { applyMobileTerminalTouchStyles } from '../utils/mobile-terminal-touch'
-import { setupTerminalMouseHandling } from './use-terminal-mouse-handling'
 
 // Dynamic imports for xterm (client-side only)
 let TerminalClass: typeof import('@xterm/xterm').Terminal
@@ -161,12 +161,15 @@ export function useTerminalInstance(
       fitAddonRef.current = fitAddon
 
       // Set up scrolling via hook (handles wheel and touch events for tmux copy-mode)
-      scrollCleanupRef.current = setupScrollingRef.current(containerRef.current)
+      scrollCleanupRef.current = setupScrollingRef.current(
+        containerRef.current,
+      )
 
       // Auto-hiding scrollbar: toggle .scrolling class on scroll events
-      const viewport = containerRef.current.querySelector<HTMLElement>(
-        '.xterm-scrollable-element',
-      )
+      const viewport =
+        containerRef.current.querySelector<HTMLElement>(
+          '.xterm-scrollable-element',
+        )
       let scrollTimer: ReturnType<typeof setTimeout> | null = null
       if (viewport && !isMobileDevice()) {
         const onScroll = () => {

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { buildApiUrl } from '../api-config'
-import type { ProjectTerminal } from './use-project-terminals'
 import type { TerminalSession } from './use-terminal-sessions'
+import type { ProjectTerminal } from './use-project-terminals'
 
 interface ResetMutationContext {
   previousSessions?: TerminalSession[]
@@ -25,9 +25,7 @@ function createTerminalSession(
 ): TerminalSession {
   return {
     id: sessionId,
-    name: project
-      ? `Project: ${project.projectId} (${mode.charAt(0).toUpperCase() + mode.slice(1)})`
-      : mode.charAt(0).toUpperCase() + mode.slice(1),
+    name: project ? `Project: ${project.projectId} (${mode.charAt(0).toUpperCase() + mode.slice(1)})` : mode.charAt(0).toUpperCase() + mode.slice(1),
     user_id: null,
     project_id: projectId,
     working_dir: project?.rootPath ?? null,
@@ -69,11 +67,7 @@ export function useResetProjectMutation(
       const project = projectTerminals.find((p) => p.projectId === projectId)
       const oldSessionIds = project?.sessions.map((ps) => ps.session.id) ?? []
 
-      return {
-        previousSessions,
-        projectId,
-        oldSessionIds,
-      } as ResetMutationContext
+      return { previousSessions, projectId, oldSessionIds } as ResetMutationContext
     },
     onSuccess: (data, projectId, context) => {
       const project = projectTerminals.find((p) => p.projectId === projectId)
@@ -90,22 +84,12 @@ export function useResetProjectMutation(
           const newSessions: TerminalSession[] = []
           if (data.shell_session_id) {
             newSessions.push(
-              createTerminalSession(
-                data.shell_session_id,
-                projectId,
-                'shell',
-                project,
-              ),
+              createTerminalSession(data.shell_session_id, projectId, 'shell', project),
             )
           }
           if (data.agent_session_id) {
             newSessions.push(
-              createTerminalSession(
-                data.agent_session_id,
-                projectId,
-                data.agent_mode ?? data.mode,
-                project,
-              ),
+              createTerminalSession(data.agent_session_id, projectId, data.agent_mode ?? data.mode, project),
             )
           }
 

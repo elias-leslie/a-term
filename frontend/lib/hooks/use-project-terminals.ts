@@ -3,11 +3,11 @@
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
 import { useProjectSettings } from './use-project-settings'
-import { useResetProjectMutation } from './use-project-terminals-mutations'
 import {
   type TerminalSession,
   useTerminalSessions,
 } from './use-terminal-sessions'
+import { useResetProjectMutation } from './use-project-terminals-mutations'
 
 export interface ProjectSession {
   session: TerminalSession
@@ -51,11 +51,8 @@ function buildProjectTerminal(
     (session, index) => ({ session, badge: index + 1 }),
   )
 
-  const activeSession =
-    projectSessions.find((s) => s.mode === project.mode) ?? null
-  const sessionBadge =
-    sessionsWithBadges.find((ps) => ps.session.id === activeSession?.id)
-      ?.badge ?? null
+  const activeSession = projectSessions.find((s) => s.mode === project.mode) ?? null
+  const sessionBadge = sessionsWithBadges.find((ps) => ps.session.id === activeSession?.id)?.badge ?? null
 
   return {
     projectId: project.id,
@@ -97,8 +94,7 @@ export function useProjectTerminals(): UseProjectTerminalsResult {
   )
 
   const projectTerminals = useMemo(
-    () =>
-      enabledProjects.map((project) => buildProjectTerminal(project, sessions)),
+    () => enabledProjects.map((project) => buildProjectTerminal(project, sessions)),
     [enabledProjects, sessions],
   )
 

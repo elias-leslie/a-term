@@ -12,6 +12,7 @@ describe('getMobileTerminalTouchStyles', () => {
       touchAction: 'pan-y',
     })
   })
+
 })
 
 describe('applyMobileTerminalTouchStyles', () => {

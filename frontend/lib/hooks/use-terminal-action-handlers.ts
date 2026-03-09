@@ -119,20 +119,17 @@ export function useTerminalActionHandlers({
   // Track which terminal pane triggered voice input
   const voiceTargetRef = useRef<string | null>(null)
 
-  const handleVoiceOpen = useCallback(
-    (targetSessionId?: string) => {
-      voiceTargetRef.current = targetSessionId ?? null
-      setShowVoice(true)
-      voiceStartListening()
-    },
-    [setShowVoice, voiceStartListening],
-  )
+  const handleVoiceOpen = useCallback((targetSessionId?: string) => {
+    voiceTargetRef.current = targetSessionId ?? null
+    setShowVoice(true)
+    voiceStartListening()
+  }, [setShowVoice, voiceStartListening])
 
   const handleVoiceSend = useCallback(
     (text: string) => {
       // Use the specific pane that triggered voice, fall back to active/first available
       const terminalRef = voiceTargetRef.current
-        ? (terminalRefs.current.get(voiceTargetRef.current) ?? null)
+        ? terminalRefs.current.get(voiceTargetRef.current) ?? null
         : findActiveRef(terminalRefs.current, activeSessionId)
       if (terminalRef) {
         // Use bracketed paste so TUI apps (Claude Code, vim, etc.) recognize the input
@@ -145,19 +142,13 @@ export function useTerminalActionHandlers({
       voiceResetTranscript()
       setShowVoice(false)
     },
-    [
-      activeSessionId,
-      terminalRefs,
-      voiceStopListening,
-      voiceResetTranscript,
-      setShowVoice,
-    ],
+    [activeSessionId, terminalRefs, voiceStopListening, voiceResetTranscript, setShowVoice],
   )
 
   const handleVoiceInsert = useCallback(
     (text: string) => {
       const terminalRef = voiceTargetRef.current
-        ? (terminalRefs.current.get(voiceTargetRef.current) ?? null)
+        ? terminalRefs.current.get(voiceTargetRef.current) ?? null
         : findActiveRef(terminalRefs.current, activeSessionId)
       if (terminalRef) {
         terminalRef.pasteInput(text)
@@ -167,13 +158,7 @@ export function useTerminalActionHandlers({
       voiceResetTranscript()
       setShowVoice(false)
     },
-    [
-      activeSessionId,
-      terminalRefs,
-      voiceStopListening,
-      voiceResetTranscript,
-      setShowVoice,
-    ],
+    [activeSessionId, terminalRefs, voiceStopListening, voiceResetTranscript, setShowVoice],
   )
 
   const handleVoiceCancel = useCallback(() => {

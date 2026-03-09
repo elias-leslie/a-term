@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { TerminalManagerModal } from './TerminalManagerModal'
 
 const mockUseProjectSettings = vi.fn()
@@ -48,9 +48,7 @@ describe('TerminalManagerModal', () => {
     })
 
     expect(screen.getByText('Agent Hub')).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: /^Terminal$/ }),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Terminal$/ })).not.toBeInTheDocument()
   })
 
   it('creates an ad-hoc terminal from quick start', () => {

@@ -164,8 +164,7 @@ export function TerminalManagerModal({
     }
 
     return sortedProjects.filter((project) => {
-      const haystack =
-        `${project.name} ${project.root_path ?? ''}`.toLowerCase()
+      const haystack = `${project.name} ${project.root_path ?? ''}`.toLowerCase()
       return haystack.includes(normalizedSearch)
     })
   }, [projects, paneCountByProject, normalizedSearch])
@@ -294,10 +293,7 @@ export function TerminalManagerModal({
               }}
             >
               <span>Quick Start</span>
-              <span>
-                {visibleProjects.length} project
-                {visibleProjects.length === 1 ? '' : 's'}
-              </span>
+              <span>{visibleProjects.length} project{visibleProjects.length === 1 ? '' : 's'}</span>
             </div>
 
             <div
