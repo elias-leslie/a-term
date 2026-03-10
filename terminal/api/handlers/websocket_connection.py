@@ -16,7 +16,7 @@ from ...services.scrollback_sync import (
     ScrollbackSyncScheduler,
     prepare_scrollback_for_transport,
 )
-from ...utils.tmux import get_scrollback
+from ...utils.tmux import get_scrollback, reset_tmux_window_size_policy
 from .session_validation import validate_and_prepare_session
 from .websocket_cleanup import cleanup_pty_process, cleanup_tasks
 from .websocket_heartbeat import heartbeat_loop
@@ -42,6 +42,8 @@ async def _setup_connection(
     session, tmux_session_name = await asyncio.to_thread(
         validate_and_prepare_session, session_id
     )
+    if session.get("is_external"):
+        await asyncio.to_thread(reset_tmux_window_size_policy, tmux_session_name)
     stored_target_session = session.get("last_claude_session")
     master_fd, pid = spawn_pty_for_tmux(tmux_session_name, stored_target_session)
     await wait_for_initial_resize(

@@ -319,5 +319,23 @@ def resize_tmux_window(session_name: str, cols: int, rows: int) -> bool:
         logger.debug("tmux_window_resized", session=session_name, cols=cols, rows=rows)
     else:
         logger.warning("tmux_window_resize_failed", session=session_name, cols=cols, rows=rows)
+    return success
+
+
+def reset_tmux_window_size_policy(session_name: str) -> bool:
+    """Return a tmux window to client-driven sizing.
+
+    External shared sessions should not remain pinned to a manual geometry after
+    Terminal disconnects. `window-size latest` lets the active tmux client
+    reclaim its own size instead of preserving a stale manual resize.
+    """
+    success, _ = run_tmux_command(
+        ["set-window-option", "-t", session_name, "window-size", "latest"]
+    )
+    if success:
+        logger.debug("tmux_window_size_policy_reset", session=session_name, policy="latest")
+    else:
+        logger.warning("tmux_window_size_policy_reset_failed", session=session_name)
+    return success
 
     return success

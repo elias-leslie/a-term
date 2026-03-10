@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from terminal.utils.tmux import get_external_agent_tmux_session, list_external_agent_tmux_sessions
+from terminal.utils.tmux import (
+    get_external_agent_tmux_session,
+    list_external_agent_tmux_sessions,
+    reset_tmux_window_size_policy,
+)
 
 
 def test_list_external_agent_tmux_sessions_discovers_non_terminal_agent_sessions() -> None:
@@ -45,3 +49,12 @@ def test_get_external_agent_tmux_session_matches_by_name() -> None:
     }
     with patch("terminal.utils.tmux.list_external_agent_tmux_sessions", return_value=[session]):
         assert get_external_agent_tmux_session("claude-summitflow") == session
+
+
+def test_reset_tmux_window_size_policy_sets_latest() -> None:
+    with patch("terminal.utils.tmux.run_tmux_command", return_value=(True, "")) as mock_run:
+        assert reset_tmux_window_size_policy("codex-agent-hub") is True
+
+    mock_run.assert_called_once_with(
+        ["set-window-option", "-t", "codex-agent-hub", "window-size", "latest"]
+    )
