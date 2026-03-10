@@ -62,6 +62,7 @@ export function TerminalTabs({
     // Modal handlers
     showTerminalManager,
     handleOpenTerminalManager,
+    handleAttachExternalSession,
     handleCloseTerminalManager,
     handleCloseKeyboardHelp,
 
@@ -202,7 +203,7 @@ export function TerminalTabs({
           handleNewTerminalForProject(projectId, 'shell', rootPath)
         }
         externalSessions={externalSessions}
-        onAttachExternalSession={handleSlotSwitch}
+        onAttachExternalSession={handleAttachExternalSession}
         panes={panes}
       />
 

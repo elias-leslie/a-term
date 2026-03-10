@@ -5,7 +5,6 @@ import { Folder, Terminal, X } from 'lucide-react'
 import { useDeferredValue, useMemo, useRef, useState } from 'react'
 import { useHoverStyle } from '@/lib/hooks/use-hover-style'
 import type { TerminalSession } from '@/lib/hooks/use-terminal-sessions'
-import type { TerminalSlot } from '@/lib/utils/slot'
 import {
   type ProjectSetting,
   useProjectSettings,
@@ -18,7 +17,7 @@ interface TerminalManagerModalProps {
   onCreateGenericTerminal: () => void
   onCreateProjectTerminal: (projectId: string, rootPath: string | null) => void
   externalSessions: TerminalSession[]
-  onAttachExternalSession: (slot: TerminalSlot) => void
+  onAttachExternalSession: (sessionId: string) => void
   panes: TerminalPane[]
 }
 
@@ -151,13 +150,8 @@ export function TerminalManagerModal({
 
   const handleCreateGeneric = () => { onCreateGenericTerminal(); closeAndReset() }
   const handleExternalSessionClick = (session: TerminalSession) => {
-    onAttachExternalSession({
-      type: 'adhoc',
-      sessionId: session.id,
-      name: session.name,
-      workingDir: session.working_dir,
-    })
-    closeAndReset()
+    setSearchQuery('')
+    onAttachExternalSession(session.id)
   }
 
   return (

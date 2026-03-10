@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
-import os
 
 from fastapi import WebSocket, WebSocketDisconnect
 
@@ -17,8 +16,7 @@ from ...services.scrollback_sync import (
     ScrollbackSyncScheduler,
     prepare_scrollback_for_transport,
 )
-from ...storage import agent_tools as agent_tools_store
-from ...utils.tmux import get_scrollback, is_agent_running_in_session
+from ...utils.tmux import get_scrollback
 from .session_validation import validate_and_prepare_session
 from .websocket_cleanup import cleanup_pty_process, cleanup_tasks
 from .websocket_heartbeat import heartbeat_loop
@@ -61,31 +59,6 @@ async def _setup_connection(
             )
 
     return session, tmux_session_name, master_fd, pid
-
-
-async def _maybe_autostart_agent(
-    session: dict,
-    master_fd: int,
-    tmux_session_name: str,
-    session_id: str,
-) -> None:
-    """Auto-start agent if the session is in agent mode and the agent is not running."""
-    mode = session.get("mode", SHELL_MODE)
-    if mode == SHELL_MODE:
-        return
-
-    tool = agent_tools_store.get_by_slug(mode)
-    if not tool:
-        tool = agent_tools_store.get_default()
-    if not tool:
-        logger.warning("no_agent_tool_found", session_id=session_id, mode=mode)
-        return
-
-    await asyncio.sleep(0.5)  # Wait for shell prompt
-    if not is_agent_running_in_session(tmux_session_name, tool["process_name"]):
-        command = tool["command"]
-        await asyncio.to_thread(os.write, master_fd, f"{command}\n".encode())
-        logger.info("auto_started_agent", session_id=session_id, tool=tool["slug"])
 
 
 async def _run_message_loop(
@@ -152,7 +125,6 @@ async def _run_session(
     )
     heartbeat_task = asyncio.create_task(heartbeat_loop(websocket))
     try:
-        await _maybe_autostart_agent(session, master_fd, tmux_session_name, session_id)
         await _run_message_loop(
             websocket, master_fd, session_id, tmux_session_name,
             output_task, heartbeat_task,

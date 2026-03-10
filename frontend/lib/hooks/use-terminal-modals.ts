@@ -11,6 +11,7 @@ interface UseTerminalModalsProps {
 interface UseTerminalModalsReturn {
   handleOpenTerminalManager: () => void
   handleCloseTerminalManager: () => void
+  handleAttachExternalSession: (sessionId: string) => void
   handleCloseKeyboardHelp: () => void
 }
 
@@ -60,6 +61,14 @@ export function useTerminalModals({
     updateUrlParams({ modal: null })
   }, [setShowTerminalManager, updateUrlParams])
 
+  const handleAttachExternalSession = useCallback(
+    (sessionId: string) => {
+      setShowTerminalManager(false)
+      updateUrlParams({ modal: null, session: sessionId })
+    },
+    [setShowTerminalManager, updateUrlParams],
+  )
+
   // Close keyboard help
   const handleCloseKeyboardHelp = useCallback(() => {
     setShowKeyboardHelp(false)
@@ -78,6 +87,7 @@ export function useTerminalModals({
   return {
     handleOpenTerminalManager,
     handleCloseTerminalManager,
+    handleAttachExternalSession,
     handleCloseKeyboardHelp,
   }
 }

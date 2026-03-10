@@ -105,11 +105,6 @@ describe('TerminalManagerModal', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /claude-terminal/i }))
 
-    expect(onAttachExternalSession).toHaveBeenCalledWith({
-      type: 'adhoc',
-      sessionId: 'claude-terminal',
-      name: 'claude-terminal',
-      workingDir: '/workspace/terminal',
-    })
+    expect(onAttachExternalSession).toHaveBeenCalledWith('claude-terminal')
   })
 })
