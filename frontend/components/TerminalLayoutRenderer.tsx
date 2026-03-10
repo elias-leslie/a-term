@@ -6,6 +6,7 @@ import { type PaneLayout, ResizablePaneLayout } from './ResizablePaneLayout'
 import type { TerminalComponent, TerminalHandle } from './Terminal'
 import type { LayoutMode } from '@/lib/constants/terminal'
 import type { ConnectionStatus } from './terminal.types'
+import { getSlotPanelId } from '@/lib/utils/slot'
 
 interface TerminalLayoutRendererProps {
   // Slots (pane-based architecture)
@@ -94,8 +95,11 @@ export function TerminalLayoutRenderer({
   initialLayouts,
   onVoice,
 }: TerminalLayoutRendererProps) {
+  const layoutKey = `${layoutMode}:${terminalSlots.map((slot) => getSlotPanelId(slot)).join('|')}`
+
   return (
     <ResizablePaneLayout
+      key={layoutKey}
       slots={terminalSlots}
       fontFamily={fontFamily}
       fontSize={fontSize}

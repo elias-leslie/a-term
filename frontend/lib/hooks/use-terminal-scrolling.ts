@@ -57,20 +57,7 @@ export function useTerminalScrolling({
 
   const setupScrolling = useCallback(
     (container: HTMLElement): ScrollingSetupResult => {
-      const handleWheel = (e: WheelEvent) => {
-        const terminal = terminalRef.current
-        if (!terminal) return
-        if (isAlternateScreen(terminal)) {
-          e.preventDefault()
-          e.stopPropagation()
-          const lines = Math.max(1, Math.floor(Math.abs(e.deltaY) / 40))
-          const direction = e.deltaY < 0 ? 'up' : 'down'
-          for (let i = 0; i < lines; i++) sendArrowKey(direction)
-        }
-      }
-
-      container.addEventListener('wheel', handleWheel, { capture: true, passive: false })
-      const wheelCleanup = () => container.removeEventListener('wheel', handleWheel, { capture: true })
+      const wheelCleanup = () => {}
 
       let touchCleanup = () => {}
 
