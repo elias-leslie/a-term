@@ -35,10 +35,12 @@ import {
 export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabsStateProps) {
   const {
     activeSessionId,
+    activeSession,
     switchToSession,
     sessions,
     projectTerminals,
     adHocSessions,
+    externalSessions,
     isLoading: activeSessionLoading,
   } = useActiveSession()
 
@@ -114,7 +116,32 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
 
   const isLoading = activeSessionLoading || sessionsLoading || projectsLoading || panesLoading
   const availableLayouts = useAvailableLayouts(panes.length)
-  const terminalSlots = useMemo(() => getPanesToSlots(panes), [panes])
+  const terminalSlots = useMemo(() => {
+    const paneSlots = getPanesToSlots(panes)
+    if (!activeSession?.is_external) {
+      return paneSlots
+    }
+
+    const alreadyVisible = paneSlots.some((slot) => {
+      if (slot.type === 'project') {
+        return slot.activeSessionId === activeSession.id
+      }
+      return slot.sessionId === activeSession.id
+    })
+    if (alreadyVisible) {
+      return paneSlots
+    }
+
+    return [
+      ...paneSlots,
+      {
+        type: 'adhoc' as const,
+        sessionId: activeSession.id,
+        name: activeSession.name,
+        workingDir: activeSession.working_dir,
+      },
+    ]
+  }, [activeSession, panes])
   const orderedIds = useMemo(() => getOrderedIds(terminalSlots), [terminalSlots])
   const reorder = useCallback((_newOrder: string[]) => { /* noop — reorder via drag-and-drop not yet implemented */ }, [])
   const swapPanes = useSwapPanes(terminalSlots, swapPanePositions)
@@ -154,6 +181,7 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     sessions,
     projectTerminals,
     adHocSessions,
+    externalSessions,
     isLoading,
     layoutMode,
     setLayoutMode,

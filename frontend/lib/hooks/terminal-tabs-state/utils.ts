@@ -1,5 +1,5 @@
 import type { TerminalSession } from '@/lib/hooks/use-terminal-sessions'
-import { getSlotPanelId, type PaneSlot, panesToSlots } from '@/lib/utils/slot'
+import { getSlotPanelId, type PaneSlot, panesToSlots, type TerminalSlot } from '@/lib/utils/slot'
 import type { TerminalPane } from '@/lib/hooks/terminal-panes-types'
 
 /**
@@ -24,7 +24,7 @@ export function getPanesToSlots(panes: TerminalPane[]): PaneSlot[] {
 /**
  * Get ordered slot IDs from terminal slots
  */
-export function getOrderedIds(terminalSlots: PaneSlot[]): string[] {
+export function getOrderedIds(terminalSlots: Array<TerminalSlot | PaneSlot>): string[] {
   return terminalSlots.map((slot) => getSlotPanelId(slot))
 }
 

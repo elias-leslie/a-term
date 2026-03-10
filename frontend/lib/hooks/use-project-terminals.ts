@@ -28,6 +28,7 @@ export interface ProjectTerminal {
 export interface UseProjectTerminalsResult {
   projectTerminals: ProjectTerminal[]
   adHocSessions: TerminalSession[]
+  externalSessions: TerminalSession[]
   isLoading: boolean
   isError: boolean
   switchMode: (projectId: string, mode: string) => Promise<void>
@@ -98,8 +99,13 @@ export function useProjectTerminals(): UseProjectTerminalsResult {
     [enabledProjects, sessions],
   )
 
+  const externalSessions = useMemo(
+    () => sessions.filter((s) => s.is_external),
+    [sessions],
+  )
+
   const adHocSessions = useMemo(
-    () => sessions.filter((s) => !s.project_id),
+    () => sessions.filter((s) => !s.project_id && !s.is_external),
     [sessions],
   )
 
@@ -132,6 +138,7 @@ export function useProjectTerminals(): UseProjectTerminalsResult {
   return {
     projectTerminals,
     adHocSessions,
+    externalSessions,
     isLoading: projectsLoading || sessionsLoading,
     isError: projectsError || sessionsError,
     switchMode,

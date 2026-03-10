@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useMemo } from 'react'
 import type { LayoutMode } from '@/lib/constants/terminal'
 import type { ConnectionStatus } from '@/components/Terminal'
-import type { PaneSlot } from '@/lib/utils/slot'
+import type { PaneSlot, TerminalSlot } from '@/lib/utils/slot'
+import { getSlotPanelId, isPaneSlot } from '@/lib/utils/slot'
 import { isReconnectableStatus } from '@/lib/utils/mobile-terminal-status'
-import { getSlotPanelId } from '@/lib/utils/slot'
 
 /**
  * Hook to manage pane swap operations
  */
 export function useSwapPanes(
-  terminalSlots: PaneSlot[],
+  terminalSlots: Array<TerminalSlot | PaneSlot>,
   swapPanePositions: (paneIdA: string, paneIdB: string) => Promise<void>,
 ) {
   return useCallback(
@@ -19,6 +19,7 @@ export function useSwapPanes(
       const slotB = terminalSlots.find((s) => getSlotPanelId(s) === slotIdB)
 
       if (!slotA || !slotB) return
+      if (!isPaneSlot(slotA) || !isPaneSlot(slotB)) return
 
       await swapPanePositions(slotA.paneId, slotB.paneId)
     },

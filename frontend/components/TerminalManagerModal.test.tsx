@@ -39,6 +39,8 @@ describe('TerminalManagerModal', () => {
         onClose={vi.fn()}
         onCreateGenericTerminal={vi.fn()}
         onCreateProjectTerminal={vi.fn()}
+        externalSessions={[]}
+        onAttachExternalSession={vi.fn()}
         panes={[]}
       />,
     )
@@ -60,6 +62,8 @@ describe('TerminalManagerModal', () => {
         onClose={vi.fn()}
         onCreateGenericTerminal={onCreateGenericTerminal}
         onCreateProjectTerminal={vi.fn()}
+        externalSessions={[]}
+        onAttachExternalSession={vi.fn()}
         panes={[]}
       />,
     )
@@ -67,5 +71,45 @@ describe('TerminalManagerModal', () => {
     fireEvent.click(screen.getByText('New Ad-Hoc Terminal'))
 
     expect(onCreateGenericTerminal).toHaveBeenCalledTimes(1)
+  })
+
+  it('attaches a live external session from the modal', () => {
+    const onAttachExternalSession = vi.fn()
+
+    render(
+      <TerminalManagerModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onCreateGenericTerminal={vi.fn()}
+        onCreateProjectTerminal={vi.fn()}
+        externalSessions={[
+          {
+            id: 'claude-terminal',
+            name: 'claude-terminal',
+            user_id: null,
+            project_id: 'terminal',
+            working_dir: '/workspace/terminal',
+            mode: 'claude',
+            display_order: 0,
+            is_alive: true,
+            created_at: null,
+            last_accessed_at: null,
+            is_external: true,
+            source: 'tmux_external',
+          },
+        ]}
+        onAttachExternalSession={onAttachExternalSession}
+        panes={[]}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /claude-terminal/i }))
+
+    expect(onAttachExternalSession).toHaveBeenCalledWith({
+      type: 'adhoc',
+      sessionId: 'claude-terminal',
+      name: 'claude-terminal',
+      workingDir: '/workspace/terminal',
+    })
   })
 })

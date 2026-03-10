@@ -77,6 +77,9 @@ export interface UseActiveSessionResult {
   /** Ad-hoc sessions for reference */
   adHocSessions: TerminalSession[]
 
+  /** External tmux sessions for reference */
+  externalSessions: TerminalSession[]
+
   /** Loading state */
   isLoading: boolean
 }
@@ -129,6 +132,7 @@ export function useActiveSession(): UseActiveSessionResult {
   const {
     projectTerminals,
     adHocSessions,
+    externalSessions,
     isLoading: projectsLoading,
   } = useProjectTerminals()
 
@@ -212,6 +216,7 @@ export function useActiveSession(): UseActiveSessionResult {
     sessions,
     projectTerminals,
     adHocSessions,
+    externalSessions,
     isLoading,
   }
 }

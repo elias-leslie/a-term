@@ -1,9 +1,11 @@
 'use client'
 
 import * as Dialog from '@radix-ui/react-dialog'
-import { Folder, Plus, Terminal, X } from 'lucide-react'
+import { Folder, Terminal, X } from 'lucide-react'
 import { useDeferredValue, useMemo, useRef, useState } from 'react'
 import { useHoverStyle } from '@/lib/hooks/use-hover-style'
+import type { TerminalSession } from '@/lib/hooks/use-terminal-sessions'
+import type { TerminalSlot } from '@/lib/utils/slot'
 import {
   type ProjectSetting,
   useProjectSettings,
@@ -15,19 +17,32 @@ interface TerminalManagerModalProps {
   onClose: () => void
   onCreateGenericTerminal: () => void
   onCreateProjectTerminal: (projectId: string, rootPath: string | null) => void
+  externalSessions: TerminalSession[]
+  onAttachExternalSession: (slot: TerminalSlot) => void
   panes: TerminalPane[]
 }
 
 interface TerminalButtonProps {
   icon: React.ReactNode
   label: string
+  description?: string
   paneCount: number
   hoverColor: string
   defaultColor: string
+  actionLabel?: string
   onClick: () => void
 }
 
-function TerminalButton({ icon, label, paneCount, hoverColor, defaultColor, onClick }: TerminalButtonProps) {
+function TerminalButton({
+  icon,
+  label,
+  description,
+  paneCount,
+  hoverColor,
+  defaultColor,
+  actionLabel = 'Open',
+  onClick,
+}: TerminalButtonProps) {
   const hoverStyle = useHoverStyle({
     hoverBg: 'var(--term-bg-surface)',
     defaultBg: 'transparent',
@@ -44,7 +59,14 @@ function TerminalButton({ icon, label, paneCount, hoverColor, defaultColor, onCl
       onMouseLeave={hoverStyle.onMouseLeave}
     >
       {icon}
-      <span className="flex-1 text-sm truncate">{label}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm truncate">{label}</span>
+        {description ? (
+          <span className="block text-[11px] truncate" style={{ color: 'var(--term-text-muted)' }}>
+            {description}
+          </span>
+        ) : null}
+      </span>
       {paneCount > 0 && (
         <span
           className="text-xs px-1.5 py-0.5 rounded"
@@ -53,7 +75,9 @@ function TerminalButton({ icon, label, paneCount, hoverColor, defaultColor, onCl
           {paneCount} open
         </span>
       )}
-      <Plus size={14} style={{ color: 'var(--term-text-muted)', flexShrink: 0 }} />
+      <span className="text-[11px] uppercase tracking-[0.14em]" style={{ color: 'var(--term-text-muted)', flexShrink: 0, fontFamily: 'var(--font-mono)' }}>
+        {actionLabel}
+      </span>
     </button>
   )
 }
@@ -69,6 +93,8 @@ export function TerminalManagerModal({
   onClose,
   onCreateGenericTerminal,
   onCreateProjectTerminal,
+  externalSessions,
+  onAttachExternalSession,
   panes,
 }: TerminalManagerModalProps) {
   const { projects } = useProjectSettings()
@@ -108,6 +134,14 @@ export function TerminalManagerModal({
     )
   }, [projects, paneCounts, normalizedSearch])
 
+  const visibleExternalSessions = useMemo(() => {
+    const sorted = [...externalSessions].sort((a, b) => a.name.localeCompare(b.name))
+    if (!normalizedSearch) return sorted
+    return sorted.filter((session) =>
+      `${session.name} ${session.project_id ?? ''} ${session.working_dir ?? ''} ${session.mode}`.toLowerCase().includes(normalizedSearch)
+    )
+  }, [externalSessions, normalizedSearch])
+
   const closeAndReset = () => { setSearchQuery(''); onClose() }
 
   const handleProjectClick = (project: ProjectSetting) => {
@@ -116,6 +150,15 @@ export function TerminalManagerModal({
   }
 
   const handleCreateGeneric = () => { onCreateGenericTerminal(); closeAndReset() }
+  const handleExternalSessionClick = (session: TerminalSession) => {
+    onAttachExternalSession({
+      type: 'adhoc',
+      sessionId: session.id,
+      name: session.name,
+      workingDir: session.working_dir,
+    })
+    closeAndReset()
+  }
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => { if (!open) closeAndReset() }}>
@@ -188,6 +231,7 @@ export function TerminalManagerModal({
                 paneCount={paneCounts.__adhoc || 0}
                 hoverColor="var(--term-accent)"
                 defaultColor="var(--term-text-muted)"
+                actionLabel="New"
                 onClick={handleCreateGeneric}
               />
               <div className="my-2 h-px" style={{ backgroundColor: 'var(--term-border)' }} />
@@ -200,6 +244,7 @@ export function TerminalManagerModal({
                     paneCount={paneCounts[project.id] || 0}
                     hoverColor="var(--term-text-primary)"
                     defaultColor="var(--term-text-secondary)"
+                    actionLabel="New"
                     onClick={() => handleProjectClick(project)}
                   />
                 ))}
@@ -216,6 +261,37 @@ export function TerminalManagerModal({
               )}
             </div>
           </div>
+
+          {externalSessions.length > 0 && (
+            <div className="px-4 pb-4">
+              <div className="mb-2 flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.14em]" style={{ color: 'var(--term-text-muted)', fontFamily: 'var(--font-mono)' }}>
+                <span>External Sessions</span>
+                <span>{visibleExternalSessions.length} live</span>
+              </div>
+              <div className="rounded-lg p-2" style={{ backgroundColor: 'rgba(10, 14, 20, 0.35)', border: '1px solid var(--term-border)' }}>
+                <div className="max-h-[220px] overflow-y-auto space-y-1 pr-1">
+                  {visibleExternalSessions.map((session) => (
+                    <TerminalButton
+                      key={session.id}
+                      icon={<Terminal size={16} style={iconStyle} />}
+                      label={session.name}
+                      description={`${session.project_id ?? 'external'} • ${session.mode}${session.working_dir ? ` • ${session.working_dir}` : ''}`}
+                      paneCount={0}
+                      hoverColor="var(--term-accent)"
+                      defaultColor="var(--term-text-secondary)"
+                      actionLabel="Attach"
+                      onClick={() => handleExternalSessionClick(session)}
+                    />
+                  ))}
+                </div>
+                {visibleExternalSessions.length === 0 && (
+                  <p className="px-3 py-6 text-center text-sm" style={{ color: 'var(--term-text-muted)' }}>
+                    No external sessions match &quot;{deferredSearchQuery.trim()}&quot;.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

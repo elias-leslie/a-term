@@ -22,6 +22,7 @@ export function TerminalTabs({
     // Core state
     isLoading,
     sessions,
+    externalSessions,
     terminalSlots,
     fontFamily,
     fontSize,
@@ -200,6 +201,8 @@ export function TerminalTabs({
         onCreateProjectTerminal={(projectId, rootPath) =>
           handleNewTerminalForProject(projectId, 'shell', rootPath)
         }
+        externalSessions={externalSessions}
+        onAttachExternalSession={handleSlotSwitch}
         panes={panes}
       />
 
