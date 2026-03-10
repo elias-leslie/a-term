@@ -16,11 +16,13 @@ export function useLayoutChangeHandler(
     (layout: Layout) => {
       if (!onLayoutChange) return
 
-      const layouts: PaneLayout[] = displaySlots.map((slot, index) => {
+      const layouts: PaneLayout[] = displaySlots.flatMap((slot, index) => {
+        if (!isPaneSlot(slot)) {
+          return []
+        }
         const panelId = getSlotPanelId(slot)
-        const persistenceId = isPaneSlot(slot) ? getPaneId(slot) : panelId
         return {
-          slotId: persistenceId,
+          slotId: getPaneId(slot),
           widthPercent: layout[panelId] ?? 100 / paneCount,
           heightPercent: 100,
           row: 0,
