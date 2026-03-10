@@ -62,6 +62,16 @@ export function useTerminalSlotHandlers({
       sessionId ? sessionsRef.current.find((session) => session.id === sessionId) ?? null : null,
     [],
   )
+  const findDetachTargetSessionId = useCallback((currentSessionId: string) => {
+    const preferred = sessionsRef.current.find(
+      (session) => session.id !== currentSessionId && !session.is_external,
+    )
+    if (preferred) {
+      return preferred.id
+    }
+
+    return sessionsRef.current.find((session) => session.id !== currentSessionId)?.id ?? null
+  }, [])
   // Handler for switching to a slot's terminal
   const handleSlotSwitch = useCallback(
     (slot: TerminalSlot) => {
@@ -104,11 +114,17 @@ export function useTerminalSlotHandlers({
       if (slot.type === 'project') {
         await disableProject(slot.projectId)
       } else {
-        if (findSession(slot.sessionId)?.is_external) return
+        if (findSession(slot.sessionId)?.is_external) {
+          const targetSessionId = findDetachTargetSessionId(slot.sessionId)
+          if (targetSessionId) {
+            switchToSession(targetSessionId)
+          }
+          return
+        }
         await remove(slot.sessionId)
       }
     },
-    [removePane, disableProject, remove, findSession],
+    [removePane, disableProject, remove, findSession, findDetachTargetSessionId, switchToSession],
   )
 
   // Handler for opening prompt cleaner for a slot
