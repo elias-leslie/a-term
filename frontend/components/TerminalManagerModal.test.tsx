@@ -40,7 +40,9 @@ describe('TerminalManagerModal', () => {
         onCreateGenericTerminal={vi.fn()}
         onCreateProjectTerminal={vi.fn()}
         externalSessions={[]}
+        hiddenExternalSessions={[]}
         onAttachExternalSession={vi.fn()}
+        onRestoreExternalSession={vi.fn()}
         panes={[]}
       />,
     )
@@ -63,7 +65,9 @@ describe('TerminalManagerModal', () => {
         onCreateGenericTerminal={onCreateGenericTerminal}
         onCreateProjectTerminal={vi.fn()}
         externalSessions={[]}
+        hiddenExternalSessions={[]}
         onAttachExternalSession={vi.fn()}
+        onRestoreExternalSession={vi.fn()}
         panes={[]}
       />,
     )
@@ -98,7 +102,9 @@ describe('TerminalManagerModal', () => {
             source: 'tmux_external',
           },
         ]}
+        hiddenExternalSessions={[]}
         onAttachExternalSession={onAttachExternalSession}
+        onRestoreExternalSession={vi.fn()}
         panes={[]}
       />,
     )
@@ -106,5 +112,44 @@ describe('TerminalManagerModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /claude-terminal/i }))
 
     expect(onAttachExternalSession).toHaveBeenCalledWith('claude-terminal')
+  })
+
+  it('restores a hidden external session from the modal', () => {
+    const onAttachExternalSession = vi.fn()
+    const onRestoreExternalSession = vi.fn()
+
+    render(
+      <TerminalManagerModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onCreateGenericTerminal={vi.fn()}
+        onCreateProjectTerminal={vi.fn()}
+        externalSessions={[]}
+        hiddenExternalSessions={[
+          {
+            id: 'codex-agent-hub',
+            name: 'codex-agent-hub',
+            user_id: null,
+            project_id: 'agent-hub',
+            working_dir: '/workspace/agent-hub',
+            mode: 'codex',
+            display_order: 0,
+            is_alive: true,
+            created_at: null,
+            last_accessed_at: null,
+            is_external: true,
+            source: 'tmux_external',
+          },
+        ]}
+        onAttachExternalSession={onAttachExternalSession}
+        onRestoreExternalSession={onRestoreExternalSession}
+        panes={[]}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /codex-agent-hub/i }))
+
+    expect(onRestoreExternalSession).toHaveBeenCalledWith('codex-agent-hub')
+    expect(onAttachExternalSession).toHaveBeenCalledWith('codex-agent-hub')
   })
 })

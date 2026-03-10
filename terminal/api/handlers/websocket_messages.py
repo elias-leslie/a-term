@@ -33,6 +33,7 @@ async def _handle_resize_command(
     session_id: str,
     tmux_session_name: str | None,
     last_resize: list[int] | None,
+    resize_tmux: bool,
 ) -> tuple[int, int]:
     """Handle a resize JSON command."""
     resize = data.get("resize", {})
@@ -42,7 +43,7 @@ async def _handle_resize_command(
     # Skip PTY/tmux resize if dimensions unchanged (dedup)
     if not last_resize or cols != last_resize[0] or rows != last_resize[1]:
         resize_pty(master_fd, cols, rows)
-        if tmux_session_name:
+        if resize_tmux and tmux_session_name:
             await asyncio.to_thread(resize_tmux_window, tmux_session_name, cols, rows)
         if last_resize is not None:
             last_resize[0] = cols
@@ -58,6 +59,7 @@ async def _handle_text_message(
     session_id: str,
     tmux_session_name: str | None,
     last_resize: list[int] | None,
+    resize_tmux: bool,
 ) -> tuple[int, int] | None:
     """Handle a text WebSocket message, dispatching JSON control or raw input.
 
@@ -73,7 +75,14 @@ async def _handle_text_message(
 
         if data.get("__ctrl"):
             if "resize" in data:
-                return await _handle_resize_command(data, master_fd, session_id, tmux_session_name, last_resize)
+                return await _handle_resize_command(
+                    data,
+                    master_fd,
+                    session_id,
+                    tmux_session_name,
+                    last_resize,
+                    resize_tmux,
+                )
 
             if data.get("refresh"):
                 await asyncio.to_thread(os.write, master_fd, b"\x0c")
@@ -90,6 +99,7 @@ async def handle_websocket_message(
     session_id: str,
     tmux_session_name: str | None = None,
     last_resize: list[int] | None = None,
+    resize_tmux: bool = True,
 ) -> tuple[int, int] | None:
     """Handle a single WebSocket message.
 
@@ -111,7 +121,7 @@ async def handle_websocket_message(
     """
     if "text" in message:
         return await _handle_text_message(
-            message["text"], master_fd, session_id, tmux_session_name, last_resize
+            message["text"], master_fd, session_id, tmux_session_name, last_resize, resize_tmux
         )
 
     if "bytes" in message:

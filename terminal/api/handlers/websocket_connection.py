@@ -44,7 +44,13 @@ async def _setup_connection(
     )
     stored_target_session = session.get("last_claude_session")
     master_fd, pid = spawn_pty_for_tmux(tmux_session_name, stored_target_session)
-    await wait_for_initial_resize(websocket, master_fd, session_id, tmux_session_name)
+    await wait_for_initial_resize(
+        websocket,
+        master_fd,
+        session_id,
+        tmux_session_name,
+        resize_tmux=not bool(session.get("is_external")),
+    )
 
     scrollback = get_scrollback(tmux_session_name)
     if scrollback:
@@ -66,6 +72,7 @@ async def _run_message_loop(
     master_fd: int,
     session_id: str,
     tmux_session_name: str,
+    resize_tmux: bool,
     output_task: asyncio.Task,
     heartbeat_task: asyncio.Task,
 ) -> None:
@@ -77,7 +84,12 @@ async def _run_message_loop(
             if message["type"] == "websocket.disconnect":
                 break
             await handle_websocket_message(
-                message, master_fd, session_id, tmux_session_name, last_resize
+                message,
+                master_fd,
+                session_id,
+                tmux_session_name,
+                last_resize,
+                resize_tmux=resize_tmux,
             )
     except WebSocketDisconnect:
         logger.info("terminal_disconnected", session_id=session_id)
@@ -126,7 +138,11 @@ async def _run_session(
     heartbeat_task = asyncio.create_task(heartbeat_loop(websocket))
     try:
         await _run_message_loop(
-            websocket, master_fd, session_id, tmux_session_name,
+            websocket,
+            master_fd,
+            session_id,
+            tmux_session_name,
+            not bool(session.get("is_external")),
             output_task, heartbeat_task,
         )
     finally:

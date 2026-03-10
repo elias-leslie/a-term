@@ -17,6 +17,7 @@ async def _poll_for_resize(
     master_fd: int,
     session_id: str,
     tmux_session_name: str,
+    resize_tmux: bool,
 ) -> bool:
     """Poll WebSocket messages until a resize event is received or disconnected."""
     while True:
@@ -24,7 +25,7 @@ async def _poll_for_resize(
         if message["type"] == "websocket.disconnect":
             return False
         resize_result = await handle_websocket_message(
-            message, master_fd, session_id, tmux_session_name
+            message, master_fd, session_id, tmux_session_name, resize_tmux=resize_tmux
         )
         if resize_result is not None:
             logger.info(
@@ -41,6 +42,7 @@ async def wait_for_initial_resize(
     master_fd: int,
     session_id: str,
     tmux_session_name: str,
+    resize_tmux: bool = True,
     timeout: float = 5.0,
 ) -> bool:
     """Wait for initial resize event from frontend.
@@ -60,7 +62,13 @@ async def wait_for_initial_resize(
     """
     try:
         return await asyncio.wait_for(
-            _poll_for_resize(websocket, master_fd, session_id, tmux_session_name),
+            _poll_for_resize(
+                websocket,
+                master_fd,
+                session_id,
+                tmux_session_name,
+                resize_tmux,
+            ),
             timeout=timeout,
         )
     except TimeoutError:

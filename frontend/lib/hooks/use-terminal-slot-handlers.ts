@@ -13,6 +13,7 @@ import {
 interface UseTerminalSlotHandlersParams {
   terminalRefs: MutableRefObject<Map<string, TerminalHandle | null>>
   switchToSession: (sessionId: string) => void
+  dismissExternalSession: (sessionId: string) => void
   resetProject: (projectId: string) => Promise<void>
   reset: (sessionId: string) => Promise<TerminalSession>
   disableProject: (projectId: string) => Promise<void>
@@ -39,6 +40,7 @@ interface UseTerminalSlotHandlersParams {
 export function useTerminalSlotHandlers({
   terminalRefs,
   switchToSession,
+  dismissExternalSession,
   resetProject: _resetProject,
   reset,
   disableProject,
@@ -104,6 +106,18 @@ export function useTerminalSlotHandlers({
   // Uses pane-based deletion when available (new architecture), falls back to session-based
   const handleSlotClose = useCallback(
     async (slot: TerminalSlot | PaneSlot) => {
+      const sessionId = getSlotSessionId(slot)
+      const session = findSession(sessionId)
+
+      if (session?.is_external) {
+        dismissExternalSession(session.id)
+        const targetSessionId = findDetachTargetSessionId(session.id)
+        if (targetSessionId) {
+          switchToSession(targetSessionId)
+        }
+        return
+      }
+
       // New pane architecture: use removePane if available and slot has paneId
       if (removePane && isPaneSlot(slot)) {
         await removePane(slot.paneId)
@@ -114,17 +128,18 @@ export function useTerminalSlotHandlers({
       if (slot.type === 'project') {
         await disableProject(slot.projectId)
       } else {
-        if (findSession(slot.sessionId)?.is_external) {
-          const targetSessionId = findDetachTargetSessionId(slot.sessionId)
-          if (targetSessionId) {
-            switchToSession(targetSessionId)
-          }
-          return
-        }
         await remove(slot.sessionId)
       }
     },
-    [removePane, disableProject, remove, findSession, findDetachTargetSessionId, switchToSession],
+    [
+      removePane,
+      disableProject,
+      remove,
+      findSession,
+      findDetachTargetSessionId,
+      dismissExternalSession,
+      switchToSession,
+    ],
   )
 
   // Handler for opening prompt cleaner for a slot

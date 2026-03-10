@@ -9,6 +9,12 @@ import {
 } from './use-terminal-sessions'
 import { useResetProjectMutation } from './use-project-terminals-mutations'
 
+interface UseProjectTerminalsOptions {
+  sessionsOverride?: TerminalSession[]
+  sessionsLoadingOverride?: boolean
+  sessionsErrorOverride?: boolean
+}
+
 export interface ProjectSession {
   session: TerminalSession
   badge: number
@@ -67,7 +73,9 @@ function buildProjectTerminal(
   }
 }
 
-export function useProjectTerminals(): UseProjectTerminalsResult {
+export function useProjectTerminals(
+  options: UseProjectTerminalsOptions = {},
+): UseProjectTerminalsResult {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -79,11 +87,10 @@ export function useProjectTerminals(): UseProjectTerminalsResult {
     isError: projectsError,
   } = useProjectSettings()
 
-  const {
-    sessions,
-    isLoading: sessionsLoading,
-    isError: sessionsError,
-  } = useTerminalSessions()
+  const sessionQuery = useTerminalSessions()
+  const sessions = options.sessionsOverride ?? sessionQuery.sessions
+  const sessionsLoading = options.sessionsLoadingOverride ?? sessionQuery.isLoading
+  const sessionsError = options.sessionsErrorOverride ?? sessionQuery.isError
 
   const switchToSessionViaUrl = useCallback(
     (sessionId: string) => {

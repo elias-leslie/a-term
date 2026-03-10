@@ -1,0 +1,55 @@
+"""Tests for WebSocket control-message handling."""
+
+from __future__ import annotations
+
+import asyncio
+from unittest.mock import patch
+
+from terminal.api.handlers.websocket_messages import handle_websocket_message
+
+
+def test_handle_websocket_message_skips_tmux_resize_for_external_sessions() -> None:
+    message = {"text": '{"__ctrl": true, "resize": {"cols": 90, "rows": 28}}'}
+
+    with (
+        patch("terminal.api.handlers.websocket_messages.resize_pty") as mock_resize_pty,
+        patch("terminal.api.handlers.websocket_messages.resize_tmux_window") as mock_resize_tmux,
+    ):
+        result = asyncio.run(
+            handle_websocket_message(
+                message,
+                master_fd=7,
+                session_id="codex-agent-hub",
+                tmux_session_name="codex-agent-hub",
+                resize_tmux=False,
+            )
+        )
+
+    assert result == (90, 28)
+    mock_resize_pty.assert_called_once_with(7, 90, 28)
+    mock_resize_tmux.assert_not_called()
+
+
+def test_handle_websocket_message_resizes_tmux_for_managed_sessions() -> None:
+    message = {"text": '{"__ctrl": true, "resize": {"cols": 120, "rows": 32}}'}
+
+    with (
+        patch("terminal.api.handlers.websocket_messages.resize_pty") as mock_resize_pty,
+        patch("terminal.api.handlers.websocket_messages.resize_tmux_window") as mock_resize_tmux,
+    ):
+        result = asyncio.run(
+            handle_websocket_message(
+                message,
+                master_fd=9,
+                session_id="123e4567-e89b-12d3-a456-426614174000",
+                tmux_session_name="summitflow-123e4567-e89b-12d3-a456-426614174000",
+            )
+        )
+
+    assert result == (120, 32)
+    mock_resize_pty.assert_called_once_with(9, 120, 32)
+    mock_resize_tmux.assert_called_once_with(
+        "summitflow-123e4567-e89b-12d3-a456-426614174000",
+        120,
+        32,
+    )

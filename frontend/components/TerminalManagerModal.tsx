@@ -17,7 +17,9 @@ interface TerminalManagerModalProps {
   onCreateGenericTerminal: () => void
   onCreateProjectTerminal: (projectId: string, rootPath: string | null) => void
   externalSessions: TerminalSession[]
+  hiddenExternalSessions: TerminalSession[]
   onAttachExternalSession: (sessionId: string) => void
+  onRestoreExternalSession: (sessionId: string) => void
   panes: TerminalPane[]
 }
 
@@ -93,7 +95,9 @@ export function TerminalManagerModal({
   onCreateGenericTerminal,
   onCreateProjectTerminal,
   externalSessions,
+  hiddenExternalSessions,
   onAttachExternalSession,
+  onRestoreExternalSession,
   panes,
 }: TerminalManagerModalProps) {
   const { projects } = useProjectSettings()
@@ -140,6 +144,13 @@ export function TerminalManagerModal({
       `${session.name} ${session.project_id ?? ''} ${session.working_dir ?? ''} ${session.mode}`.toLowerCase().includes(normalizedSearch)
     )
   }, [externalSessions, normalizedSearch])
+  const visibleHiddenExternalSessions = useMemo(() => {
+    const sorted = [...hiddenExternalSessions].sort((a, b) => a.name.localeCompare(b.name))
+    if (!normalizedSearch) return sorted
+    return sorted.filter((session) =>
+      `${session.name} ${session.project_id ?? ''} ${session.working_dir ?? ''} ${session.mode}`.toLowerCase().includes(normalizedSearch)
+    )
+  }, [hiddenExternalSessions, normalizedSearch])
 
   const closeAndReset = () => { setSearchQuery(''); onClose() }
 
@@ -151,6 +162,11 @@ export function TerminalManagerModal({
   const handleCreateGeneric = () => { onCreateGenericTerminal(); closeAndReset() }
   const handleExternalSessionClick = (session: TerminalSession) => {
     setSearchQuery('')
+    onAttachExternalSession(session.id)
+  }
+  const handleRestoreExternalSession = (session: TerminalSession) => {
+    setSearchQuery('')
+    onRestoreExternalSession(session.id)
     onAttachExternalSession(session.id)
   }
 
@@ -281,6 +297,37 @@ export function TerminalManagerModal({
                 {visibleExternalSessions.length === 0 && (
                   <p className="px-3 py-6 text-center text-sm" style={{ color: 'var(--term-text-muted)' }}>
                     No external sessions match &quot;{deferredSearchQuery.trim()}&quot;.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {hiddenExternalSessions.length > 0 && (
+            <div className="px-4 pb-5">
+              <div className="mb-2 flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.14em]" style={{ color: 'var(--term-text-muted)', fontFamily: 'var(--font-mono)' }}>
+                <span>Hidden External Sessions</span>
+                <span>{visibleHiddenExternalSessions.length} hidden</span>
+              </div>
+              <div className="rounded-lg p-2" style={{ backgroundColor: 'rgba(10, 14, 20, 0.35)', border: '1px solid var(--term-border)' }}>
+                <div className="max-h-[180px] overflow-y-auto space-y-1 pr-1">
+                  {visibleHiddenExternalSessions.map((session) => (
+                    <TerminalButton
+                      key={session.id}
+                      icon={<Terminal size={16} style={iconStyle} />}
+                      label={session.name}
+                      description={`${session.project_id ?? 'external'} • ${session.mode} • ${session.working_dir ?? 'unknown dir'}`}
+                      paneCount={0}
+                      hoverColor="var(--term-accent)"
+                      defaultColor="var(--term-text-secondary)"
+                      actionLabel="Restore"
+                      onClick={() => handleRestoreExternalSession(session)}
+                    />
+                  ))}
+                </div>
+                {visibleHiddenExternalSessions.length === 0 && (
+                  <p className="px-3 py-4 text-center text-sm" style={{ color: 'var(--term-text-muted)' }}>
+                    No hidden external sessions match &quot;{deferredSearchQuery.trim()}&quot;.
                   </p>
                 )}
               </div>
