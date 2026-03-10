@@ -6,6 +6,7 @@ import { generatePaneName } from './terminal-handler-utils'
 
 interface UseAutoCreatePaneProps {
   panes: Array<{ pane_type: string }>
+  hasVisibleExternalSlot: boolean
   isLoading: boolean
   hasLoadedOnce: boolean
   isPaneCreating: boolean
@@ -24,6 +25,7 @@ interface UseAutoCreatePaneProps {
  */
 export function useAutoCreatePane({
   panes,
+  hasVisibleExternalSlot,
   isLoading,
   hasLoadedOnce,
   isPaneCreating,
@@ -55,7 +57,7 @@ export function useAutoCreatePane({
     if (prevLength === null && !initialLoadProcessed.current) {
       initialLoadProcessed.current = true
 
-      if (currLength === 0) {
+      if (currLength === 0 && !hasVisibleExternalSlot) {
         isAutoCreatingRef.current = true
         const adHocCount = panes.filter((p) => p.pane_type === 'adhoc').length
         fetch(buildApiUrl('/api/terminal/panes/count'))
@@ -92,7 +94,12 @@ export function useAutoCreatePane({
     }
 
     // Case 2: Last pane closed (N→0 transition, where N > 0)
-    if (prevLength !== null && prevLength > 0 && currLength === 0) {
+    if (
+      prevLength !== null &&
+      prevLength > 0 &&
+      currLength === 0 &&
+      !hasVisibleExternalSlot
+    ) {
       isAutoCreatingRef.current = true
       const adHocCount = panes.filter((p) => p.pane_type === 'adhoc').length
       createAdHocPane(generatePaneName('Ad-Hoc Terminal', adHocCount))
@@ -113,6 +120,7 @@ export function useAutoCreatePane({
     isLoading,
     hasLoadedOnce,
     panes,
+    hasVisibleExternalSlot,
     isPaneCreating,
     createAdHocPane,
     switchToSession,

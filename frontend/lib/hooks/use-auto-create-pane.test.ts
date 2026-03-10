@@ -21,6 +21,7 @@ describe('useAutoCreatePane', () => {
     renderHook(() =>
       useAutoCreatePane({
         panes: [],
+        hasVisibleExternalSlot: false,
         isLoading: false,
         hasLoadedOnce: false,
         isPaneCreating: false,
@@ -54,6 +55,7 @@ describe('useAutoCreatePane', () => {
     renderHook(() =>
       useAutoCreatePane({
         panes: [],
+        hasVisibleExternalSlot: false,
         isLoading: false,
         hasLoadedOnce: true,
         isPaneCreating: false,
@@ -67,5 +69,29 @@ describe('useAutoCreatePane', () => {
     })
 
     expect(switchToSession).toHaveBeenCalledWith('session-1')
+  })
+
+  it('does not auto-create when an external slot is still visible', async () => {
+    const createAdHocPane = vi.fn()
+    const switchToSession = vi.fn()
+
+    renderHook(() =>
+      useAutoCreatePane({
+        panes: [],
+        hasVisibleExternalSlot: true,
+        isLoading: false,
+        hasLoadedOnce: true,
+        isPaneCreating: false,
+        createAdHocPane,
+        switchToSession,
+      }),
+    )
+
+    await waitFor(() => {
+      expect(createAdHocPane).not.toHaveBeenCalled()
+    }, { timeout: 100 })
+
+    expect(mockFetch).not.toHaveBeenCalled()
+    expect(switchToSession).not.toHaveBeenCalled()
   })
 })
