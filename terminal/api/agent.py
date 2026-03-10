@@ -10,7 +10,7 @@ Provides:
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, cast
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
@@ -24,7 +24,11 @@ from ..services.agent_service import (
 )
 from ..storage import agent_tools as agent_tools_store
 from ..storage import terminal as terminal_store
-from ..utils.tmux import get_tmux_session_name, tmux_session_exists_by_name
+from ..utils.tmux import (
+    get_external_agent_tmux_session,
+    get_tmux_session_name,
+    tmux_session_exists_by_name,
+)
 
 router = APIRouter(tags=["Agent Integration"])
 logger = get_logger(__name__)
@@ -85,6 +89,12 @@ def _early_return(session_id: str, state: AgentState, msg: str) -> StartAgentRes
     return StartAgentResponse(session_id=session_id, started=False, message=msg, claude_state=state)
 
 
+def _normalize_agent_state(value: object) -> AgentState:
+    if value in {"not_started", "starting", "running", "stopped", "error"}:
+        return cast(AgentState, value)
+    return "not_started"
+
+
 # ============================================================================
 # Endpoints
 # ============================================================================
@@ -96,11 +106,16 @@ def _early_return(session_id: str, state: AgentState, msg: str) -> StartAgentRes
 )
 async def get_agent_state_endpoint(session_id: str) -> AgentStateResponse:
     """Get agent state for a terminal session."""
+    external_session = get_external_agent_tmux_session(session_id)
+    if external_session:
+        claude_state = _normalize_agent_state(external_session.get("claude_state", "not_started"))
+        return AgentStateResponse(session_id=session_id, claude_state=claude_state)
+
     session = terminal_store.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail=f"Session {session_id} not found") from None
 
-    claude_state: AgentState = session.get("claude_state", "not_started")
+    claude_state = _normalize_agent_state(session.get("claude_state", "not_started"))
     return AgentStateResponse(session_id=session_id, claude_state=claude_state)
 
 
@@ -125,6 +140,14 @@ async def start_agent(session_id: str, background_tasks: BackgroundTasks) -> Sta
     Looks up the agent tool from the session's mode → agent_tools table
     to get the command and process_name.
     """
+    external = get_external_agent_tmux_session(session_id)
+    if external:
+        return _early_return(
+            session_id,
+            _normalize_agent_state(external.get("claude_state", "running")),
+            "External tmux agent session is already running",
+        )
+
     session = terminal_store.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail=f"Session {session_id} not found") from None

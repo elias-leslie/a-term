@@ -17,6 +17,10 @@ export interface TerminalSession {
   created_at: string | null
   last_accessed_at: string | null
   claude_state?: 'not_started' | 'starting' | 'running' | 'stopped' | 'error'
+  tmux_session_name?: string | null
+  tmux_pane_id?: string | null
+  is_external?: boolean
+  source?: string | null
 }
 
 interface SessionListResponse {

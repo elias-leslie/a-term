@@ -56,6 +56,12 @@ export function useTerminalSlotHandlers({
   // Ref to avoid stale closure on sessions in handleSlotModeSwitch
   const sessionsRef = useRef(sessions)
   useEffect(() => { sessionsRef.current = sessions }, [sessions])
+
+  const findSession = useCallback(
+    (sessionId: string | null | undefined) =>
+      sessionId ? sessionsRef.current.find((session) => session.id === sessionId) ?? null : null,
+    [],
+  )
   // Handler for switching to a slot's terminal
   const handleSlotSwitch = useCallback(
     (slot: TerminalSlot) => {
@@ -73,6 +79,7 @@ export function useTerminalSlotHandlers({
     async (slot: TerminalSlot) => {
       const sessionId = slot.type === 'project' ? slot.activeSessionId : slot.sessionId
       if (!sessionId) return
+      if (findSession(sessionId)?.is_external) return
 
       const newSession = await reset(sessionId)
       // Invalidate panes so the slot picks up the new session ID
@@ -80,7 +87,7 @@ export function useTerminalSlotHandlers({
       // Navigate to the new session so the terminal re-renders with the fresh connection
       switchToSession(newSession.id)
     },
-    [reset, switchToSession, queryClient],
+    [findSession, reset, switchToSession, queryClient],
   )
 
   // Handler for closing a slot's terminal
@@ -97,10 +104,11 @@ export function useTerminalSlotHandlers({
       if (slot.type === 'project') {
         await disableProject(slot.projectId)
       } else {
+        if (findSession(slot.sessionId)?.is_external) return
         await remove(slot.sessionId)
       }
     },
-    [removePane, disableProject, remove],
+    [removePane, disableProject, remove, findSession],
   )
 
   // Handler for opening prompt cleaner for a slot

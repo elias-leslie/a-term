@@ -7,7 +7,7 @@ from typing import Any
 from ...logging_config import get_logger
 from ...services import lifecycle
 from ...storage import terminal as terminal_store
-from ...utils.tmux import get_tmux_session_name
+from ...utils.tmux import get_external_agent_tmux_session, get_tmux_session_name
 
 logger = get_logger(__name__)
 
@@ -24,6 +24,10 @@ def validate_and_prepare_session(session_id: str) -> tuple[dict[str, Any], str]:
     Raises:
         ValueError: If session is invalid or cannot be restored
     """
+    external_session = get_external_agent_tmux_session(session_id)
+    if external_session is not None:
+        return external_session, str(external_session.get("tmux_session_name") or session_id)
+
     # Check if session exists in DB and ensure tmux is alive
     # This will recreate tmux if the DB record exists but tmux died
     try:

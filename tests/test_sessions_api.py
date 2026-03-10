@@ -59,22 +59,50 @@ def test_list_sessions_returns_items(test_app: TestClient) -> None:
     """GET /api/terminal/sessions -- returns list of alive sessions."""
     # Arrange
     sessions = [_make_session(name="s1"), _make_session(name="s2")]
-    with patch("terminal.api.sessions.terminal_store.list_sessions", return_value=sessions):
+    external = [
+        {
+            "id": "claude-summitflow",
+            "name": "claude-summitflow",
+            "user_id": None,
+            "project_id": "summitflow",
+            "working_dir": "/home/kasadis/summitflow",
+            "display_order": 0,
+            "mode": "claude",
+            "session_number": 0,
+            "is_alive": True,
+            "created_at": None,
+            "last_accessed_at": None,
+            "claude_state": "running",
+            "tmux_session_name": "claude-summitflow",
+            "tmux_pane_id": "%20",
+            "is_external": True,
+            "source": "tmux_external",
+        }
+    ]
+    with (
+        patch("terminal.api.sessions.terminal_store.list_sessions", return_value=sessions),
+        patch("terminal.api.sessions.list_external_agent_tmux_sessions", return_value=external),
+    ):
         # Act
         response = test_app.get("/api/terminal/sessions")
 
     # Assert
     assert response.status_code == 200
     body = response.json()
-    assert body["total"] == 2
-    assert len(body["items"]) == 2
+    assert body["total"] == 3
+    assert len(body["items"]) == 3
     assert body["items"][0]["name"] == "s1"
+    assert body["items"][2]["id"] == "claude-summitflow"
+    assert body["items"][2]["is_external"] is True
 
 
 def test_list_sessions_empty_returns_zero_total(test_app: TestClient) -> None:
     """GET /api/terminal/sessions -- empty list returns total=0."""
     # Arrange
-    with patch("terminal.api.sessions.terminal_store.list_sessions", return_value=[]):
+    with (
+        patch("terminal.api.sessions.terminal_store.list_sessions", return_value=[]),
+        patch("terminal.api.sessions.list_external_agent_tmux_sessions", return_value=[]),
+    ):
         # Act
         response = test_app.get("/api/terminal/sessions")
 
@@ -104,6 +132,38 @@ def test_get_session_found_returns_200(test_app: TestClient) -> None:
     assert response.json()["name"] == "My Terminal"
 
 
+def test_get_external_session_found_returns_200(test_app: TestClient) -> None:
+    """GET /api/terminal/sessions/{id} -- external tmux session returns 200."""
+    external = {
+        "id": "codex-summitflow",
+        "name": "codex-summitflow",
+        "user_id": None,
+        "project_id": "summitflow",
+        "working_dir": "/home/kasadis/summitflow",
+        "display_order": 0,
+        "mode": "codex",
+        "session_number": 0,
+        "is_alive": True,
+        "created_at": None,
+        "last_accessed_at": None,
+        "claude_state": "running",
+        "tmux_session_name": "codex-summitflow",
+        "tmux_pane_id": "%21",
+        "is_external": True,
+        "source": "tmux_external",
+    }
+    with (
+        patch("terminal.api.sessions.terminal_store.get_session", return_value=None),
+        patch("terminal.api.sessions.get_external_agent_tmux_session", return_value=external),
+    ):
+        response = test_app.get("/api/terminal/sessions/codex-summitflow")
+
+    assert response.status_code == 200
+    assert response.json()["id"] == "codex-summitflow"
+    assert response.json()["tmux_session_name"] == "codex-summitflow"
+    assert response.json()["is_external"] is True
+
+
 def test_get_session_not_found_returns_404(test_app: TestClient) -> None:
     """GET /api/terminal/sessions/{id} -- missing session returns 404."""
     # Arrange
@@ -116,10 +176,13 @@ def test_get_session_not_found_returns_404(test_app: TestClient) -> None:
     assert response.status_code == 404
 
 
-def test_get_session_invalid_uuid_returns_400(test_app: TestClient) -> None:
-    """GET /api/terminal/sessions/{id} -- malformed UUID returns 400."""
-    # Act
-    response = test_app.get("/api/terminal/sessions/not-a-uuid")
+def test_get_session_unknown_external_ref_returns_400(test_app: TestClient) -> None:
+    """GET /api/terminal/sessions/{id} -- invalid non-external ref returns 400."""
+    with (
+        patch("terminal.api.sessions.terminal_store.get_session", return_value=None),
+        patch("terminal.api.sessions.get_external_agent_tmux_session", return_value=None),
+    ):
+        response = test_app.get("/api/terminal/sessions/not-a-uuid")
 
     # Assert
     assert response.status_code == 400
@@ -164,6 +227,39 @@ def test_update_session_not_found_returns_404(test_app: TestClient) -> None:
 
     # Assert
     assert response.status_code == 404
+
+
+def test_update_external_session_returns_400(test_app: TestClient) -> None:
+    """PATCH /api/terminal/sessions/{id} -- external sessions are read-only."""
+    external = {
+        "id": "claude-summitflow",
+        "name": "claude-summitflow",
+        "user_id": None,
+        "project_id": "summitflow",
+        "working_dir": "/home/kasadis/summitflow",
+        "display_order": 0,
+        "mode": "claude",
+        "session_number": 0,
+        "is_alive": True,
+        "created_at": None,
+        "last_accessed_at": None,
+        "claude_state": "running",
+        "tmux_session_name": "claude-summitflow",
+        "tmux_pane_id": "%20",
+        "is_external": True,
+        "source": "tmux_external",
+    }
+    with (
+        patch("terminal.api.sessions.terminal_store.get_session", return_value=None),
+        patch("terminal.api.sessions.get_external_agent_tmux_session", return_value=external),
+    ):
+        response = test_app.patch(
+            f"/api/terminal/sessions/{uuid.uuid4()}",
+            json={"name": "New Name"},
+        )
+
+    assert response.status_code == 400
+    assert "read-only" in response.json()["detail"]
 
 
 def test_update_session_no_fields_returns_existing(test_app: TestClient) -> None:

@@ -10,6 +10,7 @@ import os
 import re
 import subprocess
 import uuid as _uuid_mod
+from pathlib import Path
 
 from ..config import TMUX_DEFAULT_COLS, TMUX_DEFAULT_ROWS
 from ..logging_config import get_logger
@@ -18,6 +19,7 @@ logger = get_logger(__name__)
 
 TMUX_COMMAND_TIMEOUT = 10  # seconds for tmux subprocess calls
 _SESSION_NAME_PATTERN = re.compile(r"^[a-zA-Z0-9_\-]+$")
+_EXTERNAL_AGENT_TOKENS = ("claude", "codex", "opencode", "aider", "gemini")
 
 # Secrets filtered from tmux session environments
 FILTERED_ENV_VARS = {
@@ -76,6 +78,11 @@ def run_tmux_command(args: list[str], check: bool = False) -> tuple[bool, str]:
 def get_tmux_session_name(session_id: str) -> str:
     """Convert session ID to tmux session name."""
     return f"summitflow-{session_id}"
+
+
+def is_managed_tmux_session_name(session_name: str) -> bool:
+    """Return True when the tmux session belongs to Terminal-managed UUID sessions."""
+    return session_name.startswith("summitflow-") and _is_valid_uuid(session_name[len("summitflow-"):])
 
 
 def tmux_session_exists_by_name(session_name: str) -> bool:
@@ -156,6 +163,88 @@ def _is_valid_uuid(value: str) -> bool:
         return True
     except ValueError:
         return False
+
+
+def _infer_external_mode(session_name: str, current_command: str) -> tuple[str, str]:
+    label = f"{session_name} {current_command}".lower()
+    for token in _EXTERNAL_AGENT_TOKENS:
+        if token in label:
+            return token, "running"
+    return "shell", "not_started"
+
+
+def _infer_project_id(working_dir: str | None) -> str | None:
+    if not working_dir:
+        return None
+    try:
+        root = subprocess.run(
+            ["git", "-C", working_dir, "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            timeout=TMUX_COMMAND_TIMEOUT,
+            check=False,
+        ).stdout.strip()
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if not root:
+        return None
+    return Path(root).name
+
+
+def list_external_agent_tmux_sessions() -> list[dict[str, object]]:
+    """List externally created tmux agent sessions that Terminal can attach to."""
+    success, output = run_tmux_command(
+        [
+            "list-panes",
+            "-a",
+            "-F",
+            "#{session_name}\t#{pane_id}\t#{pane_current_path}\t#{pane_current_command}",
+        ]
+    )
+    if not success:
+        return []
+
+    sessions: dict[str, dict[str, object]] = {}
+    for line in output.splitlines():
+        parts = line.split("\t")
+        if len(parts) != 4:
+            continue
+        session_name, pane_id, working_dir, current_command = parts
+        if not session_name or is_managed_tmux_session_name(session_name):
+            continue
+        mode, claude_state = _infer_external_mode(session_name, current_command)
+        if mode == "shell":
+            continue
+        existing = sessions.get(session_name)
+        if existing and existing.get("working_dir"):
+            continue
+        sessions[session_name] = {
+            "id": session_name,
+            "name": session_name,
+            "user_id": None,
+            "project_id": _infer_project_id(working_dir or None),
+            "working_dir": working_dir or None,
+            "display_order": 0,
+            "mode": mode,
+            "session_number": 0,
+            "is_alive": True,
+            "created_at": None,
+            "last_accessed_at": None,
+            "claude_state": claude_state,
+            "tmux_session_name": session_name,
+            "tmux_pane_id": pane_id or None,
+            "is_external": True,
+            "source": "tmux_external",
+        }
+    return sorted(sessions.values(), key=lambda row: str(row.get("name") or ""))
+
+
+def get_external_agent_tmux_session(session_ref: str) -> dict[str, object] | None:
+    """Return one external tmux agent session by its synthetic id or tmux session name."""
+    for session in list_external_agent_tmux_sessions():
+        if session.get("id") == session_ref or session.get("tmux_session_name") == session_ref:
+            return session
+    return None
 
 
 def list_tmux_sessions() -> set[str]:

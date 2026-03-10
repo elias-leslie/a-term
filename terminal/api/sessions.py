@@ -19,6 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from ..rate_limit import limiter
 from ..services import lifecycle
 from ..storage import terminal as terminal_store
+from ..utils.tmux import get_external_agent_tmux_session, list_external_agent_tmux_sessions
 from .validators import validate_uuid
 
 router = APIRouter(tags=["Terminal Sessions"])
@@ -46,6 +47,10 @@ class TerminalSessionResponse(BaseModel):
     created_at: str | None
     last_accessed_at: str | None
     claude_state: str | None = None  # not_started, starting, running, stopped, error
+    tmux_session_name: str | None = None
+    tmux_pane_id: str | None = None
+    is_external: bool = False
+    source: str | None = None
 
 
 class TerminalSessionListResponse(BaseModel):
@@ -75,18 +80,23 @@ async def list_sessions() -> TerminalSessionListResponse:
     Sessions are ordered by display_order, then created_at.
     """
     sessions = terminal_store.list_sessions(include_dead=False)
+    external_sessions = list_external_agent_tmux_sessions()
+    all_sessions = [*sessions, *external_sessions]
 
     return TerminalSessionListResponse(
-        items=[TerminalSessionResponse.model_validate(s) for s in sessions],
-        total=len(sessions),
+        items=[TerminalSessionResponse.model_validate(s) for s in all_sessions],
+        total=len(all_sessions),
     )
 
 
 @router.get("/api/terminal/sessions/{session_id}", response_model=TerminalSessionResponse)
 async def get_session(session_id: str) -> TerminalSessionResponse:
     """Get a single terminal session by ID."""
-    validate_uuid(session_id)
+    external_session = get_external_agent_tmux_session(session_id)
+    if external_session:
+        return TerminalSessionResponse.model_validate(external_session)
 
+    validate_uuid(session_id)
     session = terminal_store.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail=f"Session {session_id} not found") from None
@@ -104,6 +114,8 @@ async def update_session(session_id: str, request: UpdateSessionRequest) -> Term
 
     # Verify session exists
     existing = terminal_store.get_session(session_id)
+    if not existing and get_external_agent_tmux_session(session_id):
+        raise HTTPException(status_code=400, detail="External tmux sessions are read-only") from None
     if not existing:
         raise HTTPException(status_code=404, detail=f"Session {session_id} not found") from None
 
