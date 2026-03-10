@@ -8,6 +8,18 @@ import type { LayoutMode } from '@/lib/constants/terminal'
 import type { ConnectionStatus } from './terminal.types'
 import { getSlotPanelId } from '@/lib/utils/slot'
 
+export function getLayoutRemountKey(
+  layoutMode: LayoutMode,
+  terminalSlots: (TerminalSlot | PaneSlot)[],
+): string {
+  const externalSlotIds = terminalSlots
+    .filter((slot) => slot.type === 'adhoc' && slot.isExternal)
+    .map((slot) => getSlotPanelId(slot))
+    .join('|')
+
+  return `${layoutMode}:${externalSlotIds}`
+}
+
 interface TerminalLayoutRendererProps {
   // Slots (pane-based architecture)
   terminalSlots: (TerminalSlot | PaneSlot)[]
@@ -95,7 +107,7 @@ export function TerminalLayoutRenderer({
   initialLayouts,
   onVoice,
 }: TerminalLayoutRendererProps) {
-  const layoutKey = `${layoutMode}:${terminalSlots.map((slot) => getSlotPanelId(slot)).join('|')}`
+  const layoutKey = getLayoutRemountKey(layoutMode, terminalSlots)
 
   return (
     <ResizablePaneLayout

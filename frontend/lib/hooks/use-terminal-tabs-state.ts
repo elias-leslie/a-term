@@ -142,6 +142,7 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
         sessionId: activeSession.id,
         name: activeSession.name,
         workingDir: activeSession.working_dir,
+        isExternal: true,
       },
     ]
   }, [activeSession, panes])

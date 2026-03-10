@@ -34,6 +34,7 @@ export interface AdHocSlot {
   sessionId: string
   name: string
   workingDir: string | null
+  isExternal?: boolean
 }
 
 export type TerminalSlot = ProjectSlot | AdHocSlot
