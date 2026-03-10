@@ -18,6 +18,10 @@ export function useLocalStorageState<T>(
     (newValue: T) => {
       setValue(newValue)
       try {
+        if (newValue === null || typeof newValue === 'undefined') {
+          localStorage.removeItem(key)
+          return
+        }
         localStorage.setItem(key, JSON.stringify(newValue))
       } catch {
         // Ignore localStorage errors

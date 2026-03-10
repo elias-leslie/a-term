@@ -47,12 +47,51 @@ describe('TerminalManagerModal', () => {
       />,
     )
 
-    fireEvent.change(screen.getByLabelText('Search Projects'), {
+    fireEvent.change(screen.getByLabelText('Search Terminals'), {
       target: { value: 'agent' },
     })
 
     expect(screen.getByText('Agent Hub')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^Terminal$/ })).not.toBeInTheDocument()
+  })
+
+  it('filters external sessions by the shared search input', () => {
+    render(
+      <TerminalManagerModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onCreateGenericTerminal={vi.fn()}
+        onCreateProjectTerminal={vi.fn()}
+        externalSessions={[
+          {
+            id: 'claude-terminal',
+            name: 'claude-terminal',
+            user_id: null,
+            project_id: 'terminal',
+            working_dir: '/workspace/terminal',
+            mode: 'claude',
+            display_order: 0,
+            is_alive: true,
+            created_at: null,
+            last_accessed_at: null,
+            is_external: true,
+            source: 'tmux_external',
+          },
+        ]}
+        hiddenExternalSessions={[]}
+        onAttachExternalSession={vi.fn()}
+        onRestoreExternalSession={vi.fn()}
+        panes={[]}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Search Terminals'), {
+      target: { value: 'claude' },
+    })
+
+    expect(
+      screen.getByRole('button', { name: /claude-terminal/i }),
+    ).toBeInTheDocument()
   })
 
   it('creates an ad-hoc terminal from quick start', () => {

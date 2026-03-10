@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { useLocalStorageState } from './use-local-storage-state'
 import {
   type ProjectTerminal,
@@ -134,13 +134,16 @@ export interface UseActiveSessionResult {
 export function useActiveSession(): UseActiveSessionResult {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [persistedSessionId, setPersistedSessionId] = useState<string | null>(
-    () => window.localStorage.getItem(LAST_ACTIVE_SESSION_KEY)
-  )
-  const [dismissedExternalSessionIds, setDismissedExternalSessionIds] = useLocalStorageState<string[]>(
-    DISMISSED_EXTERNAL_SESSIONS_KEY,
-    [],
-  )
+  const [persistedSessionId, setPersistedSessionId] =
+    useLocalStorageState<string | null>(
+      LAST_ACTIVE_SESSION_KEY,
+      null,
+    )
+  const [dismissedExternalSessionIds, setDismissedExternalSessionIds] =
+    useLocalStorageState<string[]>(
+      DISMISSED_EXTERNAL_SESSIONS_KEY,
+      [],
+    )
 
   // Get session data from existing hooks
   const {
@@ -212,17 +215,13 @@ export function useActiveSession(): UseActiveSessionResult {
   }, [activeSessionId, urlSessionId, searchParamsString, router])
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-
     if (!activeSessionId) {
-      window.localStorage.removeItem(LAST_ACTIVE_SESSION_KEY)
       setPersistedSessionId(null)
       return
     }
 
-    window.localStorage.setItem(LAST_ACTIVE_SESSION_KEY, activeSessionId)
     setPersistedSessionId(activeSessionId)
-  }, [activeSessionId])
+  }, [activeSessionId, setPersistedSessionId])
 
   // Switch to a different session by updating the URL
   const switchToSession = useCallback(

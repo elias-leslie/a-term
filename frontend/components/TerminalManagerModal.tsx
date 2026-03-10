@@ -194,7 +194,7 @@ export function TerminalManagerModal({
                 TERMINALS
               </Dialog.Title>
               <Dialog.Description className="mt-1 text-xs" style={{ color: 'var(--term-text-muted)' }}>
-                Launch a project terminal or open a fresh ad-hoc shell.
+                Launch a project terminal, open a fresh ad-hoc shell, or attach an external tmux session.
               </Dialog.Description>
             </div>
             <Dialog.Close asChild>
@@ -214,7 +214,7 @@ export function TerminalManagerModal({
           {/* Search */}
           <div className="p-4">
             <label htmlFor="terminal-manager-search" className="mb-2 block text-[11px] font-medium uppercase tracking-[0.14em]" style={{ color: 'var(--term-text-muted)', fontFamily: 'var(--font-mono)' }}>
-              Search Projects
+              Search Terminals
             </label>
             <input
               ref={searchRef}
@@ -222,7 +222,7 @@ export function TerminalManagerModal({
               type="text"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Filter by project name or path"
+              placeholder="Filter by project, external session, or path"
               className="w-full rounded-md px-3 py-2.5 text-sm outline-none transition-colors"
               style={{ backgroundColor: 'var(--term-bg-surface)', border: '1px solid var(--term-border)', color: 'var(--term-text-primary)', fontFamily: 'var(--font-mono)' }}
             />
