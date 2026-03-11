@@ -152,7 +152,11 @@ function parseSettings(parsed: Record<string, unknown>): TerminalSettings {
 function saveSettings(settings: TerminalSettings, projectId?: string): void {
   if (typeof window === 'undefined') return
   const storageKey = getStorageKey(projectId)
-  localStorage.setItem(storageKey, JSON.stringify(settings))
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(settings))
+  } catch {
+    // Ignore storage failures and keep the in-memory state.
+  }
 }
 
 function sameSettings(left: TerminalSettings, right: TerminalSettings): boolean {

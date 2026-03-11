@@ -1,5 +1,5 @@
-import { renderHook, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { act, renderHook, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTerminalSettings } from './use-terminal-settings'
 
 interface HookProps {
@@ -109,5 +109,25 @@ describe('useTerminalSettings', () => {
     expect(result.current.cursorStyle).toBe('underline')
     expect(result.current.cursorBlink).toBe(true)
     expect(result.current.themeId).toBe('tokyo-night')
+  })
+
+  it('keeps updating in-memory settings when storage writes fail', () => {
+    const setItemSpy = vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => {
+        throw new Error('quota exceeded')
+      })
+
+    const { result } = renderHook(() => useTerminalSettings())
+
+    expect(() => {
+      act(() => {
+        result.current.setThemeId('dracula')
+      })
+    }).not.toThrow()
+
+    expect(result.current.themeId).toBe('dracula')
+
+    setItemSpy.mockRestore()
   })
 })
