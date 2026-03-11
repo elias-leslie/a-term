@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useState } from 'react'
 
 export type PaneLayoutGroups = Record<string, number[]>
+interface PaneLayoutGroupState {
+  storageKey: string
+  groups: PaneLayoutGroups
+}
 
 function sameSizes(left: number[] | undefined, right: number[]): boolean {
   if (!left || left.length !== right.length) return false
@@ -24,28 +28,44 @@ function readPaneLayoutGroups(storageKey: string): PaneLayoutGroups {
 }
 
 export function usePaneLayoutGroups(storageKey: string) {
-  const [groups, setGroups] = useState<PaneLayoutGroups>(() =>
-    readPaneLayoutGroups(storageKey),
-  )
+  const [state, setState] = useState<PaneLayoutGroupState>(() => ({
+    storageKey,
+    groups: readPaneLayoutGroups(storageKey),
+  }))
+  const groups =
+    state.storageKey === storageKey
+      ? state.groups
+      : readPaneLayoutGroups(storageKey)
 
   useEffect(() => {
-    setGroups(readPaneLayoutGroups(storageKey))
+    setState({
+      storageKey,
+      groups: readPaneLayoutGroups(storageKey),
+    })
   }, [storageKey])
 
   const updateGroupSizes = useCallback(
     (groupId: string, sizes: number[]) => {
-      setGroups((current) => {
-        if (sameSizes(current[groupId], sizes)) {
+      setState((current) => {
+        const currentGroups =
+          current.storageKey === storageKey
+            ? current.groups
+            : readPaneLayoutGroups(storageKey)
+
+        if (sameSizes(currentGroups[groupId], sizes)) {
           return current
         }
 
-        const next = { ...current, [groupId]: sizes }
+        const nextGroups = { ...currentGroups, [groupId]: sizes }
         try {
-          localStorage.setItem(storageKey, JSON.stringify(next))
+          localStorage.setItem(storageKey, JSON.stringify(nextGroups))
         } catch {
           // Ignore storage failures and keep the in-memory state.
         }
-        return next
+        return {
+          storageKey,
+          groups: nextGroups,
+        }
       })
     },
     [storageKey],
