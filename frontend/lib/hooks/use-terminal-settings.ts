@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { TERMINAL_THEMES, type TerminalThemeId } from '../constants/terminal'
 
 // Re-export theme type and themes for convenience
@@ -155,6 +155,17 @@ function saveSettings(settings: TerminalSettings, projectId?: string): void {
   localStorage.setItem(storageKey, JSON.stringify(settings))
 }
 
+function sameSettings(left: TerminalSettings, right: TerminalSettings): boolean {
+  return (
+    left.fontId === right.fontId &&
+    left.fontSize === right.fontSize &&
+    left.scrollback === right.scrollback &&
+    left.cursorStyle === right.cursorStyle &&
+    left.cursorBlink === right.cursorBlink &&
+    left.themeId === right.themeId
+  )
+}
+
 /**
  * Hook for terminal visual settings.
  *
@@ -167,8 +178,13 @@ export function useTerminalSettings(projectId?: string) {
   const [settings, setSettings] = useState<TerminalSettings>(() =>
     loadSettings(projectId),
   )
-  // isLoaded is now always true after initial render since we use lazy init
-  const isLoaded = true
+
+  useEffect(() => {
+    const nextSettings = loadSettings(projectId)
+    setSettings((current) =>
+      sameSettings(current, nextSettings) ? current : nextSettings,
+    )
+  }, [projectId])
 
   // Get the font family string for the current font
   const fontFamily =
@@ -259,6 +275,5 @@ export function useTerminalSettings(projectId?: string) {
     setCursorStyle,
     setCursorBlink,
     setThemeId,
-    isLoaded,
   }
 }
