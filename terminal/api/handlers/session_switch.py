@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hmac
 import uuid
 from typing import Any
 
@@ -12,6 +11,7 @@ from fastapi.responses import JSONResponse
 from ...logging_config import get_logger
 from ...storage import terminal as terminal_store
 from ...utils.tmux import validate_session_name
+from .internal_auth import extract_internal_token, verify_internal_token
 
 logger = get_logger(__name__)
 
@@ -34,36 +34,8 @@ LOG_SWITCH_TO_BASE = "session_switch_to_base"
 LOG_SWITCH_DETECTED = "session_switch_detected"
 LOG_INVALID_SESSION_ID = "invalid_session_id"
 
-# App state attribute name
-APP_STATE_TOKEN_ATTR = "internal_token"
-
 # Error messages
 ERROR_INVALID_SESSION_ID = "Invalid session ID format"
-
-
-def _extract_token(request: Request, query_token: str) -> str:
-    """Extract auth token from Authorization header (preferred) or query param (legacy).
-
-    The Authorization header is preferred because the token is not visible
-    in tmux hooks or process listings.
-    """
-    auth_header = request.headers.get("authorization", "")
-    if auth_header.startswith("Bearer "):
-        return auth_header[7:]
-    return query_token
-
-
-def _verify_token(request: Request, token: str) -> bool:
-    """Verify the internal authentication token.
-
-    Returns True if the token is valid, False otherwise.
-    """
-    expected_token = (
-        request.app.state.internal_token
-        if hasattr(request.app.state, APP_STATE_TOKEN_ATTR)
-        else ""
-    )
-    return bool(expected_token) and hmac.compare_digest(token, expected_token)
 
 
 def _validate_session_names(from_session: str, to_session: str) -> bool:
@@ -163,8 +135,8 @@ def handle_session_switch(
     """
     client_host = request.client.host if request.client else None
 
-    resolved_token = _extract_token(request, token)
-    if not _verify_token(request, resolved_token):
+    resolved_token = extract_internal_token(request, token)
+    if not verify_internal_token(request, resolved_token):
         return _reject_unauthorized(client_host)
 
     if not _validate_session_names(from_session, to_session):

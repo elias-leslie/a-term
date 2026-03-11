@@ -13,6 +13,9 @@ from typing import Any
 from fastapi import APIRouter, Query, Request, WebSocket
 from fastapi.responses import JSONResponse
 
+from ..services.maintenance import get_status as get_maintenance_status
+from ..services.maintenance import run_cycle as run_maintenance_cycle
+from .handlers.internal_auth import require_internal_token
 from .handlers.session_switch import handle_session_switch
 from .handlers.websocket_connection import handle_terminal_connection
 
@@ -34,6 +37,20 @@ async def session_switch_hook(
     Security: Only accepts requests from localhost (tmux hooks).
     """
     return handle_session_switch(request, from_session, to_session, token)
+
+
+@router.get("/api/internal/maintenance", response_model=None)
+async def maintenance_status(request: Request, token: str = Query("")) -> dict[str, Any]:
+    """Return current maintenance status for operational verification."""
+    require_internal_token(request, token)
+    return get_maintenance_status(request.app)
+
+
+@router.post("/api/internal/maintenance/run", response_model=None)
+async def run_maintenance(request: Request, token: str = Query("")) -> dict[str, Any]:
+    """Trigger one immediate maintenance cycle."""
+    require_internal_token(request, token)
+    return await run_maintenance_cycle(request.app, reason="manual")
 
 
 @router.websocket("/ws/terminal/{session_id}")

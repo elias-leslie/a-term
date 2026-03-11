@@ -27,7 +27,7 @@ from .lifecycle_core import (
 )
 
 # Startup reconciliation
-from .lifecycle_reconcile import reconcile_on_startup
+from .lifecycle_reconcile import reconcile_on_startup, reconcile_sessions
 
 __all__ = [
     "create_session",
@@ -35,6 +35,7 @@ __all__ = [
     "disable_project_terminal",
     "ensure_session_alive",
     "reconcile_on_startup",
+    "reconcile_sessions",
     "reset_all_sessions",
     "reset_project_sessions",
     "reset_session",

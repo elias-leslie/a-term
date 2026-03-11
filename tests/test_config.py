@@ -98,3 +98,28 @@ def test_config_cors_origins_splits_comma_separated() -> None:
     assert len(cfg.CORS_ORIGINS) == 2
     assert "http://localhost:3000" in cfg.CORS_ORIGINS
     assert "http://localhost:3002" in cfg.CORS_ORIGINS
+
+
+def test_config_maintenance_and_pool_settings_from_env() -> None:
+    """Config module -- maintenance and DB pool settings are configurable."""
+    with patch.dict(
+        "os.environ",
+        {
+            "DATABASE_URL": "postgresql://test:test@localhost/test",
+            "DB_POOL_MIN_SIZE": "3",
+            "DB_POOL_MAX_SIZE": "12",
+            "MAINTENANCE_INTERVAL_SECONDS": "120",
+            "MAINTENANCE_SESSION_PURGE_DAYS": "14",
+            "UPLOAD_MAX_AGE_SECONDS": "1800",
+        },
+        clear=False,
+    ):
+        import terminal.config as cfg
+        cfg.get_settings.cache_clear()
+        importlib.reload(cfg)
+
+    assert cfg.DB_POOL_MIN_SIZE == 3
+    assert cfg.DB_POOL_MAX_SIZE == 12
+    assert cfg.MAINTENANCE_INTERVAL_SECONDS == 120
+    assert cfg.MAINTENANCE_SESSION_PURGE_DAYS == 14
+    assert cfg.UPLOAD_MAX_AGE_SECONDS == 1800

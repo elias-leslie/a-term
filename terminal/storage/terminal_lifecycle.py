@@ -6,6 +6,7 @@ purging old sessions, and tracking session activity.
 
 from __future__ import annotations
 
+from collections.abc import Collection
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -33,7 +34,10 @@ def mark_dead(session_id: SessionId) -> dict[str, Any] | None:
     return update_session(session_id, is_alive=False)
 
 
-def purge_dead_sessions(older_than_days: int = 7) -> int:
+def purge_dead_sessions(
+    older_than_days: int = 7,
+    exclude_session_ids: Collection[str] | None = None,
+) -> int:
     """Permanently delete dead sessions older than N days.
 
     Called during startup reconciliation to prevent unbounded growth
@@ -46,15 +50,27 @@ def purge_dead_sessions(older_than_days: int = 7) -> int:
         Number of sessions deleted
     """
     cutoff = datetime.now(UTC) - timedelta(days=older_than_days)
+    excluded = list(exclude_session_ids or [])
 
     with get_connection() as conn, conn.cursor() as cur:
-        cur.execute(
-            """
-            DELETE FROM terminal_sessions
-            WHERE is_alive = false AND last_accessed_at < %s
-            """,
-            (cutoff,),
-        )
+        if excluded:
+            cur.execute(
+                """
+                DELETE FROM terminal_sessions
+                WHERE is_alive = false
+                  AND last_accessed_at < %s
+                  AND NOT (id::text = ANY(%s))
+                """,
+                (cutoff, excluded),
+            )
+        else:
+            cur.execute(
+                """
+                DELETE FROM terminal_sessions
+                WHERE is_alive = false AND last_accessed_at < %s
+                """,
+                (cutoff,),
+            )
         deleted_count = cur.rowcount
         conn.commit()
 

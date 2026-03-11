@@ -1,10 +1,10 @@
 # SummitFlow Terminal
 
-Web-based terminal service with tmux-backed persistent sessions, multi-pane layouts, and configurable CLI agent integrations.
+Web-based terminal service with tmux-backed persistent sessions, multi-pane layouts, configurable CLI agent integrations, and a built-in maintenance loop.
 
 ## Overview
 
-SummitFlow Terminal provides browser-accessible terminal sessions backed by tmux for persistence. It supports multiple panes with split layouts, project-scoped working directories, and dual-mode operation (shell plus the configured default agent tool). Sessions survive browser disconnects and are reconciled with tmux state on startup.
+SummitFlow Terminal provides browser-accessible terminal sessions backed by tmux for persistence. It supports multiple panes with split layouts, project-scoped working directories, and dual-mode operation (shell plus the configured default agent tool). Sessions survive browser disconnects, are reconciled with tmux state on startup and on a recurring maintenance interval, and expose maintenance status through `/health`.
 
 ## Tech Stack
 
@@ -31,7 +31,8 @@ terminal/
 │   │   ├── lifecycle.py       # Session lifecycle facade
 │   │   ├── lifecycle_core.py  # Single-session operations
 │   │   ├── lifecycle_batch.py # Multi-session batch ops
-│   │   ├── lifecycle_reconcile.py  # DB/tmux sync on startup
+│   │   ├── lifecycle_reconcile.py  # DB/tmux sync + dead-session retention
+│   │   ├── maintenance.py     # Periodic maintenance loop + status tracking
 │   │   ├── pty_manager.py     # Low-level PTY operations
 │   │   └── pane_service.py    # Pane business logic
 │   ├── storage/           # Database layer
@@ -57,7 +58,8 @@ terminal/
 - **Dual mode** - Switch between shell and your configured agent tool per pane
 - **Project context** - Open terminals in project-specific working directories
 - **Mobile keyboard** - On-screen keyboard for touch devices (simple-keyboard)
-- **Session reconciliation** - Syncs database state with tmux on startup
+- **Periodic maintenance** - Reconciles tmux state, prunes stale uploads, repairs default agent-tool state, and deletes orphaned project settings
+- **Maintenance observability** - `/health` and `scripts/status.sh` report last maintenance run state
 - **Scrollback capture** - Retrieves terminal history when reconnecting
 - **Real-time resize** - Terminal dimensions sync between browser and tmux
 
@@ -86,7 +88,7 @@ source .venv/bin/activate
 pip install -e .
 
 # Run migrations
-alembic upgrade head
+db migrate upgrade
 
 # Start server
 python -m terminal
@@ -106,6 +108,9 @@ Database URL is read from `~/.env.local`:
 
 ```
 DATABASE_URL=postgresql://user:pass@localhost/summitflow
+MAINTENANCE_INTERVAL_SECONDS=900
+MAINTENANCE_SESSION_PURGE_DAYS=7
+UPLOAD_MAX_AGE_SECONDS=86400
 ```
 
 ## API
@@ -114,7 +119,9 @@ DATABASE_URL=postgresql://user:pass@localhost/summitflow
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/health` | Health check |
+| GET | `/health` | Health check plus maintenance status payload |
+| GET | `/api/internal/maintenance` | Internal maintenance status (requires internal bearer token) |
+| POST | `/api/internal/maintenance/run` | Trigger one maintenance cycle (requires internal bearer token) |
 | GET | `/api/terminal/sessions` | List sessions |
 | GET | `/api/terminal/sessions/{id}` | Get session |
 | PATCH | `/api/terminal/sessions/{id}` | Update session |
@@ -142,7 +149,7 @@ DATABASE_URL=postgresql://user:pass@localhost/summitflow
 
 ## Database
 
-Three tables: `terminal_sessions` (session state, mode, alive tracking), `terminal_panes` (pane layout and ordering), `terminal_project_settings` (per-project mode and enabled state). Schema managed via Alembic migrations.
+Primary service tables: `terminal_sessions` (session state, mode, alive tracking), `terminal_panes` (pane layout and ordering), `terminal_project_settings` (per-project mode and enabled state), and `agent_tools` (configured CLI agent integrations). Schema is managed via Alembic migrations, with maintenance-focused indexes for session retention and project/mode lookups.
 
 ## Services
 
@@ -154,6 +161,8 @@ scripts/restart.sh    # Restart services
 scripts/status.sh     # Check status
 scripts/shutdown.sh   # Stop services
 ```
+
+`scripts/status.sh` now shows backend health plus maintenance state and last successful maintenance run.
 
 ## License
 

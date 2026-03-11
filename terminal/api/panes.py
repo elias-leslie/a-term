@@ -46,7 +46,6 @@ from .validators import (
     require_pane_exists,
     validate_active_mode,
     validate_create_pane_request,
-    validate_pane_limit,
     validate_uuid,
 )
 
@@ -83,7 +82,6 @@ async def create_pane(request: Request, body: CreatePaneRequest) -> PaneResponse
     For project panes: creates shell + default agent sessions.
     For adhoc panes: creates shell session only.
     """
-    validate_pane_limit(pane_crud.count_panes(), MAX_PANES)
     validate_create_pane_request(body.pane_type, body.project_id)
 
     try:

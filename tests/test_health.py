@@ -33,6 +33,7 @@ def test_health_healthy_returns_status(test_app: TestClient) -> None:
     body = response.json()
     assert body["status"] == "healthy"
     assert body["service"] == "terminal"
+    assert "maintenance" in body
 
 
 def test_health_unhealthy_when_db_down(test_app: TestClient) -> None:
@@ -61,3 +62,22 @@ def test_health_response_contains_service_field(test_app: TestClient) -> None:
     body = response.json()
     assert "service" in body
     assert body["service"] == "terminal"
+
+
+def test_health_response_includes_maintenance_status(test_app: TestClient) -> None:
+    """GET /health -- response includes maintenance observability payload."""
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conn.__enter__ = MagicMock(return_value=mock_conn)
+    mock_conn.__exit__ = MagicMock(return_value=False)
+    mock_conn.cursor.return_value = mock_cursor
+    mock_cursor.__enter__ = MagicMock(return_value=mock_cursor)
+    mock_cursor.__exit__ = MagicMock(return_value=False)
+    test_app.app.state.maintenance_status = {"state": "idle", "runs": 5}
+
+    with patch("terminal.main.get_connection") as mock_get_conn:
+        mock_get_conn.return_value = mock_conn
+        response = test_app.get("/health")
+
+    assert response.status_code == 200
+    assert response.json()["maintenance"]["runs"] == 5

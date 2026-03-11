@@ -61,12 +61,30 @@ def get_by_id(tool_id: str) -> dict[str, Any] | None:
 
 
 def get_default() -> dict[str, Any] | None:
-    """Get the default agent tool (is_default=true)."""
-    query = f"SELECT {AGENT_TOOL_FIELDS} FROM agent_tools WHERE is_default = true LIMIT 1"
+    """Get the default enabled agent tool, falling back to the first enabled tool."""
+    query = f"""
+        SELECT {AGENT_TOOL_FIELDS}
+        FROM agent_tools
+        WHERE enabled = true AND is_default = true
+        ORDER BY display_order, name
+        LIMIT 1
+    """
     with get_connection() as conn, conn.cursor() as cur:
         cur.execute(query)
         row = cur.fetchone()
-        return _row_to_dict(row) if row else None
+        if row:
+            return _row_to_dict(row)
+        cur.execute(
+            f"""
+            SELECT {AGENT_TOOL_FIELDS}
+            FROM agent_tools
+            WHERE enabled = true
+            ORDER BY display_order, name
+            LIMIT 1
+            """
+        )
+        fallback = cur.fetchone()
+        return _row_to_dict(fallback) if fallback else None
 
 
 def create(
@@ -151,3 +169,39 @@ def has_active_sessions(slug: str) -> bool:
         )
         row = cur.fetchone()
     return bool(row and row[0])
+
+
+def ensure_default() -> dict[str, Any] | None:
+    """Ensure exactly one enabled agent tool is marked as the default."""
+    with get_connection() as conn, conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT id
+            FROM agent_tools
+            WHERE enabled = true
+            ORDER BY is_default DESC, display_order, name
+            LIMIT 1
+            """
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+
+        tool_id = row[0]
+        cur.execute(
+            "UPDATE agent_tools SET is_default = false WHERE is_default = true AND id != %s",
+            (tool_id,),
+        )
+        cur.execute(
+            f"""
+            UPDATE agent_tools
+            SET is_default = true, updated_at = NOW()
+            WHERE id = %s
+            RETURNING {AGENT_TOOL_FIELDS}
+            """,
+            (tool_id,),
+        )
+        updated = cur.fetchone()
+        conn.commit()
+
+    return _row_to_dict(updated) if updated else None

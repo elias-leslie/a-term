@@ -1,0 +1,46 @@
+"""Tests for internal maintenance endpoints and status surfacing."""
+
+from __future__ import annotations
+
+from unittest.mock import AsyncMock, patch
+
+from fastapi.testclient import TestClient
+
+
+def test_internal_maintenance_status_requires_token(test_app: TestClient) -> None:
+    """Internal maintenance status rejects missing tokens."""
+    response = test_app.get("/api/internal/maintenance")
+
+    assert response.status_code == 403
+
+
+def test_internal_maintenance_status_returns_app_state(test_app: TestClient) -> None:
+    """Internal maintenance status returns the in-memory status payload."""
+    test_app.app.state.internal_token = "secret"
+    test_app.app.state.maintenance_status = {"state": "idle", "runs": 2}
+
+    response = test_app.get(
+        "/api/internal/maintenance",
+        headers={"Authorization": "Bearer secret"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["state"] == "idle"
+    assert response.json()["runs"] == 2
+
+
+def test_internal_maintenance_run_triggers_cycle(test_app: TestClient) -> None:
+    """Manual maintenance endpoint runs a maintenance cycle."""
+    test_app.app.state.internal_token = "secret"
+    with patch(
+        "terminal.api.terminal.run_maintenance_cycle",
+        new=AsyncMock(return_value={"reason": "manual", "skipped": False}),
+    ) as mock_run:
+        response = test_app.post(
+            "/api/internal/maintenance/run",
+            headers={"Authorization": "Bearer secret"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["reason"] == "manual"
+    mock_run.assert_awaited_once()

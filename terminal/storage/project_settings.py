@@ -120,6 +120,24 @@ def set_active_mode(project_id: str, mode: str) -> dict[str, Any] | None:
     return _row_to_dict(row)
 
 
+def prune_missing_projects(valid_project_ids: set[str]) -> int:
+    """Delete settings rows for projects that no longer exist upstream."""
+    if not valid_project_ids:
+        return 0
+
+    with get_connection() as conn, conn.cursor() as cur:
+        cur.execute(
+            """
+            DELETE FROM terminal_project_settings
+            WHERE NOT (project_id = ANY(%s))
+            """,
+            (sorted(valid_project_ids),),
+        )
+        deleted_count = cur.rowcount
+        conn.commit()
+    return deleted_count
+
+
 def _row_to_dict(row: tuple[Any, ...]) -> dict[str, Any]:
     """Convert a database row to a settings dict."""
     return {

@@ -17,8 +17,13 @@ echo "  Frontend: $(ss -tlnp 2>/dev/null | grep -q ':3002' && echo 'Port 3002 bo
 echo ""
 
 echo "Health Check:"
-BACKEND_HEALTH=$(curl -s http://localhost:8002/health 2>/dev/null | jq -r '.status' 2>/dev/null || echo "unreachable")
+HEALTH_JSON=$(curl -s http://localhost:8002/health 2>/dev/null || echo "")
+BACKEND_HEALTH=$(printf '%s' "$HEALTH_JSON" | jq -r '.status' 2>/dev/null || echo "unreachable")
+MAINTENANCE_STATE=$(printf '%s' "$HEALTH_JSON" | jq -r '.maintenance.state // "unknown"' 2>/dev/null || echo "unknown")
+MAINTENANCE_LAST_SUCCESS=$(printf '%s' "$HEALTH_JSON" | jq -r '.maintenance.last_success_at // "never"' 2>/dev/null || echo "never")
 echo "  Backend:  $BACKEND_HEALTH"
+echo "  Maint:    $MAINTENANCE_STATE"
+echo "  Last OK:  $MAINTENANCE_LAST_SUCCESS"
 echo ""
 
 echo "URLs:"

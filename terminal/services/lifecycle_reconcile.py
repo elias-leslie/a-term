@@ -70,14 +70,20 @@ def _sync_sessions(db_sessions: list[dict[str, Any]], tmux_sessions: set[str]) -
     return counts
 
 
-def _purge_dead_and_kill_orphans(purge_after_days: int) -> dict[str, int]:
+def _purge_dead_and_kill_orphans(
+    purge_after_days: int,
+    tmux_sessions: set[str],
+) -> dict[str, int]:
     """Purge old dead sessions and kill orphan tmux sessions.
 
     Returns a dict with 'purged' and 'orphans_killed' counts.
     Must be called after the main sync loop so purged IDs are excluded
     from the orphan check.
     """
-    purged = terminal_store.purge_dead_sessions(older_than_days=purge_after_days)
+    purged = terminal_store.purge_dead_sessions(
+        older_than_days=purge_after_days,
+        exclude_session_ids=tmux_sessions,
+    )
     if purged > 0:
         logger.info("reconcile_purged_dead_sessions", count=purged)
 
@@ -90,7 +96,7 @@ def _purge_dead_and_kill_orphans(purge_after_days: int) -> dict[str, int]:
     return {"purged": purged, "orphans_killed": orphans_killed}
 
 
-def reconcile_on_startup(purge_after_days: int = 7) -> dict[str, int]:
+def reconcile_sessions(purge_after_days: int = 7) -> dict[str, int]:
     """Reconcile DB with tmux state on server startup.
 
     Syncs the database with the actual tmux session state:
@@ -116,7 +122,12 @@ def reconcile_on_startup(purge_after_days: int = 7) -> dict[str, int]:
     }
 
     stats.update(_sync_sessions(db_sessions, tmux_sessions))
-    stats.update(_purge_dead_and_kill_orphans(purge_after_days))
+    stats.update(_purge_dead_and_kill_orphans(purge_after_days, tmux_sessions))
 
     logger.info("reconciliation_complete", **stats)
     return stats
+
+
+def reconcile_on_startup(purge_after_days: int = 7) -> dict[str, int]:
+    """Backward-compatible alias for the generic reconciliation routine."""
+    return reconcile_sessions(purge_after_days=purge_after_days)

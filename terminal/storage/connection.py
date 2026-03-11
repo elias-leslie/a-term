@@ -7,7 +7,16 @@ from contextlib import contextmanager
 import psycopg
 from psycopg_pool import ConnectionPool
 
-from ..config import DATABASE_URL
+from ..config import (
+    DATABASE_URL,
+    DB_POOL_MAX_IDLE_SECONDS,
+    DB_POOL_MAX_LIFETIME_SECONDS,
+    DB_POOL_MAX_SIZE,
+    DB_POOL_MAX_WAITING,
+    DB_POOL_MIN_SIZE,
+    DB_POOL_RECONNECT_TIMEOUT_SECONDS,
+    DB_POOL_TIMEOUT_SECONDS,
+)
 
 # Module-level pool with thread-safe initialization
 _pool: ConnectionPool | None = None
@@ -20,9 +29,15 @@ def _create_pool() -> ConnectionPool:
         raise RuntimeError("DATABASE_URL must be set")
     return ConnectionPool(
         conninfo=DATABASE_URL,
-        min_size=2,
-        max_size=10,
+        min_size=DB_POOL_MIN_SIZE,
+        max_size=DB_POOL_MAX_SIZE,
+        check=ConnectionPool.check_connection,
         open=True,
+        timeout=DB_POOL_TIMEOUT_SECONDS,
+        max_waiting=DB_POOL_MAX_WAITING,
+        max_lifetime=DB_POOL_MAX_LIFETIME_SECONDS,
+        max_idle=DB_POOL_MAX_IDLE_SECONDS,
+        reconnect_timeout=DB_POOL_RECONNECT_TIMEOUT_SECONDS,
     )
 
 
@@ -57,3 +72,18 @@ def close_pool() -> None:
     if _pool is not None:
         _pool.close()
         _pool = None
+
+
+@contextmanager
+def advisory_lock(lock_key: int) -> Generator[bool]:
+    """Hold a PostgreSQL advisory lock for the duration of the context."""
+    pool = _get_pool()
+    with pool.connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT pg_try_advisory_lock(%s)", (lock_key,))
+        row = cur.fetchone()
+        acquired = bool(row and row[0])
+        try:
+            yield acquired
+        finally:
+            if acquired:
+                cur.execute("SELECT pg_advisory_unlock(%s)", (lock_key,))

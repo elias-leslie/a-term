@@ -21,9 +21,9 @@ from .api import agent, agent_tools, files, panes, projects, sessions, terminal
 from .config import CORS_ORIGINS, TERMINAL_PORT
 from .logging_config import SyslogPrefixFormatter, configure_logging, get_logger
 from .rate_limit import limiter
-from .services import lifecycle
+from .services.maintenance import get_status as get_maintenance_status
+from .services.maintenance import start_scheduler, stop_scheduler
 from .services.summitflow_client import close_client
-from .services.upload_cleanup import cleanup_old_uploads
 from .storage.connection import close_pool, get_connection
 from .utils.tmux import run_tmux_command
 
@@ -95,30 +95,19 @@ def _setup_tmux_options(token: str) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan handler."""
-    # Startup: reconcile DB with tmux state
     logger.info("terminal_service_starting", port=TERMINAL_PORT)
-    try:
-        stats = lifecycle.reconcile_on_startup()
-        logger.info("startup_reconciliation_complete", **stats)
-    except Exception as e:
-        logger.error("startup_reconciliation_failed", error=str(e))
-
-    # Clean up stale uploaded files
-    try:
-        deleted = cleanup_old_uploads()
-        if deleted > 0:
-            logger.info("startup_upload_cleanup", deleted=deleted)
-    except Exception as e:
-        logger.warning("startup_upload_cleanup_failed", error=str(e))
+    app.state.maintenance_status = {}
 
     # Set up tmux options and hooks
     app.state.internal_token = secrets.token_urlsafe(32)
     _setup_tmux_options(app.state.internal_token)
+    await start_scheduler(app)
 
     yield
 
     # Shutdown
     logger.info("terminal_service_stopping")
+    await stop_scheduler(app)
     await close_client()
     close_pool()
     logger.info("terminal_service_shutdown_complete")
@@ -135,12 +124,12 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(
     RateLimitExceeded,
-    _rate_limit_exceeded_handler,  # type: ignore[arg-type]  # slowapi handler has narrower type than starlette expects
+    _rate_limit_exceeded_handler,
 )
 
 # CORS middleware
 app.add_middleware(
-    CORSMiddleware,  # type: ignore[arg-type]
+    CORSMiddleware,
     allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
@@ -173,9 +162,9 @@ app.include_router(files.router)
 
 
 @app.get("/health", response_model=None)
-async def health() -> dict[str, str] | JSONResponse:
+async def health() -> dict[str, object] | JSONResponse:
     """Health check endpoint."""
-    checks: dict[str, str] = {"service": "terminal"}
+    checks: dict[str, object] = {"service": "terminal"}
 
     # Check database
     try:
@@ -192,6 +181,7 @@ async def health() -> dict[str, str] | JSONResponse:
     # tmux returns failure when there are no sessions, which is fine
     # We just need the server to respond (not hang or crash)
     checks["tmux"] = "ok" if tmux_ok else "no_sessions"
+    checks["maintenance"] = get_maintenance_status(app)
 
     checks["status"] = "healthy"
     return checks

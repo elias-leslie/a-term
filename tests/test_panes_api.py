@@ -130,7 +130,10 @@ def test_create_pane_adhoc_returns_pane(test_app: TestClient) -> None:
 def test_create_pane_limit_exceeded_returns_400(test_app: TestClient) -> None:
     """POST /api/terminal/panes -- 6 panes already exist rejects creation."""
     # Arrange
-    with patch("terminal.api.panes.pane_crud.count_panes", return_value=6):
+    with patch(
+        "terminal.api.panes.pane_crud.create_pane_with_sessions",
+        side_effect=ValueError("Maximum 6 panes allowed. Close one to add more."),
+    ):
         # Act
         response = test_app.post(
             "/api/terminal/panes",

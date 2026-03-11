@@ -104,6 +104,8 @@ def test_app(mock_lifecycle: dict[str, MagicMock]) -> Generator[TestClient, None
     with (
         patch("terminal.main._setup_tmux_options"),
         patch("terminal.main.close_pool"),
+        patch("terminal.main.start_scheduler"),
+        patch("terminal.main.stop_scheduler"),
     ):
         from terminal.main import app
 
