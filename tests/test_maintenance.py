@@ -51,10 +51,13 @@ async def test_run_cycle_updates_status_and_collects_results() -> None:
             "terminal.services.maintenance.project_settings_store.prune_missing_projects",
             return_value=1,
         ) as mock_prune,
+        patch("terminal.services.maintenance.maintenance_run_store.create_run", return_value="run-1"),
+        patch("terminal.services.maintenance.maintenance_run_store.complete_run") as mock_complete,
     ):
         result = await run_cycle(app, reason="manual")
 
     assert result["skipped"] is False
+    assert result["run_id"] == "run-1"
     assert result["default_agent_tool"] == "codex"
     assert result["reconciliation"]["purged"] == 2
     assert result["upload_cleanup"]["deleted_files"] == 1
@@ -64,6 +67,9 @@ async def test_run_cycle_updates_status_and_collects_results() -> None:
     assert status["last_success_at"] is not None
     assert status["last_result"] == result
     mock_prune.assert_called_once_with({"terminal", "summitflow"})
+    mock_complete.assert_called_once()
+    assert mock_complete.call_args.kwargs["run_id"] == "run-1"
+    assert mock_complete.call_args.kwargs["status"] == "success"
 
 
 @pytest.mark.asyncio
@@ -72,13 +78,18 @@ async def test_run_cycle_skips_when_lock_not_acquired() -> None:
     app = FastAPI()
     setattr(app.state, MAINTENANCE_STATUS_ATTR, build_initial_status())
 
-    with patch(
-        "terminal.services.maintenance.advisory_lock",
-        side_effect=lambda _key: _advisory_lock(False),
+    with (
+        patch(
+            "terminal.services.maintenance.advisory_lock",
+            side_effect=lambda _key: _advisory_lock(False),
+        ),
+        patch("terminal.services.maintenance.maintenance_run_store.create_run", return_value="run-2"),
+        patch("terminal.services.maintenance.maintenance_run_store.complete_run") as mock_complete,
     ):
         result = await run_cycle(app, reason="interval")
 
     assert result == {
+        "run_id": "run-2",
         "reason": "interval",
         "skipped": True,
         "skip_reason": "lock_not_acquired",
@@ -87,6 +98,7 @@ async def test_run_cycle_skips_when_lock_not_acquired() -> None:
     assert status["state"] == "idle"
     assert status["last_result"] == result
     assert status["last_success_at"] is None
+    assert mock_complete.call_args.kwargs["status"] == "skipped"
 
 
 @pytest.mark.asyncio
@@ -105,3 +117,25 @@ async def test_start_scheduler_records_startup_failure_without_task() -> None:
     assert status["state"] == "idle"
     assert status["last_error"] == "boom"
     assert not hasattr(app.state, "maintenance_task")
+
+
+@pytest.mark.asyncio
+async def test_run_cycle_persists_failed_runs() -> None:
+    """Failures are written to maintenance run history before bubbling up."""
+    app = FastAPI()
+    setattr(app.state, MAINTENANCE_STATUS_ATTR, build_initial_status())
+
+    with (
+        patch("terminal.services.maintenance.advisory_lock", side_effect=lambda _key: _advisory_lock(True)),
+        patch("terminal.services.maintenance.maintenance_run_store.create_run", return_value="run-3"),
+        patch("terminal.services.maintenance.lifecycle.reconcile_sessions", side_effect=RuntimeError("bad reconcile")),
+        patch("terminal.services.maintenance.maintenance_run_store.complete_run") as mock_complete,
+    ):
+        with pytest.raises(RuntimeError, match="bad reconcile"):
+            await run_cycle(app, reason="interval")
+
+    status = getattr(app.state, MAINTENANCE_STATUS_ATTR)
+    assert status["last_error"] == "bad reconcile"
+    assert mock_complete.call_args.kwargs["run_id"] == "run-3"
+    assert mock_complete.call_args.kwargs["status"] == "failed"
+    assert mock_complete.call_args.kwargs["error"] == "bad reconcile"

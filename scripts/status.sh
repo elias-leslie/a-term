@@ -21,9 +21,11 @@ HEALTH_JSON=$(curl -s http://localhost:8002/health 2>/dev/null || echo "")
 BACKEND_HEALTH=$(printf '%s' "$HEALTH_JSON" | jq -r '.status' 2>/dev/null || echo "unreachable")
 MAINTENANCE_STATE=$(printf '%s' "$HEALTH_JSON" | jq -r '.maintenance.state // "unknown"' 2>/dev/null || echo "unknown")
 MAINTENANCE_LAST_SUCCESS=$(printf '%s' "$HEALTH_JSON" | jq -r '.maintenance.last_success_at // "never"' 2>/dev/null || echo "never")
+MAINTENANCE_RUN_ID=$(printf '%s' "$HEALTH_JSON" | jq -r '.maintenance.last_run_id // "n/a"' 2>/dev/null || echo "n/a")
 echo "  Backend:  $BACKEND_HEALTH"
 echo "  Maint:    $MAINTENANCE_STATE"
 echo "  Last OK:  $MAINTENANCE_LAST_SUCCESS"
+echo "  Run ID:   $MAINTENANCE_RUN_ID"
 echo ""
 
 echo "URLs:"

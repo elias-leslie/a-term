@@ -59,7 +59,7 @@ terminal/
 - **Project context** - Open terminals in project-specific working directories
 - **Mobile keyboard** - On-screen keyboard for touch devices (simple-keyboard)
 - **Periodic maintenance** - Reconciles tmux state, prunes stale uploads, repairs default agent-tool state, and deletes orphaned project settings
-- **Maintenance observability** - `/health` and `scripts/status.sh` report last maintenance run state
+- **Maintenance observability** - `/health`, `/api/internal/maintenance/runs`, and `scripts/status.sh` report maintenance state and recent persisted runs
 - **Scrollback capture** - Retrieves terminal history when reconnecting
 - **Real-time resize** - Terminal dimensions sync between browser and tmux
 
@@ -121,6 +121,7 @@ UPLOAD_MAX_AGE_SECONDS=86400
 |--------|----------|-------------|
 | GET | `/health` | Health check plus maintenance status payload |
 | GET | `/api/internal/maintenance` | Internal maintenance status (requires internal bearer token) |
+| GET | `/api/internal/maintenance/runs` | Recent persisted maintenance runs (requires internal bearer token) |
 | POST | `/api/internal/maintenance/run` | Trigger one maintenance cycle (requires internal bearer token) |
 | GET | `/api/terminal/sessions` | List sessions |
 | GET | `/api/terminal/sessions/{id}` | Get session |
@@ -149,7 +150,7 @@ UPLOAD_MAX_AGE_SECONDS=86400
 
 ## Database
 
-Primary service tables: `terminal_sessions` (session state, mode, alive tracking), `terminal_panes` (pane layout and ordering), `terminal_project_settings` (per-project mode and enabled state), and `agent_tools` (configured CLI agent integrations). Schema is managed via Alembic migrations, with maintenance-focused indexes for session retention and project/mode lookups.
+Primary service tables: `terminal_sessions` (session state, mode, alive tracking), `terminal_panes` (pane layout and ordering), `terminal_project_settings` (per-project mode and enabled state), `agent_tools` (configured CLI agent integrations), and `terminal_maintenance_runs` (append-only maintenance audit trail). Schema is managed via Alembic migrations, with maintenance-focused indexes for session retention and project/mode lookups.
 
 ## Services
 
@@ -162,7 +163,7 @@ scripts/status.sh     # Check status
 scripts/shutdown.sh   # Stop services
 ```
 
-`scripts/status.sh` now shows backend health plus maintenance state and last successful maintenance run.
+`scripts/status.sh` now shows backend health plus maintenance state, last successful maintenance run, and the persisted run ID.
 
 ## License
 

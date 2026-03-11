@@ -44,3 +44,22 @@ def test_internal_maintenance_run_triggers_cycle(test_app: TestClient) -> None:
     assert response.status_code == 200
     assert response.json()["reason"] == "manual"
     mock_run.assert_awaited_once()
+
+
+def test_internal_maintenance_runs_returns_history(test_app: TestClient) -> None:
+    """Recent maintenance runs are exposed through the internal API."""
+    test_app.app.state.internal_token = "secret"
+    runs = [
+        {"id": "run-1", "status": "success", "reason": "startup"},
+        {"id": "run-2", "status": "failed", "reason": "interval"},
+    ]
+    with patch("terminal.api.terminal.list_recent_maintenance_runs", return_value=runs) as mock_list:
+        response = test_app.get(
+            "/api/internal/maintenance/runs?limit=2",
+            headers={"Authorization": "Bearer secret"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["items"] == runs
+    assert response.json()["total"] == 2
+    mock_list.assert_called_once_with(limit=2)

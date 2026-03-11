@@ -6,6 +6,15 @@ Provides database access functions for:
 - Project settings (enabled/disabled projects, display order)
 """
 
+from .maintenance_runs import (
+    complete_run as complete_maintenance_run,
+)
+from .maintenance_runs import (
+    create_run as create_maintenance_run,
+)
+from .maintenance_runs import (
+    list_recent_runs as list_recent_maintenance_runs,
+)
 from .pane_crud import (
     PaneId,
     count_panes,
@@ -48,7 +57,9 @@ from .terminal import (
 __all__ = [
     "PaneId",
     "bulk_update_order",
+    "complete_maintenance_run",
     "count_panes",
+    "create_maintenance_run",
     "create_pane",
     "create_pane_with_sessions",
     "create_session",
@@ -66,6 +77,7 @@ __all__ = [
     "list_orphaned",
     "list_panes",
     "list_panes_with_sessions",
+    "list_recent_maintenance_runs",
     "list_sessions",
     "mark_dead",
     "purge_dead_sessions",

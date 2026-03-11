@@ -17,6 +17,7 @@ from ..config import (
 )
 from ..logging_config import get_logger
 from ..storage import agent_tools as agent_tools_store
+from ..storage import maintenance_runs as maintenance_run_store
 from ..storage import project_settings as project_settings_store
 from ..storage.connection import advisory_lock
 from . import lifecycle, summitflow_client
@@ -47,6 +48,7 @@ def build_initial_status() -> dict[str, Any]:
         "last_duration_ms": None,
         "last_result": None,
         "last_error": None,
+        "last_run_id": None,
         "runs": 0,
     }
 
@@ -67,6 +69,7 @@ async def run_cycle(app: FastAPI, reason: str) -> dict[str, Any]:
     """Run one full maintenance pass with advisory-lock protection."""
     started_at = _now_iso()
     started_clock = perf_counter()
+    run_id = maintenance_run_store.create_run(reason)
     runs = int(get_status(app).get("runs", 0)) + 1
     _set_status(
         app,
@@ -74,61 +77,102 @@ async def run_cycle(app: FastAPI, reason: str) -> dict[str, Any]:
         last_started_at=started_at,
         last_reason=reason,
         last_error=None,
+        last_run_id=run_id,
         runs=runs,
     )
+    try:
+        with advisory_lock(_MAINTENANCE_LOCK_KEY) as acquired:
+            if not acquired:
+                duration_ms = round((perf_counter() - started_clock) * 1000, 2)
+                result = {
+                    "run_id": run_id,
+                    "reason": reason,
+                    "skipped": True,
+                    "skip_reason": "lock_not_acquired",
+                }
+                maintenance_run_store.complete_run(
+                    run_id=run_id,
+                    status="skipped",
+                    duration_ms=duration_ms,
+                )
+                _set_status(
+                    app,
+                    state="idle",
+                    last_completed_at=_now_iso(),
+                    last_duration_ms=duration_ms,
+                    last_result=result,
+                )
+                logger.info("maintenance_cycle_skipped", reason=reason, skip_reason="lock_not_acquired")
+                return result
 
-    with advisory_lock(_MAINTENANCE_LOCK_KEY) as acquired:
-        if not acquired:
-            result = {
-                "reason": reason,
-                "skipped": True,
-                "skip_reason": "lock_not_acquired",
-            }
-            _set_status(
-                app,
-                state="idle",
-                last_completed_at=_now_iso(),
-                last_duration_ms=round((perf_counter() - started_clock) * 1000, 2),
-                last_result=result,
-            )
-            logger.info("maintenance_cycle_skipped", reason=reason, skip_reason="lock_not_acquired")
-            return result
-
-        result: dict[str, Any] = {
-            "reason": reason,
-            "skipped": False,
-            "reconciliation": lifecycle.reconcile_sessions(
+            reconciliation = lifecycle.reconcile_sessions(
                 purge_after_days=MAINTENANCE_SESSION_PURGE_DAYS
-            ),
-            "upload_cleanup": cleanup_old_uploads().to_dict(),
-        }
+            )
+            upload_cleanup_stats = cleanup_old_uploads()
+            result: dict[str, Any] = {
+                "run_id": run_id,
+                "reason": reason,
+                "skipped": False,
+                "reconciliation": reconciliation,
+                "upload_cleanup": upload_cleanup_stats.to_dict(),
+            }
 
-        default_tool = agent_tools_store.ensure_default()
-        result["default_agent_tool"] = default_tool["slug"] if default_tool else None
+            default_tool = agent_tools_store.ensure_default()
+            result["default_agent_tool"] = default_tool["slug"] if default_tool else None
 
-        projects = await summitflow_client.list_projects()
-        valid_project_ids = {str(project.get("id")) for project in projects if project.get("id")}
-        result["project_count"] = len(valid_project_ids)
-        if valid_project_ids:
-            deleted = project_settings_store.prune_missing_projects(valid_project_ids)
-            result["orphaned_project_settings_deleted"] = deleted
-        else:
-            result["orphaned_project_settings_deleted"] = 0
-            result["project_settings_cleanup_skipped"] = True
+            projects = await summitflow_client.list_projects()
+            valid_project_ids = {str(project.get("id")) for project in projects if project.get("id")}
+            result["project_count"] = len(valid_project_ids)
+            if valid_project_ids:
+                deleted = project_settings_store.prune_missing_projects(valid_project_ids)
+                result["orphaned_project_settings_deleted"] = deleted
+            else:
+                result["orphaned_project_settings_deleted"] = 0
+                result["project_settings_cleanup_skipped"] = True
 
-    completed_at = _now_iso()
-    duration_ms = round((perf_counter() - started_clock) * 1000, 2)
-    _set_status(
-        app,
-        state="idle",
-        last_completed_at=completed_at,
-        last_success_at=completed_at,
-        last_duration_ms=duration_ms,
-        last_result=result,
-        last_error=None,
-    )
-    logger.info("maintenance_cycle_complete", duration_ms=duration_ms, **result)
-    return result
+        completed_at = _now_iso()
+        duration_ms = round((perf_counter() - started_clock) * 1000, 2)
+        maintenance_run_store.complete_run(
+            run_id=run_id,
+            status="success",
+            duration_ms=duration_ms,
+            reconciliation_purged=reconciliation.get("purged", 0),
+            reconciliation_orphans_killed=reconciliation.get("orphans_killed", 0),
+            upload_scanned_files=upload_cleanup_stats.scanned_files,
+            upload_deleted_files=upload_cleanup_stats.deleted_files,
+            upload_pruned_directories=upload_cleanup_stats.pruned_directories,
+            upload_errors=upload_cleanup_stats.errors,
+            orphaned_project_settings_deleted=result.get("orphaned_project_settings_deleted", 0),
+            project_count=result.get("project_count", 0),
+            default_agent_tool_slug=result.get("default_agent_tool"),
+        )
+        _set_status(
+            app,
+            state="idle",
+            last_completed_at=completed_at,
+            last_success_at=completed_at,
+            last_duration_ms=duration_ms,
+            last_result=result,
+            last_error=None,
+        )
+        logger.info("maintenance_cycle_complete", duration_ms=duration_ms, **result)
+        return result
+    except Exception as exc:
+        duration_ms = round((perf_counter() - started_clock) * 1000, 2)
+        maintenance_run_store.complete_run(
+            run_id=run_id,
+            status="failed",
+            duration_ms=duration_ms,
+            error=str(exc),
+        )
+        _set_status(
+            app,
+            state="idle",
+            last_completed_at=_now_iso(),
+            last_duration_ms=duration_ms,
+            last_error=str(exc),
+        )
+        raise
 
 
 async def _maintenance_loop(app: FastAPI) -> None:

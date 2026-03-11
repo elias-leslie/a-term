@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 
 from ..services.maintenance import get_status as get_maintenance_status
 from ..services.maintenance import run_cycle as run_maintenance_cycle
+from ..storage.maintenance_runs import list_recent_runs as list_recent_maintenance_runs
 from .handlers.internal_auth import require_internal_token
 from .handlers.session_switch import handle_session_switch
 from .handlers.websocket_connection import handle_terminal_connection
@@ -51,6 +52,18 @@ async def run_maintenance(request: Request, token: str = Query("")) -> dict[str,
     """Trigger one immediate maintenance cycle."""
     require_internal_token(request, token)
     return await run_maintenance_cycle(request.app, reason="manual")
+
+
+@router.get("/api/internal/maintenance/runs", response_model=None)
+async def maintenance_runs(
+    request: Request,
+    token: str = Query(""),
+    limit: int = Query(10, ge=1, le=100),
+) -> dict[str, Any]:
+    """Return recent persisted maintenance runs."""
+    require_internal_token(request, token)
+    runs = list_recent_maintenance_runs(limit=limit)
+    return {"items": runs, "total": len(runs)}
 
 
 @router.websocket("/ws/terminal/{session_id}")
