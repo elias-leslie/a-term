@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ResizablePaneLayout } from './ResizablePaneLayout'
 import type { PaneSlot } from '@/lib/utils/slot'
 
@@ -23,7 +23,19 @@ vi.mock('./pane-layouts', () => ({
     orientation?: 'horizontal' | 'vertical'
   }) => <div data-testid={`three-pane-${orientation ?? 'horizontal'}`} />,
   FourPaneLayout: () => <div data-testid="four-pane-layout" />,
-  WidePaneLayout: () => <div data-testid="wide-pane-layout" />,
+  WidePaneLayout: ({
+    getStoredGroupLayout,
+  }: {
+    getStoredGroupLayout: (
+      groupId: string,
+      panelCount: number,
+      defaultSize: number,
+    ) => number[]
+  }) => (
+    <div data-testid="wide-pane-layout">
+      {getStoredGroupLayout('wide-pane-root', 2, 50).join(',')}
+    </div>
+  ),
   ColumnPaneLayout: () => <div data-testid="column-pane-layout" />,
 }))
 
@@ -41,6 +53,10 @@ function makeProjectSlot(id: string): PaneSlot {
 }
 
 describe('ResizablePaneLayout', () => {
+  beforeEach(() => {
+    window.localStorage.clear()
+  })
+
   it('uses the vertical split for stacked two-pane mode', () => {
     render(
       <ResizablePaneLayout
@@ -127,5 +143,55 @@ describe('ResizablePaneLayout', () => {
     )
 
     expect(screen.getByTestId('three-pane-vertical')).toBeInTheDocument()
+  })
+
+  it('switches to the correct wide-layout storage bucket when pane count changes', () => {
+    window.localStorage.setItem(
+      'terminal-layout-groups:grid-3x2:5',
+      JSON.stringify({
+        'wide-pane-root': [70, 30],
+      }),
+    )
+    window.localStorage.setItem(
+      'terminal-layout-groups:grid-3x2:6',
+      JSON.stringify({
+        'wide-pane-root': [45, 55],
+      }),
+    )
+
+    const { rerender } = render(
+      <ResizablePaneLayout
+        slots={[
+          makeProjectSlot('1'),
+          makeProjectSlot('2'),
+          makeProjectSlot('3'),
+          makeProjectSlot('4'),
+          makeProjectSlot('5'),
+        ]}
+        fontFamily="monospace"
+        fontSize={14}
+        layoutMode="grid-3x2"
+      />,
+    )
+
+    expect(screen.getByTestId('wide-pane-layout')).toHaveTextContent('70,30')
+
+    rerender(
+      <ResizablePaneLayout
+        slots={[
+          makeProjectSlot('1'),
+          makeProjectSlot('2'),
+          makeProjectSlot('3'),
+          makeProjectSlot('4'),
+          makeProjectSlot('5'),
+          makeProjectSlot('6'),
+        ]}
+        fontFamily="monospace"
+        fontSize={14}
+        layoutMode="grid-3x2"
+      />,
+    )
+
+    expect(screen.getByTestId('wide-pane-layout')).toHaveTextContent('45,55')
   })
 })
