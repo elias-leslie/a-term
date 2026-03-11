@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useState } from 'react'
+import { useLocalStorageState } from '@/lib/hooks/use-local-storage-state'
 import type { ConnectionStatus } from '../Terminal'
 import { ControlBar } from './ControlBar'
 import { FullKeyboard } from './FullKeyboard'
@@ -29,20 +30,14 @@ export function MobileKeyboard({
   activeMode,
 }: MobileKeyboardProps) {
   const [ctrlActive, setCtrlActive] = useState(false)
-  // Use lazy initialization to load from localStorage
-  const [minimized, setMinimized] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return localStorage.getItem(MINIMIZED_STORAGE_KEY) === 'true'
-  })
+  const [minimized, setMinimized] = useLocalStorageState(
+    MINIMIZED_STORAGE_KEY,
+    false,
+  )
 
-  // Save minimized state
   const handleToggleMinimize = useCallback(() => {
-    setMinimized((prev) => {
-      const newValue = !prev
-      localStorage.setItem(MINIMIZED_STORAGE_KEY, String(newValue))
-      return newValue
-    })
-  }, [])
+    setMinimized(!minimized)
+  }, [minimized, setMinimized])
 
   // Wrapped onSend that handles CTRL modifier
   const handleSend = useCallback(
