@@ -128,9 +128,8 @@ export function useTerminalHandlers({
       projectIdArg: string,
       newMode: string,
       projectSessions: TerminalSession[],
-      rootPath: string | null,
       paneId?: string,
-    ) => switchProjectMode({ projectId: projectIdArg, mode: newMode, projectSessions, rootPath, paneId }),
+    ) => switchProjectMode({ projectId: projectIdArg, mode: newMode, projectSessions, paneId }),
     [switchProjectMode],
   )
   const handleCloseAll = useCallback(

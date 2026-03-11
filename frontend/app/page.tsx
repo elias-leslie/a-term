@@ -25,8 +25,11 @@ export default function Home() {
   return (
     <Suspense
       fallback={
-        <div className="h-dvh flex items-center justify-center bg-slate-900 text-slate-400">
-          Loading terminal...
+        <div
+          className="h-dvh flex items-center justify-center bg-slate-900 px-6 text-center text-slate-400"
+          aria-live="polite"
+        >
+          Preparing terminal workspace…
         </div>
       }
     >

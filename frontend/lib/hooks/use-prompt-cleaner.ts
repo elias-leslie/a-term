@@ -22,6 +22,11 @@ function getAgentHubUrl(): string | null {
   return process.env.NEXT_PUBLIC_AGENT_HUB_URL || null
 }
 
+function getErrorMessage(err: unknown): string {
+  if (!(err instanceof Error)) return 'Failed to clean prompt'
+  return err.name === 'TimeoutError' ? 'Request timed out' : err.message
+}
+
 // System prompt for cleaning
 const SYSTEM_PROMPT = `You are a prompt formatting assistant. Your task is to clean and improve user prompts.
 
@@ -96,12 +101,7 @@ export function usePromptCleaner(): UsePromptCleanerReturn {
 
         return cleanedContent
       } catch (err) {
-        const message =
-          err instanceof Error
-            ? err.name === 'TimeoutError'
-              ? 'Request timed out'
-              : err.message
-            : 'Failed to clean prompt'
+        const message = getErrorMessage(err)
         setError(message)
 
         return prompt.trim()

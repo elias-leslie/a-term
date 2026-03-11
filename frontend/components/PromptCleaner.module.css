@@ -207,6 +207,30 @@
   gap: 12px;
   overflow: hidden;
 }
+.errorBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(248, 81, 73, 0.25);
+  background: rgba(248, 81, 73, 0.1);
+  color: rgba(255, 215, 212, 0.95);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+}
+.errorDismiss {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.errorDismiss:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
 
 /* Diff View */
 .diffView {
@@ -385,6 +409,10 @@
 .refinementInput::placeholder {
   color: rgba(255, 255, 255, 0.3);
 }
+.refinementInput:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
 .refineBtn {
   padding: 4px 10px;
   background: rgba(0, 255, 159, 0.15);
@@ -395,6 +423,10 @@
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
+}
+.refineBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 .refineBtn:hover {
   background: rgba(0, 255, 159, 0.25);

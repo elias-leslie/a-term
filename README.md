@@ -1,10 +1,10 @@
 # SummitFlow Terminal
 
-Web-based terminal service with tmux-backed persistent sessions, multi-pane layouts, and Claude Code integration.
+Web-based terminal service with tmux-backed persistent sessions, multi-pane layouts, and configurable CLI agent integrations.
 
 ## Overview
 
-SummitFlow Terminal provides browser-accessible terminal sessions backed by tmux for persistence. It supports multiple panes with split layouts, project-scoped working directories, and dual-mode operation (shell and Claude Code). Sessions survive browser disconnects and are reconciled with tmux state on startup.
+SummitFlow Terminal provides browser-accessible terminal sessions backed by tmux for persistence. It supports multiple panes with split layouts, project-scoped working directories, and dual-mode operation (shell plus the configured default agent tool). Sessions survive browser disconnects and are reconciled with tmux state on startup.
 
 ## Tech Stack
 
@@ -26,7 +26,7 @@ terminal/
 │   │   ├── sessions.py    # Session CRUD
 │   │   ├── panes.py       # Pane management
 │   │   ├── projects.py    # Project settings
-│   │   └── claude.py      # Claude Code integration
+│   │   └── agent.py       # Agent startup + state endpoints
 │   ├── services/          # Business logic
 │   │   ├── lifecycle.py       # Session lifecycle facade
 │   │   ├── lifecycle_core.py  # Single-session operations
@@ -54,7 +54,7 @@ terminal/
 
 - **Persistent sessions** - tmux-backed terminals survive browser disconnects and server restarts
 - **Multi-pane layouts** - Up to 6 panes with resizable split views on wide desktops
-- **Dual mode** - Switch between shell and Claude Code mode per pane
+- **Dual mode** - Switch between shell and your configured agent tool per pane
 - **Project context** - Open terminals in project-specific working directories
 - **Mobile keyboard** - On-screen keyboard for touch devices (simple-keyboard)
 - **Session reconciliation** - Syncs database state with tmux on startup
@@ -116,7 +116,6 @@ DATABASE_URL=postgresql://user:pass@localhost/summitflow
 |--------|----------|-------------|
 | GET | `/health` | Health check |
 | GET | `/api/terminal/sessions` | List sessions |
-| POST | `/api/terminal/sessions` | Create session |
 | GET | `/api/terminal/sessions/{id}` | Get session |
 | PATCH | `/api/terminal/sessions/{id}` | Update session |
 | DELETE | `/api/terminal/sessions/{id}` | Delete session |
@@ -124,9 +123,9 @@ DATABASE_URL=postgresql://user:pass@localhost/summitflow
 | POST | `/api/terminal/panes` | Create pane (max 6) |
 | PATCH | `/api/terminal/panes/{id}` | Update pane |
 | DELETE | `/api/terminal/panes/{id}` | Delete pane |
-| GET | `/api/terminal/projects/{id}` | Get project settings |
-| PUT | `/api/terminal/projects/{id}` | Update project settings |
-| PUT | `/api/terminal/projects/{id}/mode` | Set shell/claude mode |
+| GET | `/api/terminal/projects` | List project settings merged with SummitFlow projects |
+| PUT | `/api/terminal/project-settings/{id}` | Update project settings |
+| PUT | `/api/terminal/projects/{id}/mode` | Set shell/agent mode |
 | POST | `/api/terminal/projects/{id}/reset` | Reset project sessions |
 | POST | `/api/terminal/projects/{id}/disable` | Disable terminal for project |
 

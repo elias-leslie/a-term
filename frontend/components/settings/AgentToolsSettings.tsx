@@ -13,6 +13,7 @@ export function AgentToolsSettings() {
   const { agentTools, create, update, remove } = useAgentTools()
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingTool, setEditingTool] = useState<AgentTool | null>(null)
+  const [feedback, setFeedback] = useState<string | null>(null)
 
   const handleCreate = useCallback(
     async (data: ToolFormData) => {
@@ -25,9 +26,10 @@ export function AgentToolsSettings() {
           description: data.description || undefined,
           color: data.color || undefined,
         })
+        setFeedback(null)
         setShowAddForm(false)
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Failed to create')
+        setFeedback(err instanceof Error ? err.message : 'Failed to create tool')
       }
     },
     [create],
@@ -44,9 +46,10 @@ export function AgentToolsSettings() {
           description: data.description || undefined,
           color: data.color || undefined,
         })
+        setFeedback(null)
         setEditingTool(null)
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Failed to update')
+        setFeedback(err instanceof Error ? err.message : 'Failed to update tool')
       }
     },
     [editingTool, update],
@@ -57,8 +60,9 @@ export function AgentToolsSettings() {
       if (!confirm(`Delete "${tool.name}"?`)) return
       try {
         await remove(tool.id)
+        setFeedback(null)
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Failed to delete')
+        setFeedback(err instanceof Error ? err.message : 'Failed to delete tool')
       }
     },
     [remove],
@@ -66,7 +70,12 @@ export function AgentToolsSettings() {
 
   const handleSetDefault = useCallback(
     async (tool: AgentTool) => {
-      await update(tool.id, { is_default: true })
+      try {
+        await update(tool.id, { is_default: true })
+        setFeedback(null)
+      } catch (err) {
+        setFeedback(err instanceof Error ? err.message : 'Failed to update default tool')
+      }
     },
     [update],
   )
@@ -91,6 +100,16 @@ export function AgentToolsSettings() {
           </button>
         )}
       </div>
+
+      {feedback && (
+        <div
+          className="mb-2 rounded px-2 py-1.5 text-[10px]"
+          style={{ backgroundColor: 'rgba(248,81,73,0.12)', color: '#ffb4af' }}
+          role="alert"
+        >
+          {feedback}
+        </div>
+      )}
 
       <div className="space-y-1.5">
         {agentTools.map((tool) =>

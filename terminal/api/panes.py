@@ -8,7 +8,7 @@ This module provides:
 - Swap pane positions
 
 Panes are containers for 1-2 sessions:
-- Project panes: shell + claude sessions (toggled via active_mode)
+- Project panes: shell + default agent sessions (toggled via active_mode)
 - Ad-hoc panes: shell session only
 """
 
@@ -80,7 +80,7 @@ async def get_pane_count() -> dict[str, Any]:
 async def create_pane(request: Request, body: CreatePaneRequest) -> PaneResponse:
     """Create a new terminal pane with sessions.
 
-    For project panes: creates shell + claude sessions.
+    For project panes: creates shell + default agent sessions.
     For adhoc panes: creates shell session only.
     """
     validate_pane_limit(pane_crud.count_panes(), MAX_PANES)

@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { buildApiUrl } from '../api-config'
+import type { TerminalPane } from './use-terminal-panes'
 
 // ============================================================================
 // Types
@@ -98,7 +99,7 @@ async function deleteAgentTool(toolId: string): Promise<void> {
 async function switchPaneAgentTool(
   paneId: string,
   agentToolSlug: string,
-): Promise<unknown> {
+): Promise<TerminalPane> {
   const res = await fetch(
     buildApiUrl(`/api/terminal/panes/${paneId}/agent-tool`),
     {

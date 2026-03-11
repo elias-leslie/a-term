@@ -213,7 +213,7 @@ export function useProjectSettings() {
     [orderMutation],
   )
 
-  // Switch project mode (shell <-> claude)
+  // Switch project mode (shell <-> agent tool)
   const switchMode = useCallback(
     async (projectId: string, mode: string) => {
       return switchModeMutation.mutateAsync({ projectId, mode })

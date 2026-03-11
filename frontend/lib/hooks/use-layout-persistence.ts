@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import type { PaneLayout } from '@/components/ResizablePaneLayout'
+import type { TerminalPane } from './use-terminal-panes'
 
 interface UseLayoutPersistenceOptions {
   saveLayouts: (
@@ -10,7 +11,7 @@ interface UseLayoutPersistenceOptions {
       widthPercent?: number
       heightPercent?: number
     }>,
-  ) => Promise<unknown>
+  ) => Promise<TerminalPane[]>
   debounceMs?: number
   maxRetries?: number
 }

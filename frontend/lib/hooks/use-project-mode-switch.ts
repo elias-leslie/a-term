@@ -22,7 +22,6 @@ interface SwitchProjectModeParams {
   mode: string
   /** All sessions for this project */
   projectSessions: TerminalSession[]
-  rootPath: string | null
   /** Pane ID if available (for direct pane mode switching) */
   paneId?: string
 }
@@ -40,7 +39,7 @@ interface UseProjectModeSwitchOptions {
     mode: string,
   ) => Promise<TerminalPane>
   /** Function to switch agent tool on a pane (kills old tmux, creates new session) */
-  switchAgentTool?: (paneId: string, slug: string) => Promise<unknown>
+  switchAgentTool?: (paneId: string, slug: string) => Promise<TerminalPane>
 }
 
 interface UseProjectModeSwitchReturn {
@@ -51,13 +50,13 @@ interface UseProjectModeSwitchReturn {
 }
 
 /**
- * Hook for orchestrating project mode switches (shell <-> claude).
+ * Hook for orchestrating project mode switches (shell <-> agent tool).
  *
  * Handles the 6-step orchestration:
  * 1. Update backend mode
  * 2. Determine/create target session
- * 3. Check Claude state (if switching to claude)
- * 4. Start Claude and poll for confirmation
+ * 3. Check agent state (if switching into agent mode)
+ * 4. Start the agent and poll for confirmation
  * 5. Navigate to session via URL
  * 6. Scroll tab into view
  *
@@ -73,7 +72,6 @@ interface UseProjectModeSwitchReturn {
  *   projectId: "my-project",
  *   mode: "claude",
  *   projectSessions: [...], // all sessions for this project
- *   rootPath: "/home/user/project",
  * });
  * ```
  */
@@ -101,7 +99,7 @@ export function useProjectModeSwitch({
     [searchParams, router],
   )
 
-  // Helper to start Claude in a session and wait for confirmation
+  // Helper to start the agent in a session and wait for confirmation
   const startAgentInSession = useCallback(
     async (sessionId: string): Promise<boolean> => {
       return startAgent(sessionId)
@@ -139,13 +137,8 @@ export function useProjectModeSwitch({
         let updatedPane: TerminalPane
 
         if (isAgentToAgentSwitch) {
-          // Switching between agent tools: need to kill old tmux session, create new one
-          await switchAgentTool(pane.id, mode)
-          // Refetch the pane to get the new session
-          await queryClient.invalidateQueries({ queryKey: ['terminal-panes'] })
-          await queryClient.invalidateQueries({ queryKey: ['terminal-sessions'] })
-          const freshData = queryClient.getQueryData<PaneListResponse>(['terminal-panes'])
-          updatedPane = freshData?.items.find((p) => p.id === pane.id) ?? pane
+          // Switching between agent tools: replace the agent session entirely.
+          updatedPane = await switchAgentTool(pane.id, mode)
         } else {
           // Simple toggle (shell ↔ agent): just update active_mode
           updatedPane = await setActiveMode(pane.id, mode)
@@ -158,7 +151,7 @@ export function useProjectModeSwitch({
           return
         }
 
-        // Start agent if needed (any non-shell mode)
+        // Start the agent if needed after a shell -> agent toggle.
         if (mode !== 'shell' && !isAgentToAgentSwitch) {
           const agentState = projectSessions.find(
             (s) => s.id === targetSession.id,
@@ -174,8 +167,7 @@ export function useProjectModeSwitch({
         // Navigate to the session
         navigateToSession(targetSession.id)
       } else {
-        // Legacy path: fallback to old behavior for backwards compatibility
-        // (This shouldn't happen with the new architecture, but kept for safety)
+        // Session-based fallback kept for safety until all callers are pane-backed.
         await switchMode(projectId, mode)
 
         const matchingSession = projectSessions.find((s) => s.mode === mode)

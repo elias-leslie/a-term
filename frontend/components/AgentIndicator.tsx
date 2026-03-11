@@ -69,6 +69,3 @@ export function AgentIndicator({
     </div>
   )
 }
-
-// Legacy re-export
-export { AgentIndicator as ClaudeIndicator }

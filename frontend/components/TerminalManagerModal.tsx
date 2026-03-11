@@ -34,6 +34,11 @@ interface TerminalButtonProps {
   onClick: () => void
 }
 
+function formatSessionDescription(session: TerminalSession): string {
+  const location = session.working_dir || 'no working directory'
+  return `${session.project_id ?? 'external'} • ${session.mode} • ${location}`
+}
+
 function TerminalButton({
   icon,
   label,
@@ -163,12 +168,20 @@ export function TerminalManagerModal({
   const handleExternalSessionClick = (session: TerminalSession) => {
     setSearchQuery('')
     onAttachExternalSession(session.id)
+    onClose()
   }
   const handleRestoreExternalSession = (session: TerminalSession) => {
     setSearchQuery('')
     onRestoreExternalSession(session.id)
     onAttachExternalSession(session.id)
+    onClose()
   }
+
+  const noMatches =
+    normalizedSearch &&
+    visibleProjects.length === 0 &&
+    visibleExternalSessions.length === 0 &&
+    visibleHiddenExternalSessions.length === 0
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => { if (!open) closeAndReset() }}>
@@ -226,6 +239,15 @@ export function TerminalManagerModal({
               className="w-full rounded-md px-3 py-2.5 text-sm outline-none transition-colors"
               style={{ backgroundColor: 'var(--term-bg-surface)', border: '1px solid var(--term-border)', color: 'var(--term-text-primary)', fontFamily: 'var(--font-mono)' }}
             />
+            <p
+              className="mt-2 text-[11px]"
+              style={{ color: 'var(--term-text-muted)', fontFamily: 'var(--font-mono)' }}
+              aria-live="polite"
+            >
+              {noMatches
+                ? `No terminals match "${deferredSearchQuery.trim()}".`
+                : `Showing ${visibleProjects.length} project${visibleProjects.length === 1 ? '' : 's'}, ${visibleExternalSessions.length} live external, and ${visibleHiddenExternalSessions.length} hidden external session${visibleHiddenExternalSessions.length === 1 ? '' : 's'}.`}
+            </p>
           </div>
 
           {/* Project list */}
@@ -285,7 +307,7 @@ export function TerminalManagerModal({
                       key={session.id}
                       icon={<Terminal size={16} style={iconStyle} />}
                       label={session.name}
-                      description={`${session.project_id ?? 'external'} • ${session.mode} • ${session.working_dir ?? 'unknown dir'}`}
+                      description={formatSessionDescription(session)}
                       paneCount={0}
                       hoverColor="var(--term-accent)"
                       defaultColor="var(--term-text-secondary)"
@@ -316,7 +338,7 @@ export function TerminalManagerModal({
                       key={session.id}
                       icon={<Terminal size={16} style={iconStyle} />}
                       label={session.name}
-                      description={`${session.project_id ?? 'external'} • ${session.mode} • ${session.working_dir ?? 'unknown dir'}`}
+                      description={formatSessionDescription(session)}
                       paneCount={0}
                       hoverColor="var(--term-accent)"
                       defaultColor="var(--term-text-secondary)"

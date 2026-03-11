@@ -10,6 +10,9 @@ interface PromptCleanerProps {
   onSend: (cleanedPrompt: string) => void
   onCancel: () => void
   cleanPrompt: (prompt: string, refinement?: string) => Promise<string>
+  errorMessage?: string | null
+  onClearError?: () => void
+  isCleaning?: boolean
   showDiffToggle?: boolean
 }
 
@@ -20,7 +23,9 @@ interface PreviewViewProps {
   showDiff: boolean; isEditing: boolean; rawPrompt: string; displayedText: string
   editedPrompt: string; refinementInput: string; textareaRef: React.RefObject<HTMLTextAreaElement | null>
   onEditedChange: (value: string) => void; onRefinementChange: (value: string) => void; onRefine: () => void
+  refinementDisabled: boolean
 }
+interface ErrorBannerProps { errorMessage: string; onDismiss?: () => void }
 
 function ProcessingView({ state, rawPrompt, scanProgress }: ProcessingViewProps) {
   return (
@@ -40,7 +45,7 @@ function ProcessingView({ state, rawPrompt, scanProgress }: ProcessingViewProps)
   )
 }
 
-function PreviewView({ showDiff, isEditing, rawPrompt, displayedText, editedPrompt, refinementInput, textareaRef, onEditedChange, onRefinementChange, onRefine }: PreviewViewProps) {
+function PreviewView({ showDiff, isEditing, rawPrompt, displayedText, editedPrompt, refinementInput, textareaRef, onEditedChange, onRefinementChange, onRefine, refinementDisabled }: PreviewViewProps) {
   return (
     <div className={styles.previewContainer}>
       {showDiff ? (
@@ -74,10 +79,26 @@ function PreviewView({ showDiff, isEditing, rawPrompt, displayedText, editedProm
           <span className={styles.inputPrefix}>$</span>
           <input type="text" className={styles.refinementInput} placeholder="Refine: 'make it shorter', 'add context about X'..."
             value={refinementInput} onChange={(e) => onRefinementChange(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && onRefine()} />
-          {refinementInput && <button className={styles.refineBtn} onClick={onRefine}>↵</button>}
+            onKeyDown={(e) => e.key === 'Enter' && !refinementDisabled && onRefine()}
+            disabled={refinementDisabled}
+            aria-label="Refine cleaned prompt"
+          />
+          {refinementInput && <button className={styles.refineBtn} onClick={onRefine} disabled={refinementDisabled}>↵</button>}
         </div>
       </div>
+    </div>
+  )
+}
+
+function ErrorBanner({ errorMessage, onDismiss }: ErrorBannerProps) {
+  return (
+    <div className={styles.errorBanner} role="status" aria-live="polite">
+      <span>{errorMessage}. Showing the original prompt so you can keep working.</span>
+      {onDismiss ? (
+        <button type="button" className={styles.errorDismiss} onClick={onDismiss}>
+          Dismiss
+        </button>
+      ) : null}
     </div>
   )
 }
@@ -112,7 +133,16 @@ function ActionBar({ isEditing, onCancel, onToggleEdit, onSend }: ActionBarProps
   )
 }
 
-export function PromptCleaner({ rawPrompt, onSend, onCancel, cleanPrompt, showDiffToggle = true }: PromptCleanerProps) {
+export function PromptCleaner({
+  rawPrompt,
+  onSend,
+  onCancel,
+  cleanPrompt,
+  errorMessage,
+  onClearError,
+  isCleaning = false,
+  showDiffToggle = true,
+}: PromptCleanerProps) {
   const [state, setState] = useState<CleanerState>('idle')
   const [cleanedPrompt, setCleanedPrompt] = useState('')
   const [displayedText, setDisplayedText] = useState('')
@@ -128,18 +158,14 @@ export function PromptCleaner({ rawPrompt, onSend, onCancel, cleanPrompt, showDi
 
   const handleClean = useCallback(
     async (refinement?: string) => {
+      onClearError?.()
       setState(refinement ? 'refining' : 'processing')
-      try {
-        const result = await cleanPrompt(rawPrompt, refinement)
-        setCleanedPrompt(result)
-        setEditedPrompt(result)
-        setState('preview')
-      } catch (error) {
-        console.error('Failed to clean prompt:', error)
-        setState('idle')
-      }
+      const result = await cleanPrompt(rawPrompt, refinement)
+      setCleanedPrompt(result)
+      setEditedPrompt(result)
+      setState('preview')
     },
-    [cleanPrompt, rawPrompt]
+    [cleanPrompt, onClearError, rawPrompt]
   )
 
   useEffect(() => { const timer = setTimeout(() => setIsVisible(true), 50); return () => clearTimeout(timer) }, [])
@@ -163,11 +189,27 @@ export function PromptCleaner({ rawPrompt, onSend, onCancel, cleanPrompt, showDi
     return () => clearInterval(interval)
   }, [state])
 
-  const handleSend = () => onSend(isEditing ? editedPrompt : cleanedPrompt)
-  const handleClose = useCallback(() => { setIsVisible(false); closeTimerRef.current = setTimeout(onCancel, 300) }, [onCancel])
+  const sendValue = (isEditing ? editedPrompt : cleanedPrompt).trim()
+  const handleSend = () => {
+    if (!sendValue) return
+    onSend(sendValue)
+  }
+  const handleClose = useCallback(() => {
+    onClearError?.()
+    setIsVisible(false)
+    closeTimerRef.current = setTimeout(onCancel, 300)
+  }, [onCancel, onClearError])
   useEffect(() => () => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current) }, [])
-  const handleRefine = () => { if (refinementInput.trim()) { handleClean(refinementInput); setRefinementInput('') } }
-  const toggleEditMode = () => { setIsEditing(!isEditing); if (!isEditing) setTimeout(() => textareaRef.current?.focus(), 100) }
+  const handleRefine = () => {
+    const refinement = refinementInput.trim()
+    if (!refinement || isCleaning) return
+    handleClean(refinement)
+    setRefinementInput('')
+  }
+  const toggleEditMode = () => {
+    setIsEditing(!isEditing)
+    if (!isEditing) setTimeout(() => textareaRef.current?.focus(), 100)
+  }
 
   return (
     <>
@@ -175,10 +217,11 @@ export function PromptCleaner({ rawPrompt, onSend, onCancel, cleanPrompt, showDi
       <div data-testid="prompt-cleaner-modal" className={`${styles.panel} ${isVisible ? styles.panelVisible : ''}`}>
         <div className={styles.scanlineOverlay} />
         <HeaderBar showDiffToggle={showDiffToggle} state={state} showDiff={showDiff} onToggleDiff={() => setShowDiff(!showDiff)} onClose={handleClose} />
+        {errorMessage && <ErrorBanner errorMessage={errorMessage} onDismiss={onClearError} />}
         {(state === 'processing' || state === 'refining') && <ProcessingView state={state} rawPrompt={rawPrompt} scanProgress={scanProgress} />}
         {state === 'preview' && <PreviewView showDiff={showDiff} isEditing={isEditing} rawPrompt={rawPrompt} displayedText={displayedText}
           editedPrompt={editedPrompt} refinementInput={refinementInput} textareaRef={textareaRef} onEditedChange={setEditedPrompt}
-          onRefinementChange={setRefinementInput} onRefine={handleRefine} />}
+          onRefinementChange={setRefinementInput} onRefine={handleRefine} refinementDisabled={isCleaning || state !== 'preview'} />}
         {state === 'preview' && <ActionBar isEditing={isEditing} onCancel={handleClose} onToggleEdit={toggleEditMode} onSend={handleSend} />}
         <div className={styles.glowTop} />
         <div className={styles.glowBottom} />

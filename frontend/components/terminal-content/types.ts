@@ -76,6 +76,9 @@ export interface TerminalContentProps {
   handleCleanerSend: (cleaned: string) => void
   handleCleanerCancel: () => void
   cleanPrompt: (prompt: string, refinement?: string) => Promise<string>
+  cleanerError: string | null
+  clearCleanerError: () => void
+  isCleaningPrompt: boolean
 
   // Mobile keyboard
   sessions: Array<{ id: string }>

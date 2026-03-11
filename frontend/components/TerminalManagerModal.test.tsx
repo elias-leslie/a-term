@@ -118,11 +118,12 @@ describe('TerminalManagerModal', () => {
 
   it('attaches a live external session from the modal', () => {
     const onAttachExternalSession = vi.fn()
+    const onClose = vi.fn()
 
     render(
       <TerminalManagerModal
         isOpen={true}
-        onClose={vi.fn()}
+        onClose={onClose}
         onCreateGenericTerminal={vi.fn()}
         onCreateProjectTerminal={vi.fn()}
         externalSessions={[
@@ -151,16 +152,18 @@ describe('TerminalManagerModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /claude-terminal/i }))
 
     expect(onAttachExternalSession).toHaveBeenCalledWith('claude-terminal')
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('restores a hidden external session from the modal', () => {
     const onAttachExternalSession = vi.fn()
     const onRestoreExternalSession = vi.fn()
+    const onClose = vi.fn()
 
     render(
       <TerminalManagerModal
         isOpen={true}
-        onClose={vi.fn()}
+        onClose={onClose}
         onCreateGenericTerminal={vi.fn()}
         onCreateProjectTerminal={vi.fn()}
         externalSessions={[]}
@@ -190,5 +193,30 @@ describe('TerminalManagerModal', () => {
 
     expect(onRestoreExternalSession).toHaveBeenCalledWith('codex-agent-hub')
     expect(onAttachExternalSession).toHaveBeenCalledWith('codex-agent-hub')
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows a shared no-match summary when the search has no results', () => {
+    render(
+      <TerminalManagerModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onCreateGenericTerminal={vi.fn()}
+        onCreateProjectTerminal={vi.fn()}
+        externalSessions={[]}
+        hiddenExternalSessions={[]}
+        onAttachExternalSession={vi.fn()}
+        onRestoreExternalSession={vi.fn()}
+        panes={[]}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Search Terminals'), {
+      target: { value: 'missing-workspace' },
+    })
+
+    expect(
+      screen.getByText('No terminals match "missing-workspace".'),
+    ).toBeInTheDocument()
   })
 })

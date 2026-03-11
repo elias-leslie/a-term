@@ -33,7 +33,7 @@ class ProjectResponse(BaseModel):
     root_path: str | None
     # Terminal-specific settings
     terminal_enabled: bool = False
-    mode: str = "shell"  # Active mode (shell or claude)
+    mode: str = "shell"  # Active mode (shell or agent tool slug)
     display_order: int = 0
 
 
@@ -146,7 +146,7 @@ async def bulk_update_order(update: BulkOrderUpdate) -> list[ProjectResponse]:
 async def reset_project(request: Request, project_id: str) -> dict[str, Any]:
     """Reset all terminal sessions for a project.
 
-    Resets both shell and claude sessions if they exist.
+    Resets the shell session and the current default agent session if they exist.
     Uses the current project root_path from SummitFlow settings.
     Also resets mode back to shell.
     Returns new session IDs for each mode.

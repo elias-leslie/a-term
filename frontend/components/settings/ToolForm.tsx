@@ -28,6 +28,15 @@ export function slugify(name: string): string {
     .replace(/^-|-$/g, '')
 }
 
+function normalizeCommand(value: string): string {
+  return value.trim().replace(/\s+/g, ' ')
+}
+
+function normalizeColor(value: string): string {
+  const trimmed = value.trim()
+  return /^#[0-9a-f]{6}$/i.test(trimmed) ? trimmed.toUpperCase() : trimmed
+}
+
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '4px 8px',
@@ -71,17 +80,47 @@ export function ToolForm({
     }))
   }
 
+  const handleCommandChange = (command: string) => {
+    setForm((f) => {
+      const nextCommand = command
+      const nextProcessName = f.process_name || normalizeCommand(command).split(' ')[0] || ''
+      return {
+        ...f,
+        command: nextCommand,
+        process_name: nextProcessName,
+      }
+    })
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.name || !form.command || !form.process_name) return
-    if (!form.slug) {
+    const trimmedName = form.name.trim()
+    const normalizedSlug = slugify(form.slug)
+    const normalizedCommand = normalizeCommand(form.command)
+    const normalizedProcessName = normalizeCommand(form.process_name)
+    const normalizedDescription = form.description.trim()
+    const normalizedHex = normalizeColor(form.color)
+
+    if (!trimmedName || !normalizedCommand || !normalizedProcessName) return
+    if (!normalizedSlug) {
       setError('Name must contain at least one letter or number (slug cannot be empty)')
+      return
+    }
+    if (normalizedHex && !/^#[0-9a-f]{6}$/i.test(normalizedHex)) {
+      setError('Color must be a 6-digit hex value like #00FF9F')
       return
     }
     setSubmitting(true)
     setError(null)
     try {
-      await onSubmit(form)
+      await onSubmit({
+        name: trimmedName,
+        slug: normalizedSlug,
+        command: normalizedCommand,
+        process_name: normalizedProcessName,
+        description: normalizedDescription,
+        color: normalizedHex || EMPTY_FORM.color,
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save')
     } finally {
@@ -93,29 +132,29 @@ export function ToolForm({
     <form onSubmit={handleSubmit} className="space-y-2 p-2 rounded" style={{ backgroundColor: 'var(--term-bg-surface)' }}>
       <div>
         <label style={labelStyle}>Name *</label>
-        <input style={inputStyle} value={form.name} onChange={(e) => handleNameChange(e.target.value)} placeholder="OpenCode" />
+        <input style={inputStyle} value={form.name} onChange={(e) => handleNameChange(e.target.value)} placeholder="OpenCode" aria-label="Tool name" />
       </div>
       <div>
         <label style={labelStyle}>Slug {isEdit && '(read-only)'}</label>
-        <input style={{ ...inputStyle, opacity: isEdit ? 0.5 : 1 }} value={form.slug} onChange={(e) => !isEdit && setForm((f) => ({ ...f, slug: e.target.value }))} readOnly={isEdit} placeholder="opencode" />
+        <input style={{ ...inputStyle, opacity: isEdit ? 0.5 : 1 }} value={form.slug} onChange={(e) => !isEdit && setForm((f) => ({ ...f, slug: e.target.value }))} readOnly={isEdit} placeholder="opencode" aria-label="Tool slug" />
       </div>
       <div>
         <label style={labelStyle}>Command *</label>
-        <input style={inputStyle} value={form.command} onChange={(e) => setForm((f) => ({ ...f, command: e.target.value }))} placeholder="opencode" />
+        <input style={inputStyle} value={form.command} onChange={(e) => handleCommandChange(e.target.value)} placeholder="codex --model gpt-5.4" aria-label="Tool command" />
       </div>
       <div>
         <label style={labelStyle}>Process Name *</label>
-        <input style={inputStyle} value={form.process_name} onChange={(e) => setForm((f) => ({ ...f, process_name: e.target.value }))} placeholder="opencode" />
+        <input style={inputStyle} value={form.process_name} onChange={(e) => setForm((f) => ({ ...f, process_name: e.target.value }))} placeholder="codex" aria-label="Tool process name" />
       </div>
       <div>
         <label style={labelStyle}>Description</label>
-        <input style={inputStyle} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Optional description" />
+        <input style={inputStyle} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Optional description" aria-label="Tool description" />
       </div>
       <div>
         <label style={labelStyle}>Color</label>
         <div className="flex items-center gap-2">
-          <input type="color" value={form.color} onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))} style={{ width: 28, height: 22, border: 'none', cursor: 'pointer', background: 'transparent' }} />
-          <input style={{ ...inputStyle, flex: 1 }} value={form.color} onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))} placeholder="#00FF9F" />
+          <input type="color" value={/^#[0-9a-f]{6}$/i.test(form.color) ? form.color : EMPTY_FORM.color} onChange={(e) => setForm((f) => ({ ...f, color: e.target.value.toUpperCase() }))} style={{ width: 28, height: 22, border: 'none', cursor: 'pointer', background: 'transparent' }} aria-label="Tool color picker" />
+          <input style={{ ...inputStyle, flex: 1 }} value={form.color} onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))} placeholder="#00FF9F" aria-label="Tool color" />
         </div>
       </div>
       {error && <div className="text-[10px]" style={{ color: '#ff6b6b' }}>{error}</div>}

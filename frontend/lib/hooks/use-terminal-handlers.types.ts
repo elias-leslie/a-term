@@ -52,7 +52,6 @@ export interface UseTerminalHandlersReturn {
     projectId: string,
     newMode: string,
     projectSessions: TerminalSession[],
-    rootPath: string | null,
     paneId?: string,
   ) => Promise<void>
   handleCloseAll: () => Promise<void>

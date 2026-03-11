@@ -32,7 +32,6 @@ interface UseTerminalSlotHandlersParams {
     projectId: string,
     newMode: string,
     projectSessions: TerminalSession[],
-    rootPath: string | null,
     paneId?: string,
   ) => Promise<void>
 }
@@ -178,7 +177,7 @@ export function useTerminalSlotHandlers({
     [handleNewTerminalForProject],
   )
 
-  // Handler for switching mode (shell <-> claude) on a slot
+  // Handler for switching mode (shell <-> agent tool) on a slot
   const handleSlotModeSwitch = useCallback(
     async (slot: TerminalSlot | PaneSlot, mode: TerminalMode) => {
       if (slot.type !== 'project') return
@@ -195,7 +194,6 @@ export function useTerminalSlotHandlers({
           slot.projectId,
           mode,
           projectSessions,
-          slot.rootPath,
           paneId,
         )
       } finally {

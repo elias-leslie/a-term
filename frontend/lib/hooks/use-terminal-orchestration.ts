@@ -110,7 +110,12 @@ export function useTerminalOrchestration({
   })
 
   // File upload, prompt cleaner, and voice input
-  const { cleanPrompt } = usePromptCleaner()
+  const {
+    cleanPrompt,
+    error: cleanerError,
+    clearError: clearCleanerError,
+    isLoading: isCleaningPrompt,
+  } = usePromptCleaner()
   const actionHandlers = useTerminalActionHandlers({
     terminalRefs,
     activeSessionId,
@@ -169,6 +174,9 @@ export function useTerminalOrchestration({
     // Action handlers
     ...actionHandlers,
     cleanPrompt,
+    cleanerError,
+    clearCleanerError,
+    isCleaningPrompt,
 
     // Prompt cleaner state
     showCleaner,

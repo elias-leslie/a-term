@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-import { buildApiUrl } from '@/lib/api-config'
+import { useCallback, useEffect, useRef } from 'react'
 import { generatePaneName } from './terminal-handler-utils'
+import { fetchPaneCount } from './terminal-panes-api'
 
 interface UseAutoCreatePaneProps {
   panes: Array<{ pane_type: string }>
@@ -36,7 +36,20 @@ export function useAutoCreatePane({
   const initialLoadProcessed = useRef(false)
   const prevPanesLengthRef = useRef<number | null>(null)
 
+  const createAndFocusPane = useCallback(
+    async (paneName: string) => {
+      const newPane = await createAdHocPane(paneName)
+      const shellSession = newPane.sessions.find((s) => s.mode === 'shell')
+      if (shellSession) {
+        switchToSession(shellSession.id)
+      }
+    },
+    [createAdHocPane, switchToSession],
+  )
+
   useEffect(() => {
+    let cancelled = false
+
     // Skip if still loading or already creating
     if (
       isLoading ||
@@ -59,37 +72,26 @@ export function useAutoCreatePane({
 
       if (currLength === 0 && !hasVisibleExternalSlot) {
         isAutoCreatingRef.current = true
-        fetch(buildApiUrl('/api/terminal/panes/count'))
-          .then((res) => {
-            if (!res.ok) {
-              console.error('Pane count check failed:', res.status)
-              return
+        void (async () => {
+          try {
+            const paneCount = await fetchPaneCount()
+            if (!cancelled && paneCount.count === 0) {
+              await createAndFocusPane(generatePaneName('Ad-Hoc Terminal', 0))
             }
-            return res.json()
-          })
-          .then((data) => {
-            if (!data) return
-            if (data.count === 0) {
-              return createAdHocPane(generatePaneName('Ad-Hoc Terminal', 0)).then(
-                (newPane) => {
-                  const shellSession = newPane.sessions.find(
-                    (s) => s.mode === 'shell',
-                  )
-                  if (shellSession) {
-                    switchToSession(shellSession.id)
-                  }
-                },
-              )
+          } catch (error) {
+            if (!cancelled) {
+              console.error('Failed to auto-create pane on initial load:', error)
             }
-          })
-          .catch((error) => {
-            console.error('Failed to auto-create pane on initial load:', error)
-          })
-          .finally(() => {
-            isAutoCreatingRef.current = false
-          })
+          } finally {
+            if (!cancelled) {
+              isAutoCreatingRef.current = false
+            }
+          }
+        })()
       }
-      return
+      return () => {
+        cancelled = true
+      }
     }
 
     // Case 2: Last pane closed (N→0 transition, where N > 0)
@@ -101,19 +103,21 @@ export function useAutoCreatePane({
     ) {
       isAutoCreatingRef.current = true
       const adHocCount = panes.filter((p) => p.pane_type === 'adhoc').length
-      createAdHocPane(generatePaneName('Ad-Hoc Terminal', adHocCount))
-        .then((newPane) => {
-          const shellSession = newPane.sessions.find((s) => s.mode === 'shell')
-          if (shellSession) {
-            switchToSession(shellSession.id)
+      void createAndFocusPane(generatePaneName('Ad-Hoc Terminal', adHocCount))
+        .catch((error) => {
+          if (!cancelled) {
+            console.error('Failed to auto-create pane after closing last:', error)
           }
         })
-        .catch((error) => {
-          console.error('Failed to auto-create pane after closing last:', error)
-        })
         .finally(() => {
-          isAutoCreatingRef.current = false
+          if (!cancelled) {
+            isAutoCreatingRef.current = false
+          }
         })
+    }
+
+    return () => {
+      cancelled = true
     }
   }, [
     isLoading,
@@ -121,7 +125,6 @@ export function useAutoCreatePane({
     panes,
     hasVisibleExternalSlot,
     isPaneCreating,
-    createAdHocPane,
-    switchToSession,
+    createAndFocusPane,
   ])
 }

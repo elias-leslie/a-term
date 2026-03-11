@@ -110,12 +110,14 @@ async def update_session(session_id: str, request: UpdateSessionRequest) -> Term
 
     Can update: name, display_order
     """
+    external_session = get_external_agent_tmux_session(session_id)
+    if external_session:
+        raise HTTPException(status_code=400, detail="External tmux sessions are read-only") from None
+
     validate_uuid(session_id)
 
     # Verify session exists
     existing = terminal_store.get_session(session_id)
-    if not existing and get_external_agent_tmux_session(session_id):
-        raise HTTPException(status_code=400, detail="External tmux sessions are read-only") from None
     if not existing:
         raise HTTPException(status_code=404, detail=f"Session {session_id} not found") from None
 

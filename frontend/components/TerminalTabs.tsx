@@ -94,6 +94,9 @@ export function TerminalTabs({
     handleCleanerSend,
     handleCleanerCancel,
     cleanPrompt,
+    cleanerError,
+    clearCleanerError,
+    isCleaningPrompt,
 
     // Prompt cleaner state
     showCleaner,
@@ -175,6 +178,9 @@ export function TerminalTabs({
         handleCleanerSend={handleCleanerSend}
         handleCleanerCancel={handleCleanerCancel}
         cleanPrompt={cleanPrompt}
+        cleanerError={cleanerError}
+        clearCleanerError={clearCleanerError}
+        isCleaningPrompt={isCleaningPrompt}
         sessions={sessions}
         activeSessionId={activeSessionId}
         activeMode={activeMode}

@@ -2,12 +2,10 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { useAutoCreatePane } from './use-auto-create-pane'
 
-vi.mock('@/lib/api-config', () => ({
-  buildApiUrl: (path: string) => `http://localhost:8002${path}`,
+const mockFetchPaneCount = vi.fn()
+vi.mock('./terminal-panes-api', () => ({
+  fetchPaneCount: () => mockFetchPaneCount(),
 }))
-
-const mockFetch = vi.fn()
-global.fetch = mockFetch
 
 describe('useAutoCreatePane', () => {
   beforeEach(() => {
@@ -30,12 +28,12 @@ describe('useAutoCreatePane', () => {
       }),
     )
 
-    expect(mockFetch).not.toHaveBeenCalled()
+    expect(mockFetchPaneCount).not.toHaveBeenCalled()
     expect(createAdHocPane).not.toHaveBeenCalled()
     expect(switchToSession).not.toHaveBeenCalled()
 
     await waitFor(() => {
-      expect(mockFetch).not.toHaveBeenCalled()
+      expect(mockFetchPaneCount).not.toHaveBeenCalled()
       expect(createAdHocPane).not.toHaveBeenCalled()
       expect(switchToSession).not.toHaveBeenCalled()
     }, { timeout: 100 })
@@ -47,10 +45,7 @@ describe('useAutoCreatePane', () => {
     })
     const switchToSession = vi.fn()
 
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ count: 0 }),
-    })
+    mockFetchPaneCount.mockResolvedValueOnce({ count: 0 })
 
     renderHook(() =>
       useAutoCreatePane({
@@ -91,7 +86,7 @@ describe('useAutoCreatePane', () => {
       expect(createAdHocPane).not.toHaveBeenCalled()
     }, { timeout: 100 })
 
-    expect(mockFetch).not.toHaveBeenCalled()
+    expect(mockFetchPaneCount).not.toHaveBeenCalled()
     expect(switchToSession).not.toHaveBeenCalled()
   })
 })

@@ -62,6 +62,9 @@ export function TerminalContent({
   handleCleanerSend,
   handleCleanerCancel,
   cleanPrompt,
+  cleanerError,
+  clearCleanerError,
+  isCleaningPrompt,
   sessions,
   activeSessionId,
   activeMode,
@@ -175,6 +178,9 @@ export function TerminalContent({
           onSend={handleCleanerSend}
           onCancel={handleCleanerCancel}
           cleanPrompt={cleanPrompt}
+          errorMessage={cleanerError}
+          onClearError={clearCleanerError}
+          isCleaning={isCleaningPrompt}
           showDiffToggle={true}
         />
       )}

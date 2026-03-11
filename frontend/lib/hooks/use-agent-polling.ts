@@ -25,9 +25,7 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 /**
  * Hook for starting an agent in a terminal session and polling for state changes.
  *
- * Generalized from useClaudePolling to support any agent tool.
- * Uses the /start-agent and /agent-state endpoints (with legacy /start-claude
- * and /claude-state still supported by the backend).
+ * Uses the /start-agent and /agent-state endpoints.
  */
 export function useAgentPolling(): UseAgentPollingReturn {
   const queryClient = useQueryClient()
@@ -102,6 +100,7 @@ export function useAgentPolling(): UseAgentPollingReturn {
   const startAgent = useCallback(
     async (sessionId: string): Promise<boolean> => {
       try {
+        stopPolling()
         const res = await fetch(
           buildApiUrl(`/api/terminal/sessions/${sessionId}/start-agent`),
           { method: 'POST' },
@@ -128,7 +127,7 @@ export function useAgentPolling(): UseAgentPollingReturn {
         return false
       }
     },
-    [queryClient, pollForAgentState],
+    [pollForAgentState, queryClient, stopPolling],
   )
 
   return {
@@ -137,6 +136,3 @@ export function useAgentPolling(): UseAgentPollingReturn {
     stopPolling,
   }
 }
-
-// Legacy re-export for backward compatibility
-export { useAgentPolling as useClaudePolling }
