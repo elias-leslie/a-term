@@ -77,11 +77,8 @@ export function useTerminalModals({
 
   // Sync modal state from URL params
   useEffect(() => {
-    if (urlModal === 'terminal-manager') {
-      setShowTerminalManager(true)
-    } else if (urlModal === 'keyboard-shortcuts') {
-      setShowKeyboardHelp(true)
-    }
+    setShowTerminalManager(urlModal === 'terminal-manager')
+    setShowKeyboardHelp(urlModal === 'keyboard-shortcuts')
   }, [urlModal, setShowTerminalManager, setShowKeyboardHelp])
 
   return {
