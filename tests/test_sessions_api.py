@@ -254,7 +254,7 @@ def test_update_external_session_returns_400(test_app: TestClient) -> None:
         patch("terminal.api.sessions.get_external_agent_tmux_session", return_value=external),
     ):
         response = test_app.patch(
-            f"/api/terminal/sessions/{uuid.uuid4()}",
+            "/api/terminal/sessions/claude-summitflow",
             json={"name": "New Name"},
         )
 

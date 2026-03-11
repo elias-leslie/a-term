@@ -59,7 +59,6 @@ export function useAutoCreatePane({
 
       if (currLength === 0 && !hasVisibleExternalSlot) {
         isAutoCreatingRef.current = true
-        const adHocCount = panes.filter((p) => p.pane_type === 'adhoc').length
         fetch(buildApiUrl('/api/terminal/panes/count'))
           .then((res) => {
             if (!res.ok) {
@@ -71,7 +70,7 @@ export function useAutoCreatePane({
           .then((data) => {
             if (!data) return
             if (data.count === 0) {
-              return createAdHocPane(generatePaneName('Ad-Hoc Terminal', adHocCount)).then(
+              return createAdHocPane(generatePaneName('Ad-Hoc Terminal', 0)).then(
                 (newPane) => {
                   const shellSession = newPane.sessions.find(
                     (s) => s.mode === 'shell',

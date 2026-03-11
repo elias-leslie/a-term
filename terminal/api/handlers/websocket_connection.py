@@ -30,11 +30,11 @@ SCROLLBACK_SYNC_MIN_LINES = 40
 async def _setup_connection(
     websocket: WebSocket,
     session_id: str,
-) -> tuple[dict, str, int, int]:
+) -> tuple[dict, str, int, int, bool]:
     """Validate session, spawn PTY, sync dimensions and send scrollback.
 
     Returns:
-        (session, tmux_session_name, master_fd, pid)
+        (session, tmux_session_name, master_fd, pid, resize_tmux)
 
     Raises:
         ValueError: if the session is invalid/dead (caller closes websocket)
@@ -42,6 +42,7 @@ async def _setup_connection(
     session, tmux_session_name = await asyncio.to_thread(
         validate_and_prepare_session, session_id
     )
+    resize_tmux = not bool(session.get("is_external"))
     if session.get("is_external"):
         await asyncio.to_thread(reset_tmux_window_size_policy, tmux_session_name)
     stored_target_session = session.get("last_claude_session")
@@ -51,7 +52,7 @@ async def _setup_connection(
         master_fd,
         session_id,
         tmux_session_name,
-        resize_tmux=not bool(session.get("is_external")),
+        resize_tmux=resize_tmux,
     )
 
     scrollback = get_scrollback(tmux_session_name)
@@ -66,7 +67,7 @@ async def _setup_connection(
                 original_bytes=len(scrollback),
             )
 
-    return session, tmux_session_name, master_fd, pid
+    return session, tmux_session_name, master_fd, pid, resize_tmux
 
 
 async def _run_message_loop(
@@ -105,7 +106,7 @@ async def _run_session(
 ) -> tuple[int | None, int | None]:
     """Set up and run the full terminal session. Returns (pid, master_fd) for cleanup."""
     try:
-        session, tmux_session_name, master_fd, pid = await _setup_connection(
+        session, tmux_session_name, master_fd, pid, resize_tmux = await _setup_connection(
             websocket, session_id
         )
     except ValueError as e:
@@ -144,7 +145,7 @@ async def _run_session(
             master_fd,
             session_id,
             tmux_session_name,
-            not bool(session.get("is_external")),
+            resize_tmux,
             output_task, heartbeat_task,
         )
     finally:

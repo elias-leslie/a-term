@@ -64,13 +64,12 @@ describe('useTerminalSettings', () => {
 
     await waitFor(() => {
       expect(result.current.fontId).toBe('fira-code')
+      expect(result.current.fontSize).toBe(18)
+      expect(result.current.scrollback).toBe(25000)
+      expect(result.current.cursorStyle).toBe('bar')
+      expect(result.current.cursorBlink).toBe(false)
+      expect(result.current.themeId).toBe('dracula')
     })
-
-    expect(result.current.fontSize).toBe(18)
-    expect(result.current.scrollback).toBe(25000)
-    expect(result.current.cursorStyle).toBe('bar')
-    expect(result.current.cursorBlink).toBe(false)
-    expect(result.current.themeId).toBe('dracula')
   })
 
   it('reloads global settings when leaving a project scope', async () => {
@@ -102,13 +101,12 @@ describe('useTerminalSettings', () => {
 
     await waitFor(() => {
       expect(result.current.fontId).toBe('source-code-pro')
+      expect(result.current.fontSize).toBe(15)
+      expect(result.current.scrollback).toBe(5000)
+      expect(result.current.cursorStyle).toBe('underline')
+      expect(result.current.cursorBlink).toBe(true)
+      expect(result.current.themeId).toBe('tokyo-night')
     })
-
-    expect(result.current.fontSize).toBe(15)
-    expect(result.current.scrollback).toBe(5000)
-    expect(result.current.cursorStyle).toBe('underline')
-    expect(result.current.cursorBlink).toBe(true)
-    expect(result.current.themeId).toBe('tokyo-night')
   })
 
   it('keeps updating in-memory settings when storage writes fail', () => {

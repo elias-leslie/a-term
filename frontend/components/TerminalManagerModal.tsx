@@ -285,7 +285,7 @@ export function TerminalManagerModal({
                       key={session.id}
                       icon={<Terminal size={16} style={iconStyle} />}
                       label={session.name}
-                      description={`${session.project_id ?? 'external'} • ${session.mode}${session.working_dir ? ` • ${session.working_dir}` : ''}`}
+                      description={`${session.project_id ?? 'external'} • ${session.mode} • ${session.working_dir ?? 'unknown dir'}`}
                       paneCount={0}
                       hoverColor="var(--term-accent)"
                       defaultColor="var(--term-text-secondary)"
