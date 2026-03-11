@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   deriveActiveSessionId,
+  parsePersistedSessionId,
   shouldSyncSessionParam,
 } from './use-active-session'
 import type { TerminalSession } from './use-terminal-sessions'
@@ -51,6 +52,20 @@ describe('deriveActiveSessionId', () => {
 
   it('returns null when sessions array is empty', () => {
     expect(deriveActiveSessionId([], 'session-1', null)).toBe(null)
+  })
+})
+
+describe('parsePersistedSessionId', () => {
+  it('reads the current JSON string format', () => {
+    expect(parsePersistedSessionId('"session-2"')).toBe('session-2')
+  })
+
+  it('preserves legacy raw string values', () => {
+    expect(parsePersistedSessionId('session-2')).toBe('session-2')
+  })
+
+  it('ignores non-string JSON payloads', () => {
+    expect(parsePersistedSessionId('{"session":"session-2"}')).toBe(null)
   })
 })
 

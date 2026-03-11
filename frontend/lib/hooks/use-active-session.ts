@@ -15,6 +15,19 @@ import {
 const LAST_ACTIVE_SESSION_KEY = 'terminal:last-active-session-id'
 const DISMISSED_EXTERNAL_SESSIONS_KEY = 'terminal:dismissed-external-session-ids'
 
+export function parsePersistedSessionId(storedValue: string | null): string | null {
+  if (storedValue === null) {
+    return null
+  }
+
+  try {
+    const parsed = JSON.parse(storedValue)
+    return typeof parsed === 'string' ? parsed : null
+  } catch {
+    return storedValue
+  }
+}
+
 export function deriveActiveSessionId(
   sessions: TerminalSession[],
   urlSessionId: string | null,
@@ -203,6 +216,19 @@ export function useActiveSession(): UseActiveSessionResult {
 
   // Whether we're in a valid state
   const isValid = activeSessionId !== null && activeSession !== null
+
+  useEffect(() => {
+    if (persistedSessionId !== null || typeof window === 'undefined') {
+      return
+    }
+
+    const migratedSessionId = parsePersistedSessionId(
+      window.localStorage.getItem(LAST_ACTIVE_SESSION_KEY),
+    )
+    if (migratedSessionId !== null) {
+      setPersistedSessionId(migratedSessionId)
+    }
+  }, [persistedSessionId, setPersistedSessionId])
 
   useEffect(() => {
     if (!shouldSyncSessionParam(activeSessionId, urlSessionId)) {
