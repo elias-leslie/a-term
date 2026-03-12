@@ -75,14 +75,17 @@ def run_tmux_command(args: list[str], check: bool = False) -> tuple[bool, str]:
         return False, error_msg
 
 
+TMUX_SESSION_PREFIX = "summitflow-"
+
+
 def get_tmux_session_name(session_id: str) -> str:
     """Convert session ID to tmux session name."""
-    return f"summitflow-{session_id}"
+    return f"{TMUX_SESSION_PREFIX}{session_id}"
 
 
 def is_managed_tmux_session_name(session_name: str) -> bool:
     """Return True when the tmux session belongs to Terminal-managed UUID sessions."""
-    return session_name.startswith("summitflow-") and _is_valid_uuid(session_name[len("summitflow-"):])
+    return session_name.startswith(TMUX_SESSION_PREFIX) and _is_valid_uuid(session_name[len(TMUX_SESSION_PREFIX):])
 
 
 def tmux_session_exists_by_name(session_name: str) -> bool:
@@ -260,9 +263,9 @@ def list_tmux_sessions() -> set[str]:
 
     result: set[str] = set()
     for line in output.split("\n"):
-        if not line.startswith("summitflow-"):
+        if not line.startswith(TMUX_SESSION_PREFIX):
             continue
-        session_id = line[len("summitflow-"):]
+        session_id = line[len(TMUX_SESSION_PREFIX):]
         if _is_valid_uuid(session_id):
             result.add(session_id)
         else:
