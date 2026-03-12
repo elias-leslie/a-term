@@ -273,7 +273,6 @@ def list_tmux_sessions() -> set[str]:
     return result
 
 
-
 def get_scrollback(session_name: str, max_lines: int = 5000) -> str | None:
     """Capture recent tmux scrollback with color attributes and joined wrapped lines.
 

@@ -26,6 +26,41 @@ def test_get_agent_state_returns_external_tmux_state(test_app: TestClient) -> No
     }
 
 
+def test_get_agent_state_session_not_found(test_app: TestClient) -> None:
+    with (
+        patch("terminal.api.agent.get_external_agent_tmux_session", return_value=None),
+        patch("terminal.api.agent.terminal_store.get_session", return_value=None),
+    ):
+        response = test_app.get("/api/terminal/sessions/nonexistent/agent-state")
+
+    assert response.status_code == 404
+    assert "not found" in response.json()["detail"]
+
+
+def test_get_agent_state_normalizes_unknown_state(test_app: TestClient) -> None:
+    session = {"id": "s1", "claude_state": "bogus_state"}
+    with (
+        patch("terminal.api.agent.get_external_agent_tmux_session", return_value=None),
+        patch("terminal.api.agent.terminal_store.get_session", return_value=session),
+    ):
+        response = test_app.get("/api/terminal/sessions/s1/agent-state")
+
+    assert response.status_code == 200
+    assert response.json()["claude_state"] == "not_started"
+
+
+def test_legacy_claude_state_alias(test_app: TestClient) -> None:
+    session = {"id": "s1", "claude_state": "running"}
+    with (
+        patch("terminal.api.agent.get_external_agent_tmux_session", return_value=None),
+        patch("terminal.api.agent.terminal_store.get_session", return_value=session),
+    ):
+        response = test_app.get("/api/terminal/sessions/s1/claude-state")
+
+    assert response.status_code == 200
+    assert response.json()["claude_state"] == "running"
+
+
 def test_start_agent_returns_noop_for_external_tmux_session(test_app: TestClient) -> None:
     external = {
         "id": "codex-summitflow",

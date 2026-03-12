@@ -88,7 +88,7 @@ def _setup_tmux_options(token: str) -> None:
     if result.returncode == 0:
         logger.info("tmux_options_configured")
     else:
-        # tmux might not be running yet - that's OK
+        # tmux server may not be running at startup; hooks will apply once it starts
         logger.warning("tmux_setup_failed", error=result.stderr.strip())
 
 

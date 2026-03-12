@@ -34,9 +34,6 @@ from ..utils.tmux import (
 router = APIRouter(tags=["Agent Integration"])
 logger = get_logger(__name__)
 
-# Default process name if agent tool not found
-_DEFAULT_PROCESS_NAME = "claude"
-
 
 # ============================================================================
 # Request/Response Models

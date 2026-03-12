@@ -213,7 +213,7 @@ export function PromptCleaner({
 
   return (
     <>
-      <div className={`${styles.backdrop} ${isVisible ? styles.backdropVisible : ''}`} onClick={handleClose} />
+      <div className={`${styles.backdrop} ${isVisible ? styles.backdropVisible : ''}`} onClick={handleClose} aria-hidden="true" />
       <div data-testid="prompt-cleaner-modal" className={`${styles.panel} ${isVisible ? styles.panelVisible : ''}`}>
         <div className={styles.scanlineOverlay} />
         <HeaderBar showDiffToggle={showDiffToggle} state={state} showDiff={showDiff} onToggleDiff={() => setShowDiff(!showDiff)} onClose={handleClose} />

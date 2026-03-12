@@ -5,7 +5,10 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
+from ..logging_config import get_logger
 from ..storage import pane_crud
+
+logger = get_logger(__name__)
 
 
 def get_update_fields(
@@ -63,7 +66,9 @@ async def update_layouts_with_retry(
             return
         except Exception as e:
             if attempt == max_retries - 1:
+                logger.error("layout_update_failed", attempts=max_retries, error=str(e))
                 raise RuntimeError(
                     f"Failed to update layouts after {max_retries} attempts: {e}"
                 ) from e
+            logger.debug("layout_update_retry", attempt=attempt + 1, error=str(e))
             await asyncio.sleep(0.1 * (attempt + 1))

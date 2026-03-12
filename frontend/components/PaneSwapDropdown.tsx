@@ -73,6 +73,9 @@ export function PaneSwapDropdown({
           color: 'var(--term-text-primary)',
         }}
         title={`${currentName} (click to swap position)`}
+        aria-label={`Swap ${currentName} with another pane`}
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
       >
         <span className="truncate">{currentName}</span>
         <ChevronDown

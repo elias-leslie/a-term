@@ -16,11 +16,14 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
+from ..logging_config import get_logger
 from ..rate_limit import limiter
 from ..services import lifecycle
 from ..storage import terminal as terminal_store
 from ..utils.tmux import get_external_agent_tmux_session, list_external_agent_tmux_sessions
 from .validators import validate_uuid
+
+logger = get_logger(__name__)
 
 router = APIRouter(tags=["Terminal Sessions"])
 
@@ -133,6 +136,7 @@ async def update_session(session_id: str, request: UpdateSessionRequest) -> Term
 
     session = terminal_store.update_session(session_id, **update_fields)
     if not session:
+        logger.error("session_update_failed", session_id=session_id, fields=list(update_fields.keys()))
         raise HTTPException(status_code=500, detail="Failed to update session") from None
 
     return TerminalSessionResponse.model_validate(session)

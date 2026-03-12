@@ -21,6 +21,7 @@ export function EmptyPaneState({
       <button
         type="button"
         onClick={onOpenModal}
+        aria-label="Open a new terminal"
         className="flex flex-col items-center gap-3 p-6 rounded-lg cursor-pointer transition-all hover:scale-105"
         style={{
           backgroundColor: 'var(--term-bg-surface)',

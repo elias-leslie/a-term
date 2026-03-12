@@ -31,6 +31,8 @@ export function ModeTogglePopover({
     <>
       <div className="fixed inset-0 z-[9999]" onClick={onClose} role="presentation" aria-hidden="true" />
       <div
+        role="menu"
+        aria-label="Select terminal mode"
         className="fixed z-[10000] rounded-lg overflow-hidden animate-in fade-in slide-in-from-top-1 duration-100"
         style={{
           ...position,
@@ -42,6 +44,7 @@ export function ModeTogglePopover({
         }}
       >
         <button
+          role="menuitem"
           onClick={() => onSelectMode('shell')}
           className="flex items-center gap-2 w-full px-3 py-2 text-left text-xs hover:bg-white/5 transition-colors"
           style={{
@@ -56,6 +59,7 @@ export function ModeTogglePopover({
         {agentTools.map((tool) => (
           <button
             key={tool.slug}
+            role="menuitem"
             onClick={() => onSelectMode(tool.slug)}
             className="flex items-center gap-2 w-full px-3 py-2 text-left text-xs hover:bg-white/5 transition-colors"
             style={{

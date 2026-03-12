@@ -71,6 +71,7 @@ export function PaneOverflowMenu({
         }}
         title="More actions"
         aria-label="More actions"
+        aria-haspopup="menu"
         aria-expanded={isOpen}
       >
         <MoreHorizontal className="w-3.5 h-3.5" />
@@ -79,6 +80,8 @@ export function PaneOverflowMenu({
       {isOpen && (
         <div
           ref={menuRef}
+          role="menu"
+          aria-label="Pane actions"
           data-testid="pane-overflow-menu-items"
           className="absolute right-0 top-full mt-1 z-50 min-w-[140px] py-1 rounded-md shadow-lg"
           style={{

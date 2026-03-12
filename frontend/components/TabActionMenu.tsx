@@ -91,6 +91,7 @@ export function TabActionMenu({
           }
         }}
         title="Tab actions"
+        aria-label="Tab actions"
         aria-haspopup="menu"
         aria-expanded={isOpen}
       >
@@ -113,6 +114,7 @@ export function TabActionMenu({
             ref={menuRef}
             data-testid="tab-action-menu-items"
             role="menu"
+            aria-label="Tab actions"
             className="min-w-[120px] rounded-md overflow-hidden animate-in fade-in slide-in-from-top-1 duration-100"
             style={{
               ...menuStyle,

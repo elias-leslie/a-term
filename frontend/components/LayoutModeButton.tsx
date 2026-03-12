@@ -223,6 +223,7 @@ export function LayoutModeButtons({
             ref={dropdownRef}
             data-testid="layout-dropdown-menu"
             role="listbox"
+            aria-label="Layout options"
             className="min-w-[140px] rounded-md overflow-hidden animate-in fade-in slide-in-from-top-1 duration-100"
             style={{
               ...dropdownStyle,

@@ -112,8 +112,10 @@ def create_agent_tool(body: CreateAgentToolRequest) -> AgentToolResponse:
             is_default=body.is_default,
             enabled=body.enabled,
         )
-    except Exception as e:
+    except (ValueError, KeyError) as e:
         raise HTTPException(status_code=400, detail=str(e)) from None
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create agent tool: {e}") from None
 
     return _to_response(tool)
 

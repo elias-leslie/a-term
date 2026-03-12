@@ -11,14 +11,15 @@ import { useTerminalKeyboardShortcuts } from '@/components/KeyboardShortcuts'
 
 function getVoiceWsUrl(): string {
   if (typeof window === 'undefined') return ''
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  // Agent Hub voice WebSocket on same host, port 8003
-  const host = window.location.hostname
-  const isProduction = host.includes('summitflow.dev')
-  if (isProduction) {
-    return `wss://agent.summitflow.dev/api/voice/ws?user_id=terminal&app=terminal`
+  const agentHubUrl = process.env.NEXT_PUBLIC_AGENT_HUB_URL
+  if (agentHubUrl) {
+    const url = new URL(agentHubUrl)
+    const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${protocol}//${url.host}/api/voice/ws?user_id=terminal&app=terminal`
   }
-  return `${protocol}//${host}:8003/api/voice/ws?user_id=terminal&app=terminal`
+  // Fallback: Agent Hub on same host, port 8003
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${protocol}//${window.location.hostname}:8003/api/voice/ws?user_id=terminal&app=terminal`
 }
 
 interface UseTerminalOrchestrationProps {

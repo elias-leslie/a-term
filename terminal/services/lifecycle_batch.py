@@ -65,7 +65,7 @@ def _delete_project_sessions(sessions: list[dict[str, Any]], project_id: str) ->
     for session in sessions:
         delete_session(session["id"])
     if count > 2:
-        logger.warning("orphan_sessions_cleaned", project_id=project_id, deleted_count=count)
+        logger.warning("excess_sessions_cleaned", project_id=project_id, deleted_count=count)
     return count
 
 
@@ -79,6 +79,8 @@ def _recreate_project_sessions(
     Creates a shell session and an agent session using the default agent tool slug.
     """
     default_tool = agent_tools_store.get_default()
+    if not default_tool:
+        logger.warning("no_default_agent_tool", fallback="claude")
     agent_slug = default_tool["slug"] if default_tool else "claude"
     modes = [SHELL_MODE, agent_slug]
 
