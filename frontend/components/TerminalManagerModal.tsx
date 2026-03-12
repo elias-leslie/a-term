@@ -94,13 +94,14 @@ export function TerminalManagerModal({
   )
 
   const closeAndReset = () => { setSearchQuery(''); onClose() }
+  const resetSearch = () => { setSearchQuery('') }
   const handleProjectClick = (project: ProjectSetting) => { onCreateProjectTerminal(project.id, project.root_path); closeAndReset() }
   const handleCreateGeneric = () => { onCreateGenericTerminal(); closeAndReset() }
-  const handleExternalSessionClick = (session: TerminalSession) => { onAttachExternalSession(session.id); closeAndReset() }
+  const handleExternalSessionClick = (session: TerminalSession) => { resetSearch(); onAttachExternalSession(session.id) }
   const handleRestoreExternalSession = (session: TerminalSession) => {
+    resetSearch()
     onRestoreExternalSession(session.id)
     onAttachExternalSession(session.id)
-    closeAndReset()
   }
 
   const noMatches =

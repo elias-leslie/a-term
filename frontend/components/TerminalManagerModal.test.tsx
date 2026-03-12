@@ -203,7 +203,7 @@ describe('TerminalManagerModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /claude-terminal/i }))
 
     expect(onAttachExternalSession).toHaveBeenCalledWith('claude-terminal')
-    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(onClose).not.toHaveBeenCalled()
   })
 
   it('restores a hidden external session from the modal', () => {
@@ -244,7 +244,7 @@ describe('TerminalManagerModal', () => {
 
     expect(onRestoreExternalSession).toHaveBeenCalledWith('codex-agent-hub')
     expect(onAttachExternalSession).toHaveBeenCalledWith('codex-agent-hub')
-    expect(onClose).toHaveBeenCalledTimes(1)
+    expect(onClose).not.toHaveBeenCalled()
   })
 
   it('shows a shared no-match summary when the search has no results', () => {

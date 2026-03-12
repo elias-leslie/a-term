@@ -30,10 +30,17 @@ export function useTerminalModals({
   const searchParams = useSearchParams()
   const urlModal = searchParams.get('modal')
 
+  const getLatestSearchParams = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search)
+    }
+    return new URLSearchParams(searchParams.toString())
+  }, [searchParams])
+
   // Helper to update URL params
   const updateUrlParams = useCallback(
     (updates: Record<string, string | null>) => {
-      const newParams = new URLSearchParams(searchParams.toString())
+      const newParams = getLatestSearchParams()
       for (const [key, value] of Object.entries(updates)) {
         if (value === null) {
           newParams.delete(key)
@@ -46,7 +53,7 @@ export function useTerminalModals({
         scroll: false,
       })
     },
-    [searchParams, router, pathname],
+    [getLatestSearchParams, router, pathname],
   )
 
   // Open terminal manager

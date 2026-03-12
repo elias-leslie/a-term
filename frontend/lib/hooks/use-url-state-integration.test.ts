@@ -16,11 +16,12 @@ const mockUseProjectTerminals = vi.fn()
 
 function applyUrl(url: string) {
   const nextUrl = new URL(url, 'http://localhost/')
+  window.history.replaceState({}, '', `${nextUrl.pathname}${nextUrl.search}`)
   navigationState.searchParams = new URLSearchParams(nextUrl.search)
 }
 
 function resetNavigation(search = '') {
-  navigationState.searchParams = new URLSearchParams(search)
+  applyUrl(`/${search ? `?${search}` : ''}`)
   mockReplace.mockReset()
   mockPush.mockReset()
   mockReplace.mockImplementation((url: string) => {
@@ -177,5 +178,29 @@ describe('URL state integration', () => {
 
     rerender()
     expect(setShowTerminalManager).toHaveBeenLastCalledWith(false)
+  })
+
+  it('preserves the attached external session when close runs in the same tick', async () => {
+    resetNavigation('session=session-2&modal=terminal-manager')
+
+    const { result } = renderHook(() => ({
+      modals: useTerminalModals({
+        showTerminalManager: true,
+        setShowTerminalManager: vi.fn(),
+        showKeyboardHelp: false,
+        setShowKeyboardHelp: vi.fn(),
+      }),
+    }))
+
+    act(() => {
+      result.current.modals.handleAttachExternalSession('codex-terminal')
+      result.current.modals.handleCloseTerminalManager()
+    })
+
+    await waitFor(() => {
+      expect(readParams()).toEqual({
+        session: 'codex-terminal',
+      })
+    })
   })
 })
