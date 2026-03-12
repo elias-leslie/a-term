@@ -10,6 +10,14 @@ import {
   useProjectSettings,
 } from '@/lib/hooks/use-project-settings'
 import type { TerminalPane } from '@/lib/hooks/use-terminal-panes'
+import {
+  filterAndSortSessions,
+  iconStyle,
+  sectionHeaderStyle,
+  SectionHeader,
+  SessionSection,
+  TerminalButton,
+} from './TerminalManagerModal.parts'
 
 interface TerminalManagerModalProps {
   isOpen: boolean
@@ -22,73 +30,6 @@ interface TerminalManagerModalProps {
   onRestoreExternalSession: (sessionId: string) => void
   panes: TerminalPane[]
 }
-
-interface TerminalButtonProps {
-  icon: React.ReactNode
-  label: string
-  description?: string
-  paneCount: number
-  hoverColor: string
-  defaultColor: string
-  actionLabel?: string
-  onClick: () => void
-}
-
-function formatSessionDescription(session: TerminalSession): string {
-  const location = session.working_dir || 'no working directory'
-  return `${session.project_id ?? 'external'} • ${session.mode} • ${location}`
-}
-
-function TerminalButton({
-  icon,
-  label,
-  description,
-  paneCount,
-  hoverColor,
-  defaultColor,
-  actionLabel = 'Open',
-  onClick,
-}: TerminalButtonProps) {
-  const hoverStyle = useHoverStyle({
-    hoverBg: 'var(--term-bg-surface)',
-    defaultBg: 'transparent',
-    hoverColor,
-    defaultColor,
-  })
-
-  return (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-3 w-full px-3 py-3 min-h-[44px] rounded-md transition-colors text-left"
-      style={{ ...hoverStyle.style, fontFamily: 'var(--font-mono)' }}
-      onMouseEnter={hoverStyle.onMouseEnter}
-      onMouseLeave={hoverStyle.onMouseLeave}
-    >
-      {icon}
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm truncate">{label}</span>
-        {description ? (
-          <span className="block text-[11px] truncate" style={{ color: 'var(--term-text-muted)' }}>
-            {description}
-          </span>
-        ) : null}
-      </span>
-      {paneCount > 0 && (
-        <span
-          className="text-xs px-1.5 py-0.5 rounded"
-          style={{ backgroundColor: 'var(--term-bg-surface)', color: 'var(--term-text-muted)' }}
-        >
-          {paneCount} open
-        </span>
-      )}
-      <span className="text-[11px] uppercase tracking-[0.14em]" style={{ color: 'var(--term-text-muted)', flexShrink: 0, fontFamily: 'var(--font-mono)' }}>
-        {actionLabel}
-      </span>
-    </button>
-  )
-}
-
-const iconStyle = { color: 'var(--term-accent)', flexShrink: 0 } as const
 
 /**
  * Terminal Manager Modal - opened via + button in tab bar.
@@ -131,6 +72,7 @@ export function TerminalManagerModal({
   }, [panes])
 
   const normalizedSearch = deferredSearchQuery.trim().toLowerCase()
+
   const visibleProjects = useMemo(() => {
     const sorted = [...projects].sort((a, b) => {
       const delta = (paneCounts[b.id] || 0) - (paneCounts[a.id] || 0)
@@ -142,33 +84,19 @@ export function TerminalManagerModal({
     )
   }, [projects, paneCounts, normalizedSearch])
 
-  const visibleExternalSessions = useMemo(() => {
-    const sorted = [...externalSessions].sort((a, b) => a.name.localeCompare(b.name))
-    if (!normalizedSearch) return sorted
-    return sorted.filter((session) =>
-      `${session.name} ${session.project_id ?? ''} ${session.working_dir ?? ''} ${session.mode}`.toLowerCase().includes(normalizedSearch)
-    )
-  }, [externalSessions, normalizedSearch])
-  const visibleHiddenExternalSessions = useMemo(() => {
-    const sorted = [...hiddenExternalSessions].sort((a, b) => a.name.localeCompare(b.name))
-    if (!normalizedSearch) return sorted
-    return sorted.filter((session) =>
-      `${session.name} ${session.project_id ?? ''} ${session.working_dir ?? ''} ${session.mode}`.toLowerCase().includes(normalizedSearch)
-    )
-  }, [hiddenExternalSessions, normalizedSearch])
+  const visibleExternalSessions = useMemo(
+    () => filterAndSortSessions(externalSessions, normalizedSearch),
+    [externalSessions, normalizedSearch],
+  )
+  const visibleHiddenExternalSessions = useMemo(
+    () => filterAndSortSessions(hiddenExternalSessions, normalizedSearch),
+    [hiddenExternalSessions, normalizedSearch],
+  )
 
   const closeAndReset = () => { setSearchQuery(''); onClose() }
-
-  const handleProjectClick = (project: ProjectSetting) => {
-    onCreateProjectTerminal(project.id, project.root_path)
-    closeAndReset()
-  }
-
+  const handleProjectClick = (project: ProjectSetting) => { onCreateProjectTerminal(project.id, project.root_path); closeAndReset() }
   const handleCreateGeneric = () => { onCreateGenericTerminal(); closeAndReset() }
-  const handleExternalSessionClick = (session: TerminalSession) => {
-    onAttachExternalSession(session.id)
-    closeAndReset()
-  }
+  const handleExternalSessionClick = (session: TerminalSession) => { onAttachExternalSession(session.id); closeAndReset() }
   const handleRestoreExternalSession = (session: TerminalSession) => {
     onRestoreExternalSession(session.id)
     onAttachExternalSession(session.id)
@@ -180,6 +108,8 @@ export function TerminalManagerModal({
     visibleProjects.length === 0 &&
     visibleExternalSessions.length === 0 &&
     visibleHiddenExternalSessions.length === 0
+
+  const trimmedSearch = deferredSearchQuery.trim()
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => { if (!open) closeAndReset() }}>
@@ -201,7 +131,7 @@ export function TerminalManagerModal({
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--term-border)' }}>
             <div className="min-w-0">
-              <Dialog.Title className="text-xs font-medium tracking-widest" style={{ color: 'var(--term-text-muted)', fontFamily: 'var(--font-mono)' }}>
+              <Dialog.Title className="text-xs font-medium tracking-widest" style={sectionHeaderStyle}>
                 TERMINALS
               </Dialog.Title>
               <Dialog.Description className="mt-1 text-xs" style={{ color: 'var(--term-text-muted)' }}>
@@ -224,7 +154,7 @@ export function TerminalManagerModal({
 
           {/* Search */}
           <div className="p-4">
-            <label htmlFor="terminal-manager-search" className="mb-2 block text-[11px] font-medium uppercase tracking-[0.14em]" style={{ color: 'var(--term-text-muted)', fontFamily: 'var(--font-mono)' }}>
+            <label htmlFor="terminal-manager-search" className="mb-2 block text-[11px] font-medium uppercase tracking-[0.14em]" style={sectionHeaderStyle}>
               Search Terminals
             </label>
             <input
@@ -243,19 +173,20 @@ export function TerminalManagerModal({
               aria-live="polite"
             >
               {noMatches
-                ? `No terminals match "${deferredSearchQuery.trim()}".`
+                ? `No terminals match "${trimmedSearch}".`
                 : `Showing ${visibleProjects.length} project${visibleProjects.length === 1 ? '' : 's'}, ${visibleExternalSessions.length} live external, and ${visibleHiddenExternalSessions.length} hidden external session${visibleHiddenExternalSessions.length === 1 ? '' : 's'}.`}
             </p>
           </div>
 
+          {/* Scroll region */}
           <div
             data-testid="terminal-manager-scroll-region"
             className="flex-1 overflow-y-auto overscroll-contain px-4 pb-5"
           >
-            <div className="mb-2 flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.14em]" style={{ color: 'var(--term-text-muted)', fontFamily: 'var(--font-mono)' }}>
-              <span>Quick Start</span>
-              <span>{visibleProjects.length} project{visibleProjects.length === 1 ? '' : 's'}</span>
-            </div>
+            <SectionHeader
+              title="Quick Start"
+              countLabel={`${visibleProjects.length} project${visibleProjects.length === 1 ? '' : 's'}`}
+            />
             <div className="rounded-lg p-2" style={{ backgroundColor: 'rgba(10, 14, 20, 0.35)', border: '1px solid var(--term-border)' }}>
               <TerminalButton
                 icon={<Terminal size={16} style={iconStyle} />}
@@ -288,72 +219,32 @@ export function TerminalManagerModal({
               )}
               {projects.length > 0 && visibleProjects.length === 0 && (
                 <p className="px-3 py-6 text-center text-sm" style={{ color: 'var(--term-text-muted)' }}>
-                  No projects match &quot;{deferredSearchQuery.trim()}&quot;.
+                  No projects match &quot;{trimmedSearch}&quot;.
                 </p>
               )}
             </div>
 
-            {externalSessions.length > 0 && (
-              <div className="pt-4">
-                <div className="mb-2 flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.14em]" style={{ color: 'var(--term-text-muted)', fontFamily: 'var(--font-mono)' }}>
-                  <span>External Sessions</span>
-                  <span>{visibleExternalSessions.length} live</span>
-                </div>
-                <div className="rounded-lg p-2" style={{ backgroundColor: 'rgba(10, 14, 20, 0.35)', border: '1px solid var(--term-border)' }}>
-                  <div className="space-y-1 pr-1 md:max-h-[320px] md:overflow-y-auto">
-                    {visibleExternalSessions.map((session) => (
-                      <TerminalButton
-                        key={session.id}
-                        icon={<Terminal size={16} style={iconStyle} />}
-                        label={session.name}
-                        description={formatSessionDescription(session)}
-                        paneCount={0}
-                        hoverColor="var(--term-accent)"
-                        defaultColor="var(--term-text-secondary)"
-                        actionLabel="Attach"
-                        onClick={() => handleExternalSessionClick(session)}
-                      />
-                    ))}
-                  </div>
-                  {visibleExternalSessions.length === 0 && (
-                    <p className="px-3 py-6 text-center text-sm" style={{ color: 'var(--term-text-muted)' }}>
-                      No external sessions match &quot;{deferredSearchQuery.trim()}&quot;.
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {hiddenExternalSessions.length > 0 && (
-              <div className="pt-4">
-                <div className="mb-2 flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.14em]" style={{ color: 'var(--term-text-muted)', fontFamily: 'var(--font-mono)' }}>
-                  <span>Hidden External Sessions</span>
-                  <span>{visibleHiddenExternalSessions.length} hidden</span>
-                </div>
-                <div className="rounded-lg p-2" style={{ backgroundColor: 'rgba(10, 14, 20, 0.35)', border: '1px solid var(--term-border)' }}>
-                  <div className="space-y-1 pr-1 md:max-h-[280px] md:overflow-y-auto">
-                    {visibleHiddenExternalSessions.map((session) => (
-                      <TerminalButton
-                        key={session.id}
-                        icon={<Terminal size={16} style={iconStyle} />}
-                        label={session.name}
-                        description={formatSessionDescription(session)}
-                        paneCount={0}
-                        hoverColor="var(--term-accent)"
-                        defaultColor="var(--term-text-secondary)"
-                        actionLabel="Restore"
-                        onClick={() => handleRestoreExternalSession(session)}
-                      />
-                    ))}
-                  </div>
-                  {visibleHiddenExternalSessions.length === 0 && (
-                    <p className="px-3 py-4 text-center text-sm" style={{ color: 'var(--term-text-muted)' }}>
-                      No hidden external sessions match &quot;{deferredSearchQuery.trim()}&quot;.
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
+            <SessionSection
+              title="External Sessions"
+              countLabel={`${visibleExternalSessions.length} live`}
+              total={externalSessions.length}
+              visible={visibleExternalSessions}
+              searchQuery={trimmedSearch}
+              emptyLabel="external sessions"
+              actionLabel="Attach"
+              onAction={handleExternalSessionClick}
+            />
+            <SessionSection
+              title="Hidden External Sessions"
+              countLabel={`${visibleHiddenExternalSessions.length} hidden`}
+              total={hiddenExternalSessions.length}
+              visible={visibleHiddenExternalSessions}
+              searchQuery={trimmedSearch}
+              emptyLabel="hidden external sessions"
+              actionLabel="Restore"
+              maxHeight="md:max-h-[280px]"
+              onAction={handleRestoreExternalSession}
+            />
           </div>
         </Dialog.Content>
       </Dialog.Portal>
