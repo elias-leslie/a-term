@@ -15,7 +15,7 @@ export default function Error({
   }, [error])
 
   return (
-    <div className="h-screen flex flex-col items-center justify-center bg-slate-900 text-slate-300 gap-4">
+    <div className="h-dvh flex flex-col items-center justify-center bg-slate-900 text-slate-300 gap-4" role="alert" aria-live="assertive">
       <div className="text-red-400 font-mono text-sm">
         Terminal encountered an error
       </div>

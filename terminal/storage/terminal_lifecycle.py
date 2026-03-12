@@ -13,7 +13,6 @@ from typing import Any
 from .connection import get_connection
 from .terminal_crud import (
     TERMINAL_SESSION_FIELDS,
-    _execute_session_query,
     _row_to_dict,
     update_session,
 )
@@ -106,29 +105,7 @@ def touch_session(session_id: SessionId) -> dict[str, Any] | None:
     return _row_to_dict(row)
 
 
-def list_orphaned(older_than_days: int = 30) -> list[dict[str, Any]]:
-    """List sessions not accessed in N days.
-
-    Used by cleanup job to find abandoned sessions.
-
-    Args:
-        older_than_days: Days since last access (default 30)
-
-    Returns:
-        List of orphaned session dicts
-    """
-    cutoff = datetime.now(UTC) - timedelta(days=older_than_days)
-    query = f"""
-        SELECT {TERMINAL_SESSION_FIELDS}
-        FROM terminal_sessions
-        WHERE last_accessed_at < %s
-        ORDER BY last_accessed_at
-    """
-    return _execute_session_query(query, (cutoff,), fetch_mode="all")
-
-
 __all__ = [
-    "list_orphaned",
     "mark_dead",
     "purge_dead_sessions",
     "touch_session",

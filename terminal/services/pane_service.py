@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from ..storage import pane_crud
@@ -56,8 +57,6 @@ async def update_layouts_with_retry(
     layouts_data: list[dict[str, Any]], max_retries: int = 3
 ) -> None:
     """Update pane layouts with retry logic for database contention."""
-    import asyncio
-
     for attempt in range(max_retries):
         try:
             pane_crud.update_pane_layouts(layouts_data)

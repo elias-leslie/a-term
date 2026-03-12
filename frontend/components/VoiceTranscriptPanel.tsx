@@ -36,6 +36,7 @@ export function VoiceTranscriptPanel({
   const [editedText, setEditedText] = useState(transcript)
   const [visible, setVisible] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
 
   // Animate in on mount
   useEffect(() => {
@@ -65,13 +66,18 @@ export function VoiceTranscriptPanel({
     if (text) onInsert(text)
   }, [editedText, onInsert])
 
+  // Clean up close animation timer on unmount
+  useEffect(() => () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
+  }, [])
+
   const handleClose = useCallback(() => {
     if (isMobile) {
       onCancel()
       return
     }
     setVisible(false)
-    setTimeout(onCancel, 300)
+    closeTimerRef.current = setTimeout(onCancel, 300)
   }, [onCancel, isMobile])
 
   const handleKeyDown = useCallback(

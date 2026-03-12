@@ -9,14 +9,13 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import subprocess
-from typing import Literal, cast
+from typing import cast
 
+from ..constants import AgentState
 from ..logging_config import get_logger
 from ..storage import terminal as terminal_store
 
 logger = get_logger(__name__)
-
-AgentState = Literal["not_started", "starting", "running", "stopped", "error"]
 
 # Delay before verifying agent started (agents need time to initialize)
 AGENT_STARTUP_VERIFY_DELAY_SECONDS = 3
@@ -44,7 +43,7 @@ def _is_agent_running_in_session_sync(tmux_session: str, process_name: str) -> b
         )
         return False
 
-    return process_name in result.stdout.strip().lower()
+    return process_name.lower() in result.stdout.strip().lower()
 
 
 async def is_agent_running(tmux_session: str, process_name: str) -> bool:

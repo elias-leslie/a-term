@@ -122,7 +122,7 @@ def create_session(
         project_id: Optional project ID for context
         working_dir: Initial working directory (default: user home)
         user_id: Optional user ID (for future auth support)
-        mode: Session mode - 'shell' or 'claude' (default: 'shell')
+        mode: Session mode - 'shell' or agent tool slug (default: 'shell')
         pane_id: Pane this session belongs to (required for pane architecture)
 
     Returns:

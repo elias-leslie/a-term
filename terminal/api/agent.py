@@ -10,11 +10,12 @@ Provides:
 
 from __future__ import annotations
 
-from typing import Literal, cast
+from typing import cast
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 
+from ..constants import AgentState
 from ..logging_config import get_logger
 from ..services.agent_service import (
     atomically_set_starting,
@@ -32,8 +33,6 @@ from ..utils.tmux import (
 
 router = APIRouter(tags=["Agent Integration"])
 logger = get_logger(__name__)
-
-AgentState = Literal["not_started", "starting", "running", "stopped", "error"]
 
 # Default process name if agent tool not found
 _DEFAULT_PROCESS_NAME = "claude"
@@ -153,7 +152,7 @@ async def start_agent(session_id: str, background_tasks: BackgroundTasks) -> Sta
         raise HTTPException(status_code=404, detail=f"Session {session_id} not found") from None
 
     command, process_name = _get_agent_tool_for_session(session)
-    current_state: AgentState = session.get("claude_state", "not_started")
+    current_state: AgentState = _normalize_agent_state(session.get("claude_state", "not_started"))
 
     if current_state == "starting":
         return _early_return(session_id, "starting", "Agent is already starting")

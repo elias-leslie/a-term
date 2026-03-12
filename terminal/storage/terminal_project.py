@@ -34,54 +34,6 @@ def get_session_by_project(project_id: str, mode: str = "shell") -> dict[str, An
     return _execute_session_query(query, (project_id, mode))
 
 
-def get_dead_session_by_project(project_id: str, mode: str = "shell") -> dict[str, Any] | None:
-    """Get a dead session for a project and mode (for resurrection).
-
-    Finds the most recent dead session for resurrection via
-    ``claim_dead_session_by_project``.
-
-    Args:
-        project_id: Project identifier
-        mode: Session mode - 'shell' or agent tool slug (default: 'shell')
-
-    Returns:
-        Dead session dict or None if not found
-    """
-    query = f"""
-        SELECT {TERMINAL_SESSION_FIELDS}
-        FROM terminal_sessions
-        WHERE project_id = %s AND mode = %s AND is_alive = false
-        ORDER BY created_at DESC
-        LIMIT 1
-    """
-    return _execute_session_query(query, (project_id, mode))
-
-
-def get_project_sessions(project_id: str) -> dict[str, dict[str, Any] | None]:
-    """Get the active sessions for a project, keyed by mode.
-
-    Returns the most recently created session for each mode.
-
-    Args:
-        project_id: Project identifier
-
-    Returns:
-        Dict keyed by mode (e.g. 'shell', 'claude'), each containing session dict or None
-    """
-    query = f"""
-        SELECT {TERMINAL_SESSION_FIELDS}
-        FROM terminal_sessions
-        WHERE project_id = %s AND is_alive = true
-        ORDER BY mode, created_at DESC
-    """
-    sessions = _execute_session_query(query, (project_id,), fetch_mode="all")
-    result: dict[str, dict[str, Any] | None] = {"shell": None, "claude": None}
-    for session in sessions:
-        # Take first session per mode (most recent due to ORDER BY)
-        if session["mode"] in result and result[session["mode"]] is None:
-            result[session["mode"]] = session
-    return result
-
 
 def get_all_project_sessions(project_id: str) -> list[dict[str, Any]]:
     """Get ALL sessions for a project (including duplicates).
@@ -135,7 +87,5 @@ def claim_dead_session_by_project(project_id: str, mode: str) -> dict[str, Any] 
 __all__ = [
     "claim_dead_session_by_project",
     "get_all_project_sessions",
-    "get_dead_session_by_project",
-    "get_project_sessions",
     "get_session_by_project",
 ]

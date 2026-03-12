@@ -8,7 +8,7 @@ Submodules:
 - terminal_crud: Basic CRUD operations
 - terminal_lifecycle: Session lifecycle management
 - terminal_project: Project-scoped queries
-- terminal_claude: Claude integration (AI assistant state)
+- terminal_claude: Agent state management
 """
 
 from __future__ import annotations
@@ -31,7 +31,6 @@ from .terminal_crud import (
 
 # Lifecycle operations
 from .terminal_lifecycle import (
-    list_orphaned,
     mark_dead,
     purge_dead_sessions,
     touch_session,
@@ -40,8 +39,6 @@ from .terminal_lifecycle import (
 # Project-specific queries
 from .terminal_project import (
     claim_dead_session_by_project,
-    get_dead_session_by_project,
-    get_project_sessions,
     get_session_by_project,
 )
 
@@ -50,11 +47,8 @@ __all__ = [
     "create_session",
     "delete_session",
     "get_claude_state",
-    "get_dead_session_by_project",
-    "get_project_sessions",
     "get_session",
     "get_session_by_project",
-    "list_orphaned",
     "list_sessions",
     "mark_dead",
     "purge_dead_sessions",

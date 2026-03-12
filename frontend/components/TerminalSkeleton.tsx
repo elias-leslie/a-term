@@ -9,6 +9,8 @@ export function TerminalSkeleton() {
     <div
       className="flex-1 flex flex-col"
       style={{ backgroundColor: 'var(--term-bg-deep)' }}
+      aria-busy="true"
+      aria-label="Loading terminal"
     >
       {/* Header skeleton */}
       <div

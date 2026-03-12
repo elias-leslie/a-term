@@ -107,7 +107,7 @@ def reset_project_sessions(
         working_dir: Optional new working directory for recreated sessions
 
     Returns:
-        Dict mapping 'shell' and 'claude' to new session IDs (or None)
+        Dict mapping mode slugs to new session IDs (or None)
     """
     from ..storage.terminal_project import get_all_project_sessions
 

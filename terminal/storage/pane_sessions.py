@@ -54,9 +54,7 @@ def fetch_all_sessions_by_pane() -> dict[str, list[dict[str, Any]]]:
         session = _row_to_dict(row)
         pane_id = session["pane_id"]
         if pane_id:
-            if pane_id not in sessions_by_pane:
-                sessions_by_pane[pane_id] = []
-            sessions_by_pane[pane_id].append(session)
+            sessions_by_pane.setdefault(pane_id, []).append(session)
 
     return sessions_by_pane
 

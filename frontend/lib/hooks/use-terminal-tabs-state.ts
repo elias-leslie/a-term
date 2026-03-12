@@ -151,7 +151,6 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     () => terminalSlots.some((slot) => slot.type === 'adhoc' && slot.isExternal),
     [terminalSlots],
   )
-  const reorder = useCallback((_newOrder: string[]) => { /* noop — reorder via drag-and-drop not yet implemented */ }, [])
   const swapPanes = useSwapPanes(terminalSlots, swapPanePositions)
   const canAddPane = useCallback(
     () =>
@@ -199,7 +198,6 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     isGridMode,
     terminalSlots,
     orderedIds,
-    reorder,
     swapPanes,
     canAddPane,
     panes,

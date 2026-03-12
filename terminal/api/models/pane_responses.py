@@ -27,7 +27,7 @@ class PaneResponse(BaseModel):
     project_id: str | None
     pane_order: int
     pane_name: str
-    active_mode: str  # 'shell' or 'claude'
+    active_mode: str  # 'shell' or agent tool slug
     created_at: str | None
     sessions: list[SessionInPaneResponse] = []
     # Layout fields for resizable grid

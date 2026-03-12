@@ -14,7 +14,6 @@ interface UseTerminalSlotHandlersParams {
   terminalRefs: MutableRefObject<Map<string, TerminalHandle | null>>
   switchToSession: (sessionId: string) => void
   dismissExternalSession: (sessionId: string) => void
-  resetProject: (projectId: string) => Promise<void>
   reset: (sessionId: string) => Promise<TerminalSession>
   disableProject: (projectId: string) => Promise<void>
   remove: (sessionId: string) => Promise<void>
@@ -40,7 +39,6 @@ export function useTerminalSlotHandlers({
   terminalRefs,
   switchToSession,
   dismissExternalSession,
-  resetProject: _resetProject,
   reset,
   disableProject,
   remove,

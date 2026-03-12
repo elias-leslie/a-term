@@ -72,7 +72,7 @@ def swap_pane_positions(pane_id_a: PaneId, pane_id_b: PaneId) -> bool:
     """Swap positions of two panes."""
     norm_a = normalize_pane_id(pane_id_a)
     norm_b = normalize_pane_id(pane_id_b)
-    if str(norm_a) == str(norm_b):
+    if norm_a == norm_b:
         return True  # no-op: same pane
     with get_connection() as conn, conn.cursor() as cur:
         cur.execute(
