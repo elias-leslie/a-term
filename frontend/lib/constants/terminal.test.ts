@@ -39,8 +39,11 @@ describe('getAvailableLayoutModes', () => {
     ])
   })
 
-  it('offers both wide and tall grids for five and six panes', () => {
-    expect(getAvailableLayoutModes(5, 1920)).toEqual(['grid-3x2', 'grid-2x3'])
+  it('offers grid-3x2 for five panes (one empty cell)', () => {
+    expect(getAvailableLayoutModes(5, 1920)).toEqual(['grid-3x2'])
+  })
+
+  it('offers both wide and tall grids for six panes', () => {
     expect(getAvailableLayoutModes(6, 2560)).toEqual(['grid-3x2', 'grid-2x3'])
   })
 

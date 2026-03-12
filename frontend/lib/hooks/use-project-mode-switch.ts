@@ -99,14 +99,6 @@ export function useProjectModeSwitch({
     [searchParams, router],
   )
 
-  // Helper to start the agent in a session and wait for confirmation
-  const startAgentInSession = useCallback(
-    async (sessionId: string): Promise<boolean> => {
-      return startAgent(sessionId)
-    },
-    [startAgent],
-  )
-
   // Main orchestration function
   const switchProjectMode = useCallback(
     async (params: SwitchProjectModeParams): Promise<void> => {
@@ -160,7 +152,7 @@ export function useProjectModeSwitch({
             agentState !== 'running' && agentState !== 'starting'
 
           if (needsAgentStart) {
-            await startAgentInSession(targetSession.id)
+            await startAgent(targetSession.id)
           }
         }
 
@@ -177,7 +169,7 @@ export function useProjectModeSwitch({
             const needsAgentStart =
               agentState !== 'running' && agentState !== 'starting'
             if (needsAgentStart) {
-              await startAgentInSession(matchingSession.id)
+              await startAgent(matchingSession.id)
             }
           }
           navigateToSession(matchingSession.id)
@@ -199,7 +191,7 @@ export function useProjectModeSwitch({
       setActiveMode,
       switchAgentTool,
       switchMode,
-      startAgentInSession,
+      startAgent,
       navigateToSession,
       projectTabRefs,
     ],

@@ -20,7 +20,8 @@ from fastapi import APIRouter, HTTPException, Request
 
 from ..constants import MAX_PANES
 from ..rate_limit import limiter
-from ..services.lifecycle_core import _kill_tmux_session, create_session, delete_session
+from ..services.lifecycle_core import create_session, delete_session
+from ..services.lifecycle_helpers import kill_tmux_session
 from ..services.pane_service import (
     convert_layout_items_to_storage,
     get_layout_update_fields,
@@ -141,7 +142,7 @@ async def delete_pane(pane_id: str) -> dict[str, Any]:
     # Kill tmux sessions before deleting DB records to prevent orphans
     sessions = fetch_sessions_for_pane(pane_id)
     for session in sessions:
-        _kill_tmux_session(session["id"], ignore_missing=True)
+        kill_tmux_session(session["id"], ignore_missing=True)
 
     deleted = pane_crud.delete_pane(pane_id)
     if not deleted:
@@ -232,7 +233,7 @@ def _replace_agent_session(pane: dict[str, Any], pane_id: str, agent_tool_slug: 
         None,
     )
     if agent_session:
-        _kill_tmux_session(agent_session["id"], ignore_missing=True)
+        kill_tmux_session(agent_session["id"], ignore_missing=True)
         delete_session(agent_session["id"])
 
     shell_session = next(

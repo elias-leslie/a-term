@@ -20,9 +20,6 @@ from .lifecycle_helpers import (
     try_resurrect_tmux,
 )
 
-# Re-export for callers that import _kill_tmux_session directly (api/panes.py)
-_kill_tmux_session = kill_tmux_session
-
 logger = get_logger(__name__)
 
 

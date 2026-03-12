@@ -109,7 +109,7 @@ export const ModeToggle = memo(function ModeToggle({
       if (hasMultipleTools) { setShowPopover((prev) => !prev); return }
       const oppositeMode: TerminalMode = isAgentMode ? 'shell' : defaultTool?.slug ?? fallbackAgentSlug
       setInternalLoading(true)
-      try { await onChange(oppositeMode) } catch (error) { console.error('Failed to switch mode:', error) } finally { setInternalLoading(false) }
+      try { await onChange(oppositeMode) } catch { /* caller handles errors */ } finally { setInternalLoading(false) }
     },
     [isAgentMode, onChange, isDisabled, hasMultipleTools, defaultTool],
   )
@@ -119,7 +119,7 @@ export const ModeToggle = memo(function ModeToggle({
       setShowPopover(false)
       if (mode === value) return
       setInternalLoading(true)
-      try { await onChange(mode) } catch (error) { console.error('Failed to switch mode:', error) } finally { setInternalLoading(false) }
+      try { await onChange(mode) } catch { /* caller handles errors */ } finally { setInternalLoading(false) }
     },
     [onChange, value],
   )

@@ -22,9 +22,9 @@ import type {
 } from './use-terminal-handlers.types'
 
 export function useTerminalHandlers({
-  projectId: _projectId,
-  projectPath: _projectPath,
-  adHocSessions: _adHocSessions,
+  projectId: _projectId, // reserved for future project-scoped routing
+  projectPath: _projectPath, // reserved for future working-dir resolution
+  adHocSessions: _adHocSessions, // reserved for ad-hoc session awareness
   projectTerminals,
   activeSessionId,
   terminalRefs,

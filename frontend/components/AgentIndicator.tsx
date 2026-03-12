@@ -25,7 +25,7 @@ export function AgentIndicator({
   const accentColor = color || 'var(--term-accent)'
 
   return (
-    <div className={`flex items-center justify-center w-3 h-3 ${className}`}>
+    <div className={`flex items-center justify-center w-3 h-3 ${className}`} role="status" aria-label={state === 'none' ? 'Shell mode' : state === 'active' ? 'Agent active' : 'Agent idle'}>
       {state === 'none' ? (
         <div
           className="w-1.5 h-1.5 rounded-full"

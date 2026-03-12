@@ -4,7 +4,7 @@ import { createElement } from 'react'
 import { HeaderIconButton } from './HeaderIconButton'
 
 describe('HeaderIconButton', () => {
-  it('renders with tooltip', () => {
+  it('renders with tooltip and aria-label', () => {
     const icon = createElement('span', { 'data-testid': 'icon' }, 'X')
     render(
       <HeaderIconButton
@@ -16,6 +16,7 @@ describe('HeaderIconButton', () => {
 
     const button = screen.getByTitle('Close terminal')
     expect(button).toBeInTheDocument()
+    expect(button).toHaveAttribute('aria-label', 'Close terminal')
     expect(screen.getByTestId('icon')).toBeInTheDocument()
   })
 

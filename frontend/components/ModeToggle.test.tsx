@@ -135,6 +135,28 @@ describe('ModeToggle', () => {
     expect(onChange).not.toHaveBeenCalled()
   })
 
+  it('resets loading state after onChange rejects', async () => {
+    const onChange = vi.fn().mockRejectedValue(new Error('fail'))
+    render(
+      <ModeToggle
+        value="shell"
+        onChange={onChange}
+        agentTools={[mockTool({})]}
+      />,
+    )
+
+    fireEvent.click(screen.getByTestId('mode-toggle'))
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled()
+    })
+
+    // Button should not remain in loading state
+    await waitFor(() => {
+      expect(screen.getByTestId('mode-toggle')).not.toBeDisabled()
+    })
+  })
+
   it('applies reduced opacity when disabled', () => {
     const onChange = vi.fn()
     render(<ModeToggle value="shell" onChange={onChange} disabled />)

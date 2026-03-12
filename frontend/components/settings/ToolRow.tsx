@@ -46,6 +46,7 @@ export function ToolRow({
           <button
             onClick={onSetDefault}
             title="Set as default"
+            aria-label={`Set ${tool.name} as default`}
             className="p-1 rounded hover:bg-white/5 transition-colors"
             style={{ color: 'var(--term-text-muted)' }}
           >
@@ -55,6 +56,7 @@ export function ToolRow({
         <button
           onClick={onEdit}
           title="Edit"
+          aria-label={`Edit ${tool.name}`}
           className="p-1 rounded hover:bg-white/5 transition-colors"
           style={{ color: 'var(--term-text-muted)' }}
         >
@@ -63,6 +65,7 @@ export function ToolRow({
         <button
           onClick={onDelete}
           title="Delete"
+          aria-label={`Delete ${tool.name}`}
           className="p-1 rounded hover:bg-white/5 transition-colors"
           style={{ color: 'var(--term-error, #ff6b6b)' }}
         >

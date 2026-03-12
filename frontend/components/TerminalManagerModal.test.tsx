@@ -94,6 +94,57 @@ describe('TerminalManagerModal', () => {
     ).toBeInTheDocument()
   })
 
+  it('uses a full-height mobile layout with a shared scroll region', () => {
+    render(
+      <TerminalManagerModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onCreateGenericTerminal={vi.fn()}
+        onCreateProjectTerminal={vi.fn()}
+        externalSessions={[
+          {
+            id: 'claude-terminal',
+            name: 'claude-terminal',
+            user_id: null,
+            project_id: 'terminal',
+            working_dir: '/workspace/terminal',
+            mode: 'claude',
+            display_order: 0,
+            is_alive: true,
+            created_at: null,
+            last_accessed_at: null,
+            is_external: true,
+            source: 'tmux_external',
+          },
+        ]}
+        hiddenExternalSessions={[
+          {
+            id: 'codex-agent-hub',
+            name: 'codex-agent-hub',
+            user_id: null,
+            project_id: 'agent-hub',
+            working_dir: '/workspace/agent-hub',
+            mode: 'codex',
+            display_order: 0,
+            is_alive: true,
+            created_at: null,
+            last_accessed_at: null,
+            is_external: true,
+            source: 'tmux_external',
+          },
+        ]}
+        onAttachExternalSession={vi.fn()}
+        onRestoreExternalSession={vi.fn()}
+        panes={[]}
+      />,
+    )
+
+    expect(screen.getByTestId('terminal-manager-modal').className).toContain('top-3')
+    expect(screen.getByTestId('terminal-manager-modal').className).toContain('bottom-3')
+    expect(screen.getByTestId('terminal-manager-scroll-region').className).toContain('flex-1')
+    expect(screen.getByTestId('terminal-manager-scroll-region').className).toContain('overflow-y-auto')
+  })
+
   it('creates an ad-hoc terminal from quick start', () => {
     const onCreateGenericTerminal = vi.fn()
 

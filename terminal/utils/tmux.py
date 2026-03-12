@@ -337,5 +337,3 @@ def reset_tmux_window_size_policy(session_name: str) -> bool:
     else:
         logger.warning("tmux_window_size_policy_reset_failed", session=session_name)
     return success
-
-    return success

@@ -26,6 +26,7 @@ export async function addAdHocPaneAction(
       navigateToSession(shellSession.id)
     }
   } catch (error) {
+    // eslint-disable-next-line no-console -- action error boundary
     console.error('Failed to create ad-hoc pane:', error)
   }
 }
@@ -68,6 +69,7 @@ export async function addProjectPaneAction(
 
     const targetSession = findSessionByMode(newPane, mode)
     if (!targetSession) {
+      // eslint-disable-next-line no-console -- action error boundary
       console.error('New pane missing session for mode:', mode)
       return
     }
@@ -79,6 +81,7 @@ export async function addProjectPaneAction(
       await startAgent(targetSession.id)
     }
   } catch (error) {
+    // eslint-disable-next-line no-console -- action error boundary
     console.error('Failed to create project pane:', error)
   }
 }
@@ -103,6 +106,7 @@ export async function closeAllPanesAction(
       navigateToSession(shellSession.id)
     }
   } catch (error) {
+    // eslint-disable-next-line no-console -- action error boundary
     console.error('Failed to create ad-hoc pane after close all:', error)
   }
 }

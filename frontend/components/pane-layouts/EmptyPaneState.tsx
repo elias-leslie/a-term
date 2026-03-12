@@ -18,7 +18,8 @@ export function EmptyPaneState({
       className="w-full h-full flex items-center justify-center p-4"
       style={{ backgroundColor: 'var(--term-bg-deep)' }}
     >
-      <div
+      <button
+        type="button"
         onClick={onOpenModal}
         className="flex flex-col items-center gap-3 p-6 rounded-lg cursor-pointer transition-all hover:scale-105"
         style={{
@@ -43,7 +44,7 @@ export function EmptyPaneState({
         <span className="text-sm" style={{ color: 'var(--term-text-muted)' }}>
           Open terminal
         </span>
-      </div>
+      </button>
     </div>
   )
 }

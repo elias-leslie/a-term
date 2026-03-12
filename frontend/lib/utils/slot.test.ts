@@ -9,6 +9,7 @@ import {
   findActiveSlot,
   isPaneSlot,
   getPaneId,
+  paneToSlot,
   type PaneSlot,
 } from './slot'
 
@@ -204,5 +205,62 @@ describe('getPaneId', () => {
       paneId: 'pane-42',
     }
     expect(getPaneId(paneSlot)).toBe('pane-42')
+  })
+})
+
+describe('paneToSlot', () => {
+  it('converts a project pane to a PaneBasedSlot with agent state', () => {
+    const slot = paneToSlot({
+      id: 'pane-1',
+      pane_type: 'project',
+      project_id: 'proj-x',
+      pane_order: 0,
+      pane_name: 'Terminal',
+      active_mode: 'shell',
+      created_at: null,
+      width_percent: 50,
+      height_percent: 100,
+      grid_row: 0,
+      grid_col: 0,
+      sessions: [
+        { id: 's1', name: 'Shell', mode: 'shell', session_number: 1, is_alive: true, working_dir: '/ws', claude_state: 'not_started' },
+        { id: 's2', name: 'Agent', mode: 'claude', session_number: 2, is_alive: true, working_dir: '/ws', claude_state: 'running' },
+      ],
+    })
+
+    expect(slot.type).toBe('project')
+    expect(slot.paneId).toBe('pane-1')
+    if (slot.type === 'project') {
+      expect(slot.projectId).toBe('proj-x')
+      expect(slot.activeSessionId).toBe('s1')
+      expect(slot.claudeState).toBe('running')
+    }
+  })
+
+  it('converts an adhoc pane to an AdHocPaneSlot', () => {
+    const slot = paneToSlot({
+      id: 'pane-2',
+      pane_type: 'adhoc',
+      project_id: null,
+      pane_order: 1,
+      pane_name: 'Ad-Hoc',
+      active_mode: 'shell',
+      created_at: null,
+      width_percent: 100,
+      height_percent: 100,
+      grid_row: 0,
+      grid_col: 0,
+      sessions: [
+        { id: 's3', name: 'Shell', mode: 'shell', session_number: 1, is_alive: true, working_dir: '/tmp', claude_state: 'not_started' },
+      ],
+    })
+
+    expect(slot.type).toBe('adhoc')
+    expect(slot.paneId).toBe('pane-2')
+    if (slot.type === 'adhoc') {
+      expect(slot.sessionId).toBe('s3')
+      expect(slot.name).toBe('Ad-Hoc')
+      expect(slot.workingDir).toBe('/tmp')
+    }
   })
 })

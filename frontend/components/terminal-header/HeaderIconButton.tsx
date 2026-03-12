@@ -34,6 +34,7 @@ export const HeaderIconButton = memo(function HeaderIconButton({
           variant === 'danger' ? 'var(--term-error)' : 'var(--term-text-muted)'
       }}
       title={tooltip}
+      aria-label={tooltip}
     >
       {icon}
     </button>

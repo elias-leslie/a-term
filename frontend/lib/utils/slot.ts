@@ -2,9 +2,8 @@
  * Slot helper utilities for discriminated union access.
  * Used by SplitPane and other components that work with TerminalSlot.
  *
- * NOTE: This file is being migrated to pane-based architecture.
- * The `TerminalSlot` type is being replaced by pane-derived slots.
- * During migration, both approaches coexist.
+ * Both TerminalSlot (session-based) and PaneSlot (pane-based) types
+ * coexist. New code should prefer PaneSlot via paneToSlot().
  */
 
 import type {
@@ -140,7 +139,7 @@ export function findActiveSlot(
 }
 
 // ============================================================================
-// Pane-based Slot Derivation (NEW - migration in progress)
+// Pane-based Slot Derivation
 // ============================================================================
 
 /**
@@ -176,9 +175,7 @@ export function paneToSlot(pane: TerminalPane): PaneSlot {
       activeMode: pane.active_mode,
       activeSessionId: activeSession?.id ?? null,
       sessionBadge: null, // Badge is now part of pane_name
-      claudeState: agentSession
-        ? (agentSession.claude_state as ProjectSlot['claudeState'])
-        : undefined,
+      claudeState: agentSession?.claude_state,
     }
   }
 

@@ -269,7 +269,7 @@ def test_delete_pane_success_returns_deleted(test_app: TestClient) -> None:
     pid = str(uuid.uuid4())
     with (
         patch("terminal.api.panes.fetch_sessions_for_pane", return_value=[]),
-        patch("terminal.api.panes._kill_tmux_session"),
+        patch("terminal.api.panes.kill_tmux_session"),
         patch("terminal.api.panes.pane_crud.delete_pane", return_value=True),
     ):
         # Act

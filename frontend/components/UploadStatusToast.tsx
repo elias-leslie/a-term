@@ -13,6 +13,8 @@ export function UploadProgressToast({ progress }: UploadProgressToastProps) {
   return (
     <div
       data-testid="upload-progress-toast"
+      role="status"
+      aria-label={`Uploading file: ${progress}%`}
       className={TOAST_BASE_CLASSES}
       style={{
         backgroundColor: 'var(--term-bg-elevated)',
@@ -40,6 +42,7 @@ export function UploadErrorToast({ message }: UploadErrorToastProps) {
   return (
     <div
       data-testid="upload-error-toast"
+      role="alert"
       className={TOAST_BASE_CLASSES}
       style={{
         backgroundColor: 'var(--term-bg-elevated)',

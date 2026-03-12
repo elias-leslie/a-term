@@ -15,11 +15,11 @@ from .terminal_crud import TERMINAL_SESSION_FIELDS, _execute_session_query, _row
 def get_session_by_project(project_id: str, mode: str = "shell") -> dict[str, Any] | None:
     """Get the active session for a project and mode.
 
-    Each project can have one shell session and one claude session.
+    Each project can have one session per mode (e.g. shell, claude, or any agent tool slug).
 
     Args:
         project_id: Project identifier
-        mode: Session mode - 'shell' or 'claude' (default: 'shell')
+        mode: Session mode - 'shell' or agent tool slug (default: 'shell')
 
     Returns:
         Session dict or None if not found
@@ -37,12 +37,12 @@ def get_session_by_project(project_id: str, mode: str = "shell") -> dict[str, An
 def get_dead_session_by_project(project_id: str, mode: str = "shell") -> dict[str, Any] | None:
     """Get a dead session for a project and mode (for resurrection).
 
-    The unique constraint covers all sessions including dead ones.
-    This function finds dead sessions that can be resurrected.
+    Finds the most recent dead session for resurrection via
+    ``claim_dead_session_by_project``.
 
     Args:
         project_id: Project identifier
-        mode: Session mode - 'shell' or 'claude' (default: 'shell')
+        mode: Session mode - 'shell' or agent tool slug (default: 'shell')
 
     Returns:
         Dead session dict or None if not found
@@ -58,7 +58,7 @@ def get_dead_session_by_project(project_id: str, mode: str = "shell") -> dict[st
 
 
 def get_project_sessions(project_id: str) -> dict[str, dict[str, Any] | None]:
-    """Get both shell and claude sessions for a project.
+    """Get the active sessions for a project, keyed by mode.
 
     Returns the most recently created session for each mode.
 
@@ -66,7 +66,7 @@ def get_project_sessions(project_id: str) -> dict[str, dict[str, Any] | None]:
         project_id: Project identifier
 
     Returns:
-        Dict with 'shell' and 'claude' keys, each containing session dict or None
+        Dict keyed by mode (e.g. 'shell', 'claude'), each containing session dict or None
     """
     query = f"""
         SELECT {TERMINAL_SESSION_FIELDS}

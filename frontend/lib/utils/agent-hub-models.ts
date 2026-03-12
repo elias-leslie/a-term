@@ -29,13 +29,17 @@ function getAgentHubUrl(): string | null {
 }
 
 function formatClaudeLabel(model: AgentHubCatalogModel): string {
-  return model.alias.charAt(0).toUpperCase() + model.alias.slice(1)
+  return capitalize(model.alias)
+}
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 function getFallbackClaudeModelOptions(): ClaudeModelOption[] {
   return CLAUDE_MODEL_ALIASES.map((alias) => ({
     id: alias,
-    label: alias.charAt(0).toUpperCase() + alias.slice(1),
+    label: capitalize(alias),
     command: `/model ${alias}\r`,
   }))
 }
