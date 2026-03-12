@@ -6,6 +6,7 @@ import {
   type AgentTool,
   useAgentTools,
 } from '@/lib/hooks/use-agent-tools'
+import { ConfirmationDialog } from '@/components/ConfirmationDialog'
 import { EMPTY_FORM, ToolForm, type ToolFormData } from './ToolForm'
 import { ToolRow } from './ToolRow'
 
@@ -14,6 +15,7 @@ export function AgentToolsSettings() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingTool, setEditingTool] = useState<AgentTool | null>(null)
   const [feedback, setFeedback] = useState<string | null>(null)
+  const [deletingTool, setDeletingTool] = useState<AgentTool | null>(null)
 
   const handleCreate = useCallback(
     async (data: ToolFormData) => {
@@ -55,18 +57,17 @@ export function AgentToolsSettings() {
     [editingTool, update],
   )
 
-  const handleDelete = useCallback(
-    async (tool: AgentTool) => {
-      if (!confirm(`Delete "${tool.name}"?`)) return
-      try {
-        await remove(tool.id)
-        setFeedback(null)
-      } catch (err) {
-        setFeedback(err instanceof Error ? err.message : 'Failed to delete tool')
-      }
-    },
-    [remove],
-  )
+  const confirmDelete = useCallback(async () => {
+    if (!deletingTool) return
+    try {
+      await remove(deletingTool.id)
+      setFeedback(null)
+    } catch (err) {
+      setFeedback(err instanceof Error ? err.message : 'Failed to delete tool')
+    } finally {
+      setDeletingTool(null)
+    }
+  }, [deletingTool, remove])
 
   const handleSetDefault = useCallback(
     async (tool: AgentTool) => {
@@ -133,7 +134,7 @@ export function AgentToolsSettings() {
               key={tool.id}
               tool={tool}
               onEdit={() => setEditingTool(tool)}
-              onDelete={() => handleDelete(tool)}
+              onDelete={() => setDeletingTool(tool)}
               onSetDefault={() => handleSetDefault(tool)}
             />
           ),
@@ -154,6 +155,15 @@ export function AgentToolsSettings() {
           </div>
         )}
       </div>
+
+      <ConfirmationDialog
+        isOpen={deletingTool !== null}
+        title="Delete Agent Tool"
+        message={`Are you sure you want to delete "${deletingTool?.name}"? This cannot be undone.`}
+        confirmText="Delete"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeletingTool(null)}
+      />
     </div>
   )
 }

@@ -70,7 +70,6 @@ interface TerminalLayoutRendererProps {
   availableLayouts: LayoutMode[]
   onLayoutModeChange: (mode: LayoutMode) => void
   onLayoutChange?: (layouts: PaneLayout[]) => void
-  initialLayouts?: PaneLayout[]
 
   // Voice input
   onVoice?: (sessionId?: string) => void
@@ -104,7 +103,6 @@ export function TerminalLayoutRenderer({
   availableLayouts,
   onLayoutModeChange,
   onLayoutChange,
-  initialLayouts,
   onVoice,
 }: TerminalLayoutRendererProps) {
   const layoutKey = getLayoutRemountKey(layoutMode, terminalSlots)
@@ -139,7 +137,6 @@ export function TerminalLayoutRenderer({
       onLayoutModeChange={onLayoutModeChange}
       onSwapPanes={onSwapPanes}
       onLayoutChange={onLayoutChange}
-      initialLayouts={initialLayouts}
       onVoice={onVoice}
     />
   )

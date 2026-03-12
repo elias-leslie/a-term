@@ -49,7 +49,6 @@ export interface ResizablePaneLayoutProps {
   availableLayouts?: LayoutMode[]
   onLayoutModeChange?: (mode: LayoutMode) => void
   onLayoutChange?: (layouts: PaneLayout[]) => void
-  initialLayouts?: PaneLayout[]
   onSwapPanes?: (slotIdA: string, slotIdB: string) => void
   onVoice?: (sessionId?: string) => void
 }
