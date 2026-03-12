@@ -59,6 +59,14 @@ describe('getSlotPanelId', () => {
     const slot = makeAdHocSlot({ sessionId: 's-2' })
     expect(getSlotPanelId(slot)).toBe('adhoc-s-2')
   })
+
+  it('returns pane-prefixed id for pane-based slots', () => {
+    const slot: PaneSlot = {
+      ...makeProjectSlot({ projectId: 'p-1' }),
+      paneId: 'pane-123',
+    }
+    expect(getSlotPanelId(slot)).toBe('pane-pane-123')
+  })
 })
 
 describe('getSlotName', () => {

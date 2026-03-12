@@ -50,6 +50,8 @@ export function useTerminalOrchestration({
     removePane,
     handleNewTerminalForProject,
     handleProjectModeChange,
+    attachExternalSession,
+    detachExternalSession,
     showTerminalManager,
     setShowTerminalManager,
     saveLayouts,
@@ -72,6 +74,7 @@ export function useTerminalOrchestration({
     setShowTerminalManager,
     showKeyboardHelp: keyboardHelpState,
     setShowKeyboardHelp: setKeyboardHelpState,
+    onAttachExternalSession: attachExternalSession,
   })
 
   // Slot handlers
@@ -81,6 +84,7 @@ export function useTerminalOrchestration({
     reset,
     disableProject,
     remove,
+    detachExternalSession,
     removePane,
     handleNewTerminalForProject,
     setShowCleaner,

@@ -53,7 +53,10 @@ export function getSlotSessionId(slot: TerminalSlot | PaneSlot): string | null {
 /**
  * Get a unique panel ID for a slot.
  */
-export function getSlotPanelId(slot: TerminalSlot): string {
+export function getSlotPanelId(slot: TerminalSlot | PaneSlot): string {
+  if (isPaneSlot(slot)) {
+    return `pane-${slot.paneId}`
+  }
   if (slot.type === 'project') {
     return `project-${slot.projectId}`
   }

@@ -39,7 +39,6 @@ import {
 export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabsStateProps) {
   const {
     activeSessionId,
-    activeSession,
     switchToSession,
     sessions,
     projectTerminals,
@@ -50,7 +49,7 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
 
   const {
     panes,
-    atLimit: panesAtLimit,
+    atLimit: backendPanesAtLimit,
     isLoading: panesLoading,
     hasLoadedOnce: panesLoadedOnce,
     swapPanePositions,
@@ -76,9 +75,40 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
   const [showSettings, setShowSettings] = useState(false)
   const [keyboardSize, setKeyboardSize] = useLocalStorageState<KeyboardSizePreset>('terminal-keyboard-size', 'medium')
   const [showTerminalManager, setShowTerminalManager] = useState(false)
+  const [attachedExternalSessionIds, setAttachedExternalSessionIds] = useState<string[]>([])
   const terminalRefs = useRef<Map<string, TerminalHandle>>(new Map())
   const [terminalStatuses, setTerminalStatuses] = useState<Map<string, ConnectionStatus>>(new Map())
   const projectTabRefs = useRef<Map<string, HTMLDivElement>>(new Map())
+  const attachedExternalSessions = useMemo(() => {
+    const sessionsById = new Map(externalSessions.map((session) => [session.id, session]))
+    return attachedExternalSessionIds.flatMap((sessionId) => {
+      const session = sessionsById.get(sessionId)
+      return session ? [session] : []
+    })
+  }, [attachedExternalSessionIds, externalSessions])
+  const visiblePaneCount = panes.length + attachedExternalSessions.length
+  const paneCountLimit = Math.min(maxPanes, viewportPaneCapacity)
+  const visiblePanesAtLimit = visiblePaneCount >= paneCountLimit
+
+  useEffect(() => {
+    setAttachedExternalSessionIds((current) =>
+      current.filter((sessionId) => externalSessions.some((session) => session.id === sessionId)),
+    )
+  }, [externalSessions])
+
+  const attachExternalSession = useCallback((sessionId: string) => {
+    setAttachedExternalSessionIds((current) =>
+      current.includes(sessionId) || current.length + panes.length >= paneCountLimit || backendPanesAtLimit
+        ? current
+        : [...current, sessionId],
+    )
+  }, [backendPanesAtLimit, paneCountLimit, panes.length])
+
+  const detachExternalSession = useCallback((sessionId: string) => {
+    setAttachedExternalSessionIds((current) =>
+      current.filter((currentSessionId) => currentSessionId !== sessionId),
+    )
+  }, [])
 
   const {
     handleKeyboardSizeChange,
@@ -108,7 +138,7 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     setLayoutMode,
     setKeyboardSize,
     panes,
-    panesAtLimit,
+    panesAtLimit: visiblePanesAtLimit,
     createProjectPane,
     createAdHocPane,
     setActiveMode,
@@ -116,44 +146,24 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
   })
 
   const isLoading = activeSessionLoading || sessionsLoading || projectsLoading || panesLoading
-  const availableLayouts = useAvailableLayouts(panes.length)
+  const availableLayouts = useAvailableLayouts(visiblePaneCount)
   const terminalSlots = useMemo(() => {
     const paneSlots = getPanesToSlots(panes)
-    if (!activeSession?.is_external) {
-      return paneSlots
-    }
-
-    const alreadyVisible = paneSlots.some((slot) => {
-      if (slot.type === 'project') {
-        return slot.activeSessionId === activeSession.id
-      }
-      return slot.sessionId === activeSession.id
-    })
-    if (alreadyVisible) {
-      return paneSlots
-    }
-
-    return [
-      ...paneSlots,
-      {
-        type: 'adhoc' as const,
-        sessionId: activeSession.id,
-        name: activeSession.name,
-        workingDir: activeSession.working_dir,
-        isExternal: true,
-      },
-    ]
-  }, [activeSession, panes])
+    const externalSlots = attachedExternalSessions.map((session) => ({
+      type: 'adhoc' as const,
+      sessionId: session.id,
+      name: session.name,
+      workingDir: session.working_dir,
+      isExternal: true,
+    }))
+    return [...paneSlots, ...externalSlots]
+  }, [attachedExternalSessions, panes])
   const orderedIds = useMemo(() => getOrderedIds(terminalSlots), [terminalSlots])
-  const hasVisibleExternalSlot = useMemo(
-    () => terminalSlots.some((slot) => slot.type === 'adhoc' && slot.isExternal),
-    [terminalSlots],
-  )
+  const hasVisibleExternalSlot = attachedExternalSessions.length > 0
   const swapPanes = useSwapPanes(terminalSlots, swapPanePositions)
   const canAddPane = useCallback(
-    () =>
-      panes.length < Math.min(maxPanes, viewportPaneCapacity) && !panesAtLimit,
-    [maxPanes, panes.length, panesAtLimit, viewportPaneCapacity],
+    () => visiblePaneCount < paneCountLimit && !backendPanesAtLimit,
+    [backendPanesAtLimit, paneCountLimit, visiblePaneCount],
   )
   const isGridMode = isGridLayoutMode(layoutMode)
   const { activeStatus } = useConnectionStatus(activeSessionId, terminalStatuses)
@@ -168,7 +178,7 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     availableLayouts,
     layoutMode,
     setLayoutMode,
-    panesLoadedOnce && panes.length > 0,
+    panesLoadedOnce && visiblePaneCount > 0,
   )
   useAutoCreatePane({
     panes,
@@ -181,13 +191,17 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
   })
   const tabEditingProps = useTabEditing({ onSave: async (sessionId: string, newName: string) => { await update(sessionId, { name: newName }) } })
   const startupLaunchKeyRef = useRef<string | null>(null)
+  const handleCloseAllWithDetachedExternal = useCallback(async () => {
+    setAttachedExternalSessionIds([])
+    await handleCloseAll()
+  }, [handleCloseAll])
 
   useEffect(() => {
     if (!projectId) {
       startupLaunchKeyRef.current = null
       return
     }
-    if (isLoading || isPaneCreating || panesAtLimit) {
+    if (isLoading || isPaneCreating || visiblePanesAtLimit) {
       return
     }
 
@@ -238,7 +252,7 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     isLoading,
     isPaneCreating,
     panes,
-    panesAtLimit,
+    visiblePanesAtLimit,
     projectId,
     projectPath,
     projectTerminals,
@@ -262,7 +276,9 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     swapPanes,
     canAddPane,
     panes,
-    panesAtLimit,
+    panesAtLimit: visiblePanesAtLimit,
+    attachExternalSession,
+    detachExternalSession,
     removePane,
     setActiveMode,
     createAdHocPane,
@@ -304,7 +320,7 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     handleAddTab,
     handleNewTerminalForProject,
     handleProjectModeChange,
-    handleCloseAll,
+    handleCloseAll: handleCloseAllWithDetachedExternal,
     resetProject,
     disableProject,
     reset,

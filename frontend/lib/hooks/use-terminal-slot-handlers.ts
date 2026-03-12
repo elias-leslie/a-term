@@ -16,6 +16,7 @@ interface UseTerminalSlotHandlersParams {
   reset: (sessionId: string) => Promise<TerminalSession>
   disableProject: (projectId: string) => Promise<void>
   remove: (sessionId: string) => Promise<void>
+  detachExternalSession?: (sessionId: string) => void
   // Pane-based operations (new architecture)
   removePane?: (paneId: string) => Promise<void>
   handleNewTerminalForProject: (
@@ -40,6 +41,7 @@ export function useTerminalSlotHandlers({
   reset,
   disableProject,
   remove,
+  detachExternalSession,
   removePane,
   handleNewTerminalForProject,
   setShowCleaner,
@@ -105,6 +107,7 @@ export function useTerminalSlotHandlers({
       const session = findSession(sessionId)
 
       if (session?.is_external) {
+        detachExternalSession?.(session.id)
         const targetSessionId = findDetachTargetSessionId(session.id)
         if (targetSessionId) {
           switchToSession(targetSessionId)
@@ -131,6 +134,7 @@ export function useTerminalSlotHandlers({
       remove,
       findSession,
       findDetachTargetSessionId,
+      detachExternalSession,
       switchToSession,
     ],
   )

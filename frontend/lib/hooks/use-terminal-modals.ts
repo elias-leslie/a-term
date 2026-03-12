@@ -6,6 +6,7 @@ interface UseTerminalModalsProps {
   setShowTerminalManager: (show: boolean) => void
   showKeyboardHelp: boolean
   setShowKeyboardHelp: (show: boolean) => void
+  onAttachExternalSession?: (sessionId: string) => void
 }
 
 interface UseTerminalModalsReturn {
@@ -24,6 +25,7 @@ export function useTerminalModals({
   setShowTerminalManager,
   showKeyboardHelp: _showKeyboardHelp,
   setShowKeyboardHelp,
+  onAttachExternalSession,
 }: UseTerminalModalsProps): UseTerminalModalsReturn {
   const router = useRouter()
   const pathname = usePathname()
@@ -71,9 +73,10 @@ export function useTerminalModals({
   const handleAttachExternalSession = useCallback(
     (sessionId: string) => {
       setShowTerminalManager(false)
+      onAttachExternalSession?.(sessionId)
       updateUrlParams({ modal: null, session: sessionId })
     },
-    [setShowTerminalManager, updateUrlParams],
+    [onAttachExternalSession, setShowTerminalManager, updateUrlParams],
   )
 
   // Close keyboard help

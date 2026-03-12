@@ -90,4 +90,25 @@ describe('useTerminalModals', () => {
     expect(setShowTerminalManager).toHaveBeenCalledWith(false)
     expect(setShowKeyboardHelp).toHaveBeenCalledWith(true)
   })
+
+  it('runs the external attach callback while keeping session URL sync', () => {
+    const setShowTerminalManager = vi.fn()
+    const setShowKeyboardHelp = vi.fn()
+    const onAttachExternalSession = vi.fn()
+
+    const { result } = renderHook(() =>
+      useTerminalModals({
+        showTerminalManager: true,
+        setShowTerminalManager,
+        showKeyboardHelp: false,
+        setShowKeyboardHelp,
+        onAttachExternalSession,
+      }),
+    )
+
+    result.current.handleAttachExternalSession('codex-terminal')
+
+    expect(onAttachExternalSession).toHaveBeenCalledWith('codex-terminal')
+    expect(mockReplace).toHaveBeenCalledWith('/?session=codex-terminal', { scroll: false })
+  })
 })
