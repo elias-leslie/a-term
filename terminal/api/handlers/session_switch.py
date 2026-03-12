@@ -10,7 +10,8 @@ from fastapi.responses import JSONResponse
 
 from ...logging_config import get_logger
 from ...storage import terminal as terminal_store
-from ...utils.tmux import TMUX_SESSION_PREFIX as BASE_SESSION_PREFIX, validate_session_name
+from ...utils.tmux import TMUX_SESSION_PREFIX as BASE_SESSION_PREFIX
+from ...utils.tmux import validate_session_name
 from .internal_auth import extract_internal_token, verify_internal_token
 
 logger = get_logger(__name__)
