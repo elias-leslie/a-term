@@ -57,6 +57,7 @@ terminal/
 - **Multi-pane layouts** - Up to 6 panes with resizable split views on wide desktops
 - **Dual mode** - Switch between shell and your configured agent tool per pane
 - **Project context** - Open terminals in project-specific working directories
+- **Project deep links** - Open `/?project=<id>&dir=<path>` to focus or create a project pane directly
 - **Mobile keyboard** - On-screen keyboard for touch devices (simple-keyboard)
 - **Periodic maintenance** - Reconciles tmux state, prunes stale uploads, repairs default agent-tool state, and deletes orphaned project settings
 - **Maintenance observability** - `/health`, `/api/internal/maintenance/runs`, and `scripts/status.sh` report maintenance state and recent persisted runs

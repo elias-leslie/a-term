@@ -57,6 +57,23 @@ class BulkOrderUpdate(BaseModel):
     project_ids: list[str]
 
 
+def _build_project_response(
+    project_id: str,
+    settings: dict[str, Any] | None,
+    project_lookup: dict[str, dict[str, Any]],
+) -> ProjectResponse:
+    """Merge SummitFlow project metadata with local terminal settings."""
+    project = project_lookup.get(project_id, {})
+    return ProjectResponse(
+        id=project_id,
+        name=project.get("name", project_id),
+        root_path=project.get("root_path"),
+        terminal_enabled=settings["enabled"] if settings else False,
+        mode=settings["active_mode"] if settings else "shell",
+        display_order=settings["display_order"] if settings else 0,
+    )
+
+
 # ============================================================================
 # Endpoints
 # ============================================================================
@@ -71,26 +88,16 @@ async def list_projects() -> list[ProjectResponse]:
     """
     # Fetch projects from SummitFlow
     sf_projects = await summitflow_client.list_projects()
+    project_lookup = {project.get("id", ""): project for project in sf_projects}
 
     # Get all local terminal settings
     all_settings = settings_store.get_all_settings()
 
     # Merge and build response
-    result: list[ProjectResponse] = []
-    for project in sf_projects:
-        project_id = project.get("id", "")
-        settings = all_settings.get(project_id)
-
-        result.append(
-            ProjectResponse(
-                id=project_id,
-                name=project.get("name", project_id),
-                root_path=project.get("root_path"),
-                terminal_enabled=settings["enabled"] if settings else False,
-                mode=settings["active_mode"] if settings else "shell",
-                display_order=settings["display_order"] if settings else 0,
-            )
-        )
+    result = [
+        _build_project_response(project_id, all_settings.get(project_id), project_lookup)
+        for project_id in project_lookup
+    ]
 
     # Sort by display_order, then by name
     result.sort(key=lambda p: (p.display_order, p.name))
@@ -117,16 +124,8 @@ async def update_project_settings(
 
     # Try to get project info from SummitFlow for the name/path
     sf_projects = await summitflow_client.list_projects()
-    project_info = next((p for p in sf_projects if p.get("id") == project_id), None)
-
-    return ProjectResponse(
-        id=project_id,
-        name=project_info.get("name", project_id) if project_info else project_id,
-        root_path=project_info.get("root_path") if project_info else None,
-        terminal_enabled=settings["enabled"],
-        mode=settings["active_mode"],
-        display_order=settings["display_order"],
-    )
+    project_lookup = {project.get("id", ""): project for project in sf_projects}
+    return _build_project_response(project_id, settings, project_lookup)
 
 
 @router.post("/api/terminal/project-settings/bulk-order", response_model=list[ProjectResponse])
@@ -174,18 +173,21 @@ async def reset_project(request: Request, project_id: str) -> dict[str, Any]:
     }
 
 
-@router.post("/api/terminal/projects/{project_id}/disable")
-async def disable_project(project_id: str) -> dict[str, Any]:
+@router.post("/api/terminal/projects/{project_id}/disable", response_model=ProjectResponse)
+async def disable_project(project_id: str) -> ProjectResponse:
     """Disable terminal for a project.
 
     Deletes all sessions and sets enabled=false in settings.
     """
     lifecycle.disable_project_terminal(project_id)
-    return {"project_id": project_id, "disabled": True}
+    sf_projects = await summitflow_client.list_projects()
+    project_lookup = {project.get("id", ""): project for project in sf_projects}
+    settings = settings_store.get_all_settings().get(project_id)
+    return _build_project_response(project_id, settings, project_lookup)
 
 
-@router.put("/api/terminal/projects/{project_id}/mode")
-async def set_project_mode(project_id: str, request: SetModeRequest) -> dict[str, Any]:
+@router.put("/api/terminal/projects/{project_id}/mode", response_model=ProjectResponse)
+async def set_project_mode(project_id: str, request: SetModeRequest) -> ProjectResponse:
     """Set the active mode for a project.
 
     Updates the active_mode in project settings. This mode syncs across devices.
@@ -195,7 +197,6 @@ async def set_project_mode(project_id: str, request: SetModeRequest) -> dict[str
         # Create settings if they don't exist
         result = settings_store.upsert_settings(project_id, active_mode=request.mode)
 
-    return {
-        "project_id": project_id,
-        "mode": result["active_mode"],
-    }
+    sf_projects = await summitflow_client.list_projects()
+    project_lookup = {project.get("id", ""): project for project in sf_projects}
+    return _build_project_response(project_id, result, project_lookup)

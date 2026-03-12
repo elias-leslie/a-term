@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react'
+import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTerminalTabsState } from './use-terminal-tabs-state'
 
@@ -238,5 +238,165 @@ describe('useTerminalTabsState', () => {
     expect(result.current.activeSessionId).toBe('session-adhoc')
     expect(result.current.themeId).toBe('phosphor')
     expect(mockUseTerminalSettings).toHaveBeenLastCalledWith(undefined)
+  })
+
+  it('creates and focuses a project pane when a project deep link is provided', async () => {
+    const switchToSession = vi.fn()
+    const createProjectPane = vi.fn().mockResolvedValue({
+      id: 'pane-project-a',
+      pane_type: 'project',
+      project_id: 'project-a',
+      pane_order: 0,
+      pane_name: 'Project A',
+      active_mode: 'shell',
+      created_at: '2026-03-06T00:00:00Z',
+      sessions: [
+        {
+          id: 'session-created-shell',
+          name: 'Project A Shell',
+          mode: 'shell',
+          session_number: 1,
+          is_alive: true,
+          working_dir: '/workspace/project-a',
+          claude_state: 'not_started',
+        },
+      ],
+      width_percent: 100,
+      height_percent: 100,
+      grid_row: 0,
+      grid_col: 0,
+    })
+
+    mockUseActiveSession.mockReturnValue(
+      buildActiveSessionState({
+        activeSessionId: null,
+        activeSession: null,
+        switchToSession,
+        projectTerminals: [],
+        sessions: [],
+        adHocSessions: [],
+      }),
+    )
+    mockUseTerminalPanes.mockReturnValue({
+      panes: [],
+      atLimit: false,
+      isLoading: false,
+      hasLoadedOnce: true,
+      swapPanePositions: vi.fn(),
+      removePane: vi.fn(),
+      setActiveMode: vi.fn(),
+      createAdHocPane: vi.fn(),
+      createProjectPane,
+      isCreating: false,
+      saveLayouts: vi.fn(),
+      maxPanes: 6,
+    })
+
+    renderHook(() =>
+      useTerminalTabsState({
+        projectId: 'project-a',
+        projectPath: '/workspace/project-a',
+      }),
+    )
+
+    await waitFor(() => {
+      expect(createProjectPane).toHaveBeenCalledWith(
+        'Project-a',
+        'project-a',
+        '/workspace/project-a',
+      )
+      expect(switchToSession).toHaveBeenCalledWith('session-created-shell')
+    })
+  })
+
+  it('focuses an existing project session instead of creating a duplicate deep-link pane', () => {
+    const switchToSession = vi.fn()
+    const createProjectPane = vi.fn()
+
+    mockUseActiveSession.mockReturnValue(
+      buildActiveSessionState({
+        activeSessionId: null,
+        activeSession: null,
+        switchToSession,
+        sessions: [
+          {
+            id: 'session-project-a',
+            name: 'Project A Shell',
+            user_id: null,
+            project_id: 'project-a',
+            working_dir: '/workspace/project-a',
+            mode: 'shell',
+            display_order: 0,
+            is_alive: true,
+            created_at: '2026-03-06T00:00:00Z',
+            last_accessed_at: '2026-03-06T00:00:00Z',
+          },
+        ],
+        projectTerminals: [
+          {
+            projectId: 'project-a',
+            projectName: 'Project A',
+            rootPath: '/workspace/project-a',
+            activeMode: 'shell',
+            sessions: [
+              {
+                badge: 1,
+                session: {
+                  id: 'session-project-a',
+                  name: 'Project A Shell',
+                  user_id: null,
+                  project_id: 'project-a',
+                  working_dir: '/workspace/project-a',
+                  mode: 'shell',
+                  display_order: 0,
+                  is_alive: true,
+                  created_at: '2026-03-06T00:00:00Z',
+                  last_accessed_at: '2026-03-06T00:00:00Z',
+                },
+              },
+            ],
+            activeSession: {
+              id: 'session-project-a',
+              name: 'Project A Shell',
+              user_id: null,
+              project_id: 'project-a',
+              working_dir: '/workspace/project-a',
+              mode: 'shell',
+              display_order: 0,
+              is_alive: true,
+              created_at: '2026-03-06T00:00:00Z',
+              last_accessed_at: '2026-03-06T00:00:00Z',
+            },
+            activeSessionId: 'session-project-a',
+            sessionBadge: 1,
+          },
+        ],
+        adHocSessions: [],
+      }),
+    )
+    mockUseTerminalPanes.mockReturnValue({
+      panes: [],
+      atLimit: false,
+      isLoading: false,
+      hasLoadedOnce: true,
+      swapPanePositions: vi.fn(),
+      removePane: vi.fn(),
+      setActiveMode: vi.fn(),
+      createAdHocPane: vi.fn(),
+      createProjectPane,
+      isCreating: false,
+      saveLayouts: vi.fn(),
+      maxPanes: 6,
+    })
+
+    renderHook(() =>
+      useTerminalTabsState({
+        projectId: 'project-a',
+        projectPath: '/workspace/project-a',
+      }),
+    )
+
+    expect(createProjectPane).not.toHaveBeenCalled()
+    expect(switchToSession).toHaveBeenCalledWith('session-project-a')
   })
 })

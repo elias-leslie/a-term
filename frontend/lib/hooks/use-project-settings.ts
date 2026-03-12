@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
-import { buildApiUrl } from '../api-config'
+import { apiFetch } from '../api-fetch'
 
 // ============================================================================
 // Types
@@ -28,71 +28,61 @@ interface ProjectSettingsUpdate {
 // ============================================================================
 
 async function fetchProjects(): Promise<ProjectSetting[]> {
-  const res = await fetch(buildApiUrl('/api/terminal/projects'))
-  if (!res.ok) throw new Error('Failed to fetch projects')
-  return res.json()
+  return apiFetch('/api/terminal/projects', undefined, 'Failed to fetch projects')
 }
 
 async function updateProjectSettings(
   projectId: string,
   update: ProjectSettingsUpdate,
 ): Promise<ProjectSetting> {
-  const res = await fetch(
-    buildApiUrl(`/api/terminal/project-settings/${projectId}`),
+  return apiFetch(
+    `/api/terminal/project-settings/${projectId}`,
     {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(update),
     },
+    'Failed to update settings',
   )
-  if (!res.ok) {
-    const error = await res
-      .json()
-      .catch(() => ({ detail: 'Failed to update settings' }))
-    throw new Error(error.detail || 'Failed to update settings')
-  }
-  return res.json()
 }
 
 async function bulkUpdateOrder(
   projectIds: string[],
 ): Promise<ProjectSetting[]> {
-  const res = await fetch(
-    buildApiUrl('/api/terminal/project-settings/bulk-order'),
+  return apiFetch(
+    '/api/terminal/project-settings/bulk-order',
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ project_ids: projectIds }),
     },
+    'Failed to update order',
   )
-  if (!res.ok) {
-    const error = await res
-      .json()
-      .catch(() => ({ detail: 'Failed to update order' }))
-    throw new Error(error.detail || 'Failed to update order')
-  }
-  return res.json()
 }
 
 async function switchProjectMode(
   projectId: string,
   mode: string,
 ): Promise<ProjectSetting> {
-  const res = await fetch(
-    buildApiUrl(`/api/terminal/projects/${projectId}/mode`),
+  return apiFetch(
+    `/api/terminal/projects/${projectId}/mode`,
     {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mode }),
     },
+    'Failed to switch mode',
   )
-  if (!res.ok) {
-    const error = await res
-      .json()
-      .catch(() => ({ detail: 'Failed to switch mode' }))
-    throw new Error(error.detail || 'Failed to switch mode')
-  }
-  return res.json()
+}
+
+async function disableProjectTerminal(projectId: string): Promise<ProjectSetting> {
+  return apiFetch(
+    `/api/terminal/projects/${projectId}/disable`,
+    {
+      method: 'POST',
+    },
+    'Failed to disable terminal',
+  )
 }
 
 // ============================================================================
@@ -129,6 +119,7 @@ export function useProjectSettings() {
     isLoading,
     isError,
     error,
+    refetch,
   } = useQuery({
     queryKey: ['terminal-projects'],
     queryFn: fetchProjects,
@@ -197,6 +188,15 @@ export function useProjectSettings() {
     },
   })
 
+  const disableMutation = useMutation({
+    mutationFn: disableProjectTerminal,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['terminal-projects'] })
+      queryClient.invalidateQueries({ queryKey: ['terminal-sessions'] })
+      queryClient.invalidateQueries({ queryKey: ['terminal-panes'] })
+    },
+  })
+
   // Update settings for a project
   const updateSettings = useCallback(
     async (projectId: string, update: ProjectSettingsUpdate) => {
@@ -221,18 +221,28 @@ export function useProjectSettings() {
     [switchModeMutation],
   )
 
+  const disableProject = useCallback(
+    async (projectId: string) => {
+      return disableMutation.mutateAsync(projectId)
+    },
+    [disableMutation],
+  )
+
   return {
     projects,
     enabledProjects,
     updateSettings,
     updateOrder,
     switchMode,
+    disableProject,
     isLoading,
     isError,
     error,
+    refetch,
     isUpdating:
       updateMutation.isPending ||
       orderMutation.isPending ||
-      switchModeMutation.isPending,
+      switchModeMutation.isPending ||
+      disableMutation.isPending,
   }
 }

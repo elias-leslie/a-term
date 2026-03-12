@@ -3,7 +3,6 @@ import type { LayoutMode } from '@/lib/constants/terminal'
 import type { ConnectionStatus } from '@/components/Terminal'
 import type { PaneSlot, TerminalSlot } from '@/lib/utils/slot'
 import { getSlotPanelId, isPaneSlot } from '@/lib/utils/slot'
-import { isReconnectableStatus } from '@/lib/utils/mobile-terminal-status'
 
 /**
  * Hook to manage pane swap operations
@@ -55,8 +54,10 @@ export function useConnectionStatus(
   terminalStatuses: Map<string, ConnectionStatus>,
 ) {
   return useMemo(() => {
-    const activeStatus = activeSessionId ? terminalStatuses.get(activeSessionId) : undefined
-    const showReconnect = isReconnectableStatus(activeStatus)
-    return { activeStatus, showReconnect }
+    return {
+      activeStatus: activeSessionId
+        ? terminalStatuses.get(activeSessionId)
+        : undefined,
+    }
   }, [activeSessionId, terminalStatuses])
 }

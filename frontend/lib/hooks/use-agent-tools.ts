@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
-import { buildApiUrl } from '../api-config'
+import { apiFetch } from '../api-fetch'
 import type { TerminalPane } from './use-terminal-panes'
 
 // ============================================================================
@@ -52,67 +52,59 @@ interface UpdateAgentToolInput {
 // ============================================================================
 
 async function fetchAgentTools(): Promise<AgentTool[]> {
-  const res = await fetch(buildApiUrl('/api/terminal/agent-tools'))
-  if (!res.ok) throw new Error('Failed to fetch agent tools')
-  return res.json()
+  return apiFetch('/api/terminal/agent-tools', undefined, 'Failed to fetch agent tools')
 }
 
 async function createAgentTool(input: CreateAgentToolInput): Promise<AgentTool> {
-  const res = await fetch(buildApiUrl('/api/terminal/agent-tools'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  })
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ detail: 'Failed to create agent tool' }))
-    throw new Error(error.detail || 'Failed to create agent tool')
-  }
-  return res.json()
+  return apiFetch(
+    '/api/terminal/agent-tools',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    },
+    'Failed to create agent tool',
+  )
 }
 
 async function updateAgentTool(
   toolId: string,
   input: UpdateAgentToolInput,
 ): Promise<AgentTool> {
-  const res = await fetch(buildApiUrl(`/api/terminal/agent-tools/${toolId}`), {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  })
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ detail: 'Failed to update agent tool' }))
-    throw new Error(error.detail || 'Failed to update agent tool')
-  }
-  return res.json()
+  return apiFetch(
+    `/api/terminal/agent-tools/${toolId}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    },
+    'Failed to update agent tool',
+  )
 }
 
 async function deleteAgentTool(toolId: string): Promise<void> {
-  const res = await fetch(buildApiUrl(`/api/terminal/agent-tools/${toolId}`), {
-    method: 'DELETE',
-  })
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ detail: 'Failed to delete agent tool' }))
-    throw new Error(error.detail || 'Failed to delete agent tool')
-  }
+  await apiFetch(
+    `/api/terminal/agent-tools/${toolId}`,
+    {
+      method: 'DELETE',
+    },
+    'Failed to delete agent tool',
+  )
 }
 
 async function switchPaneAgentTool(
   paneId: string,
   agentToolSlug: string,
 ): Promise<TerminalPane> {
-  const res = await fetch(
-    buildApiUrl(`/api/terminal/panes/${paneId}/agent-tool`),
+  return apiFetch(
+    `/api/terminal/panes/${paneId}/agent-tool`,
     {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ agent_tool_slug: agentToolSlug }),
     },
+    'Failed to switch agent tool',
   )
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ detail: 'Failed to switch agent tool' }))
-    throw new Error(error.detail || 'Failed to switch agent tool')
-  }
-  return res.json()
 }
 
 // ============================================================================

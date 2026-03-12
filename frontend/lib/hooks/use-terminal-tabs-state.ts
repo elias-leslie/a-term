@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardSizePreset } from '@/components/SettingsDropdown'
 import type { ConnectionStatus, TerminalHandle } from '@/components/Terminal'
 import { useActiveSession } from '@/lib/hooks/use-active-session'
@@ -19,6 +19,10 @@ import { useTabEditing } from '@/lib/hooks/use-tab-editing'
 import { useTerminalHandlers } from '@/lib/hooks/use-terminal-handlers'
 import { useTerminalPanes } from '@/lib/hooks/use-terminal-panes'
 import { useTerminalSettings } from '@/lib/hooks/use-terminal-settings'
+import {
+  findSessionByMode,
+  generateProjectPaneName,
+} from '@/lib/hooks/terminal-handler-utils'
 import type { UseTerminalTabsStateProps } from './terminal-tabs-state/types'
 import {
   getActiveSessionProjectId,
@@ -96,9 +100,6 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     sessionsLoading,
     projectsLoading,
   } = useTerminalHandlers({
-    projectId,
-    projectPath,
-    adHocSessions,
     projectTerminals,
     activeSessionId,
     terminalRefs,
@@ -155,7 +156,7 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     [maxPanes, panes.length, panesAtLimit, viewportPaneCapacity],
   )
   const isGridMode = isGridLayoutMode(layoutMode)
-  const { activeStatus, showReconnect } = useConnectionStatus(activeSessionId, terminalStatuses)
+  const { activeStatus } = useConnectionStatus(activeSessionId, terminalStatuses)
 
   // Derive active mode from the active session (for ControlBar model picker)
   const activeMode = useMemo<string | undefined>(() => {
@@ -179,6 +180,70 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     switchToSession,
   })
   const tabEditingProps = useTabEditing({ onSave: async (sessionId: string, newName: string) => { await update(sessionId, { name: newName }) } })
+  const startupLaunchKeyRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!projectId) {
+      startupLaunchKeyRef.current = null
+      return
+    }
+    if (isLoading || isPaneCreating || panesAtLimit) {
+      return
+    }
+
+    const startupKey = `${projectId}:${projectPath ?? ''}`
+    if (startupLaunchKeyRef.current === startupKey) {
+      return
+    }
+
+    const projectTerminal = projectTerminals.find(
+      (terminal) => terminal.projectId === projectId,
+    )
+    const existingSessionId =
+      projectTerminal?.activeSessionId ??
+      projectTerminal?.sessions.find((session) => session.session.mode === 'shell')
+        ?.session.id ??
+      projectTerminal?.sessions[0]?.session.id ??
+      null
+
+    if (existingSessionId) {
+      startupLaunchKeyRef.current = startupKey
+      if (existingSessionId !== activeSessionId) {
+        switchToSession(existingSessionId)
+      }
+      return
+    }
+
+    startupLaunchKeyRef.current = startupKey
+    createProjectPane(
+      generateProjectPaneName(projectId, panes),
+      projectId,
+      projectPath ?? undefined,
+    )
+      .then((newPane) => {
+        const targetSessionId =
+          findSessionByMode(newPane, 'shell')?.id ??
+          findSessionByMode(newPane, newPane.active_mode)?.id ??
+          newPane.sessions[0]?.id
+        if (targetSessionId) {
+          switchToSession(targetSessionId)
+        }
+      })
+      .catch(() => {
+        startupLaunchKeyRef.current = null
+      })
+  }, [
+    activeSessionId,
+    createProjectPane,
+    isLoading,
+    isPaneCreating,
+    panes,
+    panesAtLimit,
+    projectId,
+    projectPath,
+    projectTerminals,
+    switchToSession,
+  ])
 
   return {
     activeSessionId,
@@ -231,7 +296,6 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     setShowTerminalManager,
     activeMode,
     activeStatus,
-    showReconnect,
     ...tabEditingProps,
     handleStatusChange,
     handleKeyboardInput,

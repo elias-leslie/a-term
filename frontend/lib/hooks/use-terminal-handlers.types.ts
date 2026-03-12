@@ -9,9 +9,6 @@ import type { TerminalPane } from './use-terminal-panes'
 import type { TerminalSession, useTerminalSessions } from './use-terminal-sessions'
 
 export interface UseTerminalHandlersProps {
-  projectId?: string
-  projectPath?: string
-  adHocSessions: TerminalSession[]
   projectTerminals: ProjectTerminal[]
   activeSessionId: string | null
   terminalRefs: React.MutableRefObject<Map<string, TerminalHandle>>
@@ -63,7 +60,6 @@ export interface UseTerminalHandlersReturn {
   resetAll: ReturnType<typeof useTerminalSessions>['resetAll']
   resetProject: ReturnType<typeof useProjectTerminals>['resetProject']
   disableProject: ReturnType<typeof useProjectTerminals>['disableProject']
-  switchMode: ReturnType<typeof useProjectTerminals>['switchMode']
   sessionsLoading: boolean
   projectsLoading: boolean
 }

@@ -87,15 +87,6 @@ export function useTerminalActionHandlers({
   )
 
   // Prompt cleaner handlers
-  const handleCleanClick = useCallback(() => {
-    const terminalRef = findActiveRef(terminalRefs.current, activeSessionId)
-    if (!terminalRef) return
-    const input = terminalRef.getLastLine()
-    if (!input.trim()) return
-    setCleanerRawPrompt(input)
-    setShowCleaner(true)
-  }, [activeSessionId, terminalRefs, setCleanerRawPrompt, setShowCleaner])
-
   const handleCleanerSend = useCallback(
     (cleanedPrompt: string) => {
       const terminalRef = findActiveRef(terminalRefs.current, activeSessionId)
@@ -184,8 +175,6 @@ export function useTerminalActionHandlers({
     handleUploadClick,
     handleFileSelect,
     handleFileInputChange,
-    // Prompt cleaner
-    handleCleanClick,
     handleCleanerSend,
     handleCleanerCancel,
     // Voice input

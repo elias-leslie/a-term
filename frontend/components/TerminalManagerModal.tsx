@@ -5,9 +5,7 @@ import { Terminal, X } from 'lucide-react'
 import { useDeferredValue, useMemo, useRef, useState } from 'react'
 import { useHoverStyle } from '@/lib/hooks/use-hover-style'
 import type { TerminalSession } from '@/lib/hooks/use-terminal-sessions'
-import {
-  useProjectSettings,
-} from '@/lib/hooks/use-project-settings'
+import { useProjectSettings } from '@/lib/hooks/use-project-settings'
 import type { TerminalPane } from '@/lib/hooks/use-terminal-panes'
 import {
   filterAndSortSessions,
@@ -40,7 +38,13 @@ export function TerminalManagerModal({
   onAttachExternalSession,
   panes,
 }: TerminalManagerModalProps) {
-  const { projects } = useProjectSettings()
+  const {
+    projects,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useProjectSettings()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedSessionsByProject, setSelectedSessionsByProject] = useState<Record<string, string>>({})
   const deferredSearchQuery = useDeferredValue(searchQuery)
@@ -134,6 +138,14 @@ export function TerminalManagerModal({
     visibleOtherSessions.length === 0
 
   const trimmedSearch = deferredSearchQuery.trim()
+  const projectStatusMessage =
+    isLoading
+      ? 'Loading project workspaces…'
+      : isError
+        ? 'Project list unavailable. Retry below.'
+        : noMatches
+          ? `No terminals match "${trimmedSearch}".`
+          : `Showing ${visibleProjectRows.length} project${visibleProjectRows.length === 1 ? '' : 's'} and ${visibleOtherSessions.length} other session${visibleOtherSessions.length === 1 ? '' : 's'}.`
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => { if (!open) closeAndReset() }}>
@@ -194,15 +206,14 @@ export function TerminalManagerModal({
               style={{ color: 'var(--term-text-muted)', fontFamily: 'var(--font-mono)' }}
               aria-live="polite"
             >
-              {noMatches
-                ? `No terminals match "${trimmedSearch}".`
-                : `Showing ${visibleProjectRows.length} project${visibleProjectRows.length === 1 ? '' : 's'} and ${visibleOtherSessions.length} other session${visibleOtherSessions.length === 1 ? '' : 's'}.`}
+              {projectStatusMessage}
             </p>
           </div>
 
           <div
             data-testid="terminal-manager-scroll-region"
             className="flex-1 overflow-y-auto overscroll-contain px-4 pb-5"
+            aria-busy={isLoading}
           >
             <SectionHeader
               title="Quick Start"
@@ -231,27 +242,63 @@ export function TerminalManagerModal({
             <div className="pt-4">
               <SectionHeader
                 title="Projects"
-                countLabel={`${visibleProjectRows.length} project${visibleProjectRows.length === 1 ? '' : 's'}`}
+                countLabel={
+                  isLoading
+                    ? 'Loading'
+                    : isError
+                      ? 'Unavailable'
+                      : `${visibleProjectRows.length} project${visibleProjectRows.length === 1 ? '' : 's'}`
+                }
               />
               <div className="rounded-lg p-2" style={{ backgroundColor: 'rgba(10, 14, 20, 0.35)', border: '1px solid var(--term-border)' }}>
-                <div className="space-y-1 pr-1 md:max-h-[420px] md:overflow-y-auto">
-                  {visibleProjectRows.map((row) => (
-                    <ProjectSessionRow
-                      key={row.project.id}
-                      row={row}
-                      selectedSessionId={selectedSessionsByProject[row.project.id]}
-                      onSelectSession={handleProjectSessionSelect}
-                      onAttachSession={handleAttachExternalSession}
-                      onCreateProjectTerminal={handleCreateProjectTerminal}
-                    />
-                  ))}
-                </div>
-                {projects.length === 0 && (
+                {!isLoading && !isError && (
+                  <div className="space-y-1 pr-1 md:max-h-[420px] md:overflow-y-auto">
+                    {visibleProjectRows.map((row) => (
+                      <ProjectSessionRow
+                        key={row.project.id}
+                        row={row}
+                        selectedSessionId={selectedSessionsByProject[row.project.id]}
+                        onSelectSession={handleProjectSessionSelect}
+                        onAttachSession={handleAttachExternalSession}
+                        onCreateProjectTerminal={handleCreateProjectTerminal}
+                      />
+                    ))}
+                  </div>
+                )}
+                {isLoading && (
+                  <p className="px-3 py-6 text-center text-sm" style={{ color: 'var(--term-text-muted)' }}>
+                    Loading project workspaces and attachable sessions…
+                  </p>
+                )}
+                {isError && (
+                  <div className="px-3 py-6 text-center">
+                    <p className="text-sm" style={{ color: 'var(--term-text-muted)' }}>
+                      {error instanceof Error
+                        ? error.message
+                        : 'Failed to load project workspaces.'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void refetch()
+                      }}
+                      className="mt-3 rounded-md border px-3 py-2 text-xs uppercase tracking-[0.14em] transition-colors"
+                      style={{
+                        borderColor: 'var(--term-border)',
+                        color: 'var(--term-accent)',
+                        fontFamily: 'var(--font-mono)',
+                      }}
+                    >
+                      Retry
+                    </button>
+                  </div>
+                )}
+                {!isLoading && !isError && projects.length === 0 && (
                   <p className="px-3 py-6 text-center text-sm" style={{ color: 'var(--term-text-muted)' }}>
                     No projects found yet. You can still open an ad-hoc shell.
                   </p>
                 )}
-                {projects.length > 0 && visibleProjectRows.length === 0 && (
+                {!isLoading && !isError && projects.length > 0 && visibleProjectRows.length === 0 && (
                   <p className="px-3 py-6 text-center text-sm" style={{ color: 'var(--term-text-muted)' }}>
                     No projects match &quot;{trimmedSearch}&quot;.
                   </p>

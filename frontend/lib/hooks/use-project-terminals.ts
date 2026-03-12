@@ -82,7 +82,7 @@ export function useProjectTerminals(
   const {
     enabledProjects,
     switchMode: switchProjectMode,
-    updateSettings,
+    disableProject: disableProjectTerminal,
     isLoading: projectsLoading,
     isError: projectsError,
   } = useProjectSettings()
@@ -137,9 +137,9 @@ export function useProjectTerminals(
 
   const disableProject = useCallback(
     async (projectId: string) => {
-      await updateSettings(projectId, { enabled: false })
+      await disableProjectTerminal(projectId)
     },
-    [updateSettings],
+    [disableProjectTerminal],
   )
 
   return {

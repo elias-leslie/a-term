@@ -35,17 +35,27 @@ function renderModal(overrides: Partial<ComponentProps<typeof TerminalManagerMod
   )
 }
 
+function buildProjectSettingsState(overrides: Record<string, unknown> = {}) {
+  const projects = [
+    buildProject('proj-agent-hub', 'Agent Hub', '/workspace/agent-hub'),
+    buildProject('proj-terminal', 'Terminal', '/workspace/terminal'),
+    buildProject('proj-portfolio', 'Portfolio AI', '/workspace/portfolio-ai'),
+  ]
+
+  return {
+    projects,
+    enabledProjects: projects,
+    isLoading: false,
+    isError: false,
+    error: null,
+    refetch: vi.fn(),
+    ...overrides,
+  }
+}
+
 describe('TerminalManagerModal', () => {
   beforeEach(() => {
-    const projects = [
-      buildProject('proj-agent-hub', 'Agent Hub', '/workspace/agent-hub'),
-      buildProject('proj-terminal', 'Terminal', '/workspace/terminal'),
-      buildProject('proj-portfolio', 'Portfolio AI', '/workspace/portfolio-ai'),
-    ]
-    mockUseProjectSettings.mockReturnValue({
-      projects,
-      enabledProjects: projects,
-    })
+    mockUseProjectSettings.mockReturnValue(buildProjectSettingsState())
   })
 
   it('filters projects by project name and attachable session metadata', () => {
@@ -234,5 +244,48 @@ describe('TerminalManagerModal', () => {
     expect(
       screen.getByText('No terminals match "missing-workspace".'),
     ).toBeInTheDocument()
+  })
+
+  it('shows a loading state while project workspaces are loading', () => {
+    mockUseProjectSettings.mockReturnValue(
+      buildProjectSettingsState({
+        projects: [],
+        enabledProjects: [],
+        isLoading: true,
+      }),
+    )
+
+    renderModal()
+
+    expect(
+      screen.getByText('Loading project workspaces and attachable sessions…'),
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('terminal-manager-scroll-region')).toHaveAttribute(
+      'aria-busy',
+      'true',
+    )
+  })
+
+  it('shows an error state with retry when project loading fails', () => {
+    const refetch = vi.fn()
+    mockUseProjectSettings.mockReturnValue(
+      buildProjectSettingsState({
+        projects: [],
+        enabledProjects: [],
+        isError: true,
+        error: new Error('SummitFlow projects are unavailable'),
+        refetch,
+      }),
+    )
+
+    renderModal()
+
+    expect(
+      screen.getByText('SummitFlow projects are unavailable'),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+
+    expect(refetch).toHaveBeenCalledTimes(1)
   })
 })

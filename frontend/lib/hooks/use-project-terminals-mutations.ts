@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { buildApiUrl } from '../api-config'
+import { apiFetch } from '../api-fetch'
 import type { TerminalSession } from './use-terminal-sessions'
 import type { ProjectTerminal } from './use-project-terminals'
 
@@ -44,19 +44,12 @@ export function useResetProjectMutation(
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (projectId: string) => {
-      const res = await fetch(
-        buildApiUrl(`/api/terminal/projects/${projectId}/reset`),
+    mutationFn: (projectId: string) =>
+      apiFetch<ResetProjectResponse>(
+        `/api/terminal/projects/${projectId}/reset`,
         { method: 'POST' },
-      )
-      if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ detail: 'Failed to reset project' }))
-        throw new Error(error.detail || 'Failed to reset project')
-      }
-      return res.json() as Promise<ResetProjectResponse>
-    },
+        'Failed to reset project',
+      ),
     onMutate: async (projectId) => {
       await queryClient.cancelQueries({ queryKey: ['terminal-sessions'] })
       await queryClient.cancelQueries({ queryKey: ['terminal-projects'] })
