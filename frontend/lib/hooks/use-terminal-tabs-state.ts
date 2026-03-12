@@ -41,9 +41,6 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     projectTerminals,
     adHocSessions,
     externalSessions,
-    hiddenExternalSessions,
-    dismissExternalSession,
-    restoreExternalSession,
     isLoading: activeSessionLoading,
   } = useActiveSession()
 
@@ -190,7 +187,6 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     projectTerminals,
     adHocSessions,
     externalSessions,
-    hiddenExternalSessions,
     isLoading,
     layoutMode,
     setLayoutMode,
@@ -233,8 +229,6 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     isMobile,
     showTerminalManager,
     setShowTerminalManager,
-    dismissExternalSession,
-    restoreExternalSession,
     activeMode,
     activeStatus,
     showReconnect,

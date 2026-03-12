@@ -23,7 +23,6 @@ export function TerminalTabs({
     isLoading,
     sessions,
     externalSessions,
-    hiddenExternalSessions,
     terminalSlots,
     fontFamily,
     fontSize,
@@ -64,7 +63,6 @@ export function TerminalTabs({
     showTerminalManager,
     handleOpenTerminalManager,
     handleAttachExternalSession,
-    restoreExternalSession,
     handleCloseTerminalManager,
     handleCloseKeyboardHelp,
 
@@ -211,9 +209,7 @@ export function TerminalTabs({
           handleNewTerminalForProject(projectId, 'shell', rootPath)
         }
         externalSessions={externalSessions}
-        hiddenExternalSessions={hiddenExternalSessions}
         onAttachExternalSession={handleAttachExternalSession}
-        onRestoreExternalSession={restoreExternalSession}
         panes={panes}
       />
 

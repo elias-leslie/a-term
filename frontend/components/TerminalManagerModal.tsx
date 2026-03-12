@@ -1,22 +1,24 @@
 'use client'
 
 import * as Dialog from '@radix-ui/react-dialog'
-import { Folder, Terminal, X } from 'lucide-react'
+import { Terminal, X } from 'lucide-react'
 import { useDeferredValue, useMemo, useRef, useState } from 'react'
 import { useHoverStyle } from '@/lib/hooks/use-hover-style'
 import type { TerminalSession } from '@/lib/hooks/use-terminal-sessions'
 import {
-  type ProjectSetting,
   useProjectSettings,
 } from '@/lib/hooks/use-project-settings'
 import type { TerminalPane } from '@/lib/hooks/use-terminal-panes'
 import {
   filterAndSortSessions,
   iconStyle,
-  sectionHeaderStyle,
+  makeProjectSessionOptions,
+  matchesProjectRow,
+  type ProjectRowData,
+  ProjectSessionRow,
   SectionHeader,
+  sectionHeaderStyle,
   SessionSection,
-  TerminalButton,
 } from './TerminalManagerModal.parts'
 
 interface TerminalManagerModalProps {
@@ -25,29 +27,22 @@ interface TerminalManagerModalProps {
   onCreateGenericTerminal: () => void
   onCreateProjectTerminal: (projectId: string, rootPath: string | null) => void
   externalSessions: TerminalSession[]
-  hiddenExternalSessions: TerminalSession[]
   onAttachExternalSession: (sessionId: string) => void
-  onRestoreExternalSession: (sessionId: string) => void
   panes: TerminalPane[]
 }
 
-/**
- * Terminal Manager Modal - opened via + button in tab bar.
- * Simple project selector - click a project to create a new terminal for it.
- */
 export function TerminalManagerModal({
   isOpen,
   onClose,
   onCreateGenericTerminal,
   onCreateProjectTerminal,
   externalSessions,
-  hiddenExternalSessions,
   onAttachExternalSession,
-  onRestoreExternalSession,
   panes,
 }: TerminalManagerModalProps) {
   const { projects } = useProjectSettings()
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedSessionsByProject, setSelectedSessionsByProject] = useState<Record<string, string>>({})
   const deferredSearchQuery = useDeferredValue(searchQuery)
   const searchRef = useRef<HTMLInputElement>(null)
 
@@ -58,7 +53,6 @@ export function TerminalManagerModal({
     defaultColor: 'var(--term-text-muted)',
   })
 
-  // Single pass: count project panes by id and ad-hoc panes under '__adhoc'
   const paneCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     for (const pane of panes) {
@@ -73,42 +67,71 @@ export function TerminalManagerModal({
 
   const normalizedSearch = deferredSearchQuery.trim().toLowerCase()
 
-  const visibleProjects = useMemo(() => {
-    const sorted = [...projects].sort((a, b) => {
-      const delta = (paneCounts[b.id] || 0) - (paneCounts[a.id] || 0)
-      return delta !== 0 ? delta : a.name.localeCompare(b.name)
-    })
-    if (!normalizedSearch) return sorted
-    return sorted.filter((p) =>
-      `${p.name} ${p.root_path ?? ''}`.toLowerCase().includes(normalizedSearch)
-    )
-  }, [projects, paneCounts, normalizedSearch])
+  const projectRows = useMemo<ProjectRowData[]>(() => {
+    const sessionMap = new Map<string, TerminalSession[]>()
+    for (const session of externalSessions) {
+      if (!session.project_id) continue
+      const existing = sessionMap.get(session.project_id) ?? []
+      existing.push(session)
+      sessionMap.set(session.project_id, existing)
+    }
 
-  const visibleExternalSessions = useMemo(
-    () => filterAndSortSessions(externalSessions, normalizedSearch),
-    [externalSessions, normalizedSearch],
-  )
-  const visibleHiddenExternalSessions = useMemo(
-    () => filterAndSortSessions(hiddenExternalSessions, normalizedSearch),
-    [hiddenExternalSessions, normalizedSearch],
+    return projects.map((project) => ({
+      project,
+      paneCount: paneCounts[project.id] || 0,
+      sessionOptions: makeProjectSessionOptions(sessionMap.get(project.id) ?? []),
+    }))
+  }, [projects, externalSessions, paneCounts])
+
+  const visibleProjectRows = useMemo(
+    () => projectRows.filter((row) => matchesProjectRow(row, normalizedSearch)),
+    [projectRows, normalizedSearch],
   )
 
-  const closeAndReset = () => { setSearchQuery(''); onClose() }
-  const resetSearch = () => { setSearchQuery('') }
-  const handleProjectClick = (project: ProjectSetting) => { onCreateProjectTerminal(project.id, project.root_path); closeAndReset() }
-  const handleCreateGeneric = () => { onCreateGenericTerminal(); closeAndReset() }
-  const handleExternalSessionClick = (session: TerminalSession) => { resetSearch(); onAttachExternalSession(session.id) }
-  const handleRestoreExternalSession = (session: TerminalSession) => {
-    resetSearch()
-    onRestoreExternalSession(session.id)
-    onAttachExternalSession(session.id)
+  const knownProjectIds = useMemo(
+    () => new Set(projects.map((project) => project.id)),
+    [projects],
+  )
+
+  const unmatchedExternalSessions = useMemo(
+    () =>
+      externalSessions.filter((session) => !session.project_id || !knownProjectIds.has(session.project_id)),
+    [externalSessions, knownProjectIds],
+  )
+
+  const visibleOtherSessions = useMemo(
+    () => filterAndSortSessions(unmatchedExternalSessions, normalizedSearch),
+    [unmatchedExternalSessions, normalizedSearch],
+  )
+
+  const resetModalState = () => {
+    setSearchQuery('')
+    setSelectedSessionsByProject({})
+  }
+  const closeAndReset = () => {
+    resetModalState()
+    onClose()
+  }
+  const handleCreateGeneric = () => {
+    onCreateGenericTerminal()
+    closeAndReset()
+  }
+  const handleCreateProjectTerminal = (projectId: string, rootPath: string | null) => {
+    onCreateProjectTerminal(projectId, rootPath)
+    closeAndReset()
+  }
+  const handleAttachExternalSession = (sessionId: string) => {
+    resetModalState()
+    onAttachExternalSession(sessionId)
+  }
+  const handleProjectSessionSelect = (projectId: string, sessionId: string) => {
+    setSelectedSessionsByProject((current) => ({ ...current, [projectId]: sessionId }))
   }
 
   const noMatches =
     normalizedSearch &&
-    visibleProjects.length === 0 &&
-    visibleExternalSessions.length === 0 &&
-    visibleHiddenExternalSessions.length === 0
+    visibleProjectRows.length === 0 &&
+    visibleOtherSessions.length === 0
 
   const trimmedSearch = deferredSearchQuery.trim()
 
@@ -121,7 +144,7 @@ export function TerminalManagerModal({
         />
         <Dialog.Content
           data-testid="terminal-manager-modal"
-          className="fixed inset-x-3 top-3 bottom-3 z-[10001] flex flex-col overflow-hidden rounded-lg animate-in fade-in zoom-in-95 duration-150 sm:inset-x-6 sm:top-6 sm:bottom-6 md:left-1/2 md:right-auto md:top-1/2 md:bottom-auto md:w-[min(92vw,560px)] md:max-h-[min(98dvh,1100px)] md:-translate-x-1/2 md:-translate-y-1/2"
+          className="fixed inset-x-3 top-3 bottom-3 z-[10001] flex flex-col overflow-hidden rounded-lg animate-in fade-in zoom-in-95 duration-150 sm:inset-x-6 sm:top-6 sm:bottom-6 md:left-1/2 md:right-auto md:top-1/2 md:bottom-auto md:w-[min(92vw,720px)] md:max-h-[min(98dvh,1100px)] md:-translate-x-1/2 md:-translate-y-1/2"
           style={{
             backgroundColor: 'var(--term-bg-elevated)',
             border: '1px solid var(--term-border-active)',
@@ -129,14 +152,13 @@ export function TerminalManagerModal({
           }}
           onOpenAutoFocus={(event) => { event.preventDefault(); searchRef.current?.focus() }}
         >
-          {/* Header */}
           <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--term-border)' }}>
             <div className="min-w-0">
               <Dialog.Title className="text-xs font-medium tracking-widest" style={sectionHeaderStyle}>
                 TERMINALS
               </Dialog.Title>
               <Dialog.Description className="mt-1 text-xs" style={{ color: 'var(--term-text-muted)' }}>
-                Launch a project terminal, open a fresh ad-hoc shell, or attach an external tmux session.
+                One row per project. Attach to an existing tmux session when one is available, or start a new terminal.
               </Dialog.Description>
             </div>
             <Dialog.Close asChild>
@@ -153,7 +175,6 @@ export function TerminalManagerModal({
             </Dialog.Close>
           </div>
 
-          {/* Search */}
           <div className="p-4">
             <label htmlFor="terminal-manager-search" className="mb-2 block text-[11px] font-medium uppercase tracking-[0.14em]" style={sectionHeaderStyle}>
               Search Terminals
@@ -164,7 +185,7 @@ export function TerminalManagerModal({
               type="text"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Filter by project, external session, or path"
+              placeholder="Filter by project, session name, tool, or path"
               className="w-full rounded-md px-3 py-2.5 text-sm outline-none transition-colors"
               style={{ backgroundColor: 'var(--term-bg-surface)', border: '1px solid var(--term-border)', color: 'var(--term-text-primary)', fontFamily: 'var(--font-mono)' }}
             />
@@ -175,76 +196,78 @@ export function TerminalManagerModal({
             >
               {noMatches
                 ? `No terminals match "${trimmedSearch}".`
-                : `Showing ${visibleProjects.length} project${visibleProjects.length === 1 ? '' : 's'}, ${visibleExternalSessions.length} live external, and ${visibleHiddenExternalSessions.length} hidden external session${visibleHiddenExternalSessions.length === 1 ? '' : 's'}.`}
+                : `Showing ${visibleProjectRows.length} project${visibleProjectRows.length === 1 ? '' : 's'} and ${visibleOtherSessions.length} other session${visibleOtherSessions.length === 1 ? '' : 's'}.`}
             </p>
           </div>
 
-          {/* Scroll region */}
           <div
             data-testid="terminal-manager-scroll-region"
             className="flex-1 overflow-y-auto overscroll-contain px-4 pb-5"
           >
             <SectionHeader
               title="Quick Start"
-              countLabel={`${visibleProjects.length} project${visibleProjects.length === 1 ? '' : 's'}`}
+              countLabel={`${paneCounts.__adhoc || 0} open`}
             />
             <div className="rounded-lg p-2" style={{ backgroundColor: 'rgba(10, 14, 20, 0.35)', border: '1px solid var(--term-border)' }}>
-              <TerminalButton
-                icon={<Terminal size={16} style={iconStyle} />}
-                label="New Ad-Hoc Terminal"
-                paneCount={paneCounts.__adhoc || 0}
-                hoverColor="var(--term-accent)"
-                defaultColor="var(--term-text-muted)"
-                actionLabel="New"
+              <button
+                type="button"
                 onClick={handleCreateGeneric}
+                className="flex items-center gap-3 w-full px-3 py-3 min-h-[44px] rounded-md transition-colors text-left"
+                style={{ fontFamily: 'var(--font-mono)' }}
+              >
+                <Terminal size={16} style={iconStyle} />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm truncate">New Ad-Hoc Terminal</span>
+                  <span className="block text-[11px] truncate" style={{ color: 'var(--term-text-muted)' }}>
+                    Scratch shell outside any project
+                  </span>
+                </span>
+                <span className="text-[11px] uppercase tracking-[0.14em]" style={{ color: 'var(--term-text-muted)', flexShrink: 0, fontFamily: 'var(--font-mono)' }}>
+                  New
+                </span>
+              </button>
+            </div>
+
+            <div className="pt-4">
+              <SectionHeader
+                title="Projects"
+                countLabel={`${visibleProjectRows.length} project${visibleProjectRows.length === 1 ? '' : 's'}`}
               />
-              <div className="my-2 h-px" style={{ backgroundColor: 'var(--term-border)' }} />
-              <div className="space-y-1 pr-1 md:max-h-[320px] md:overflow-y-auto">
-                {visibleProjects.map((project) => (
-                  <TerminalButton
-                    key={project.id}
-                    icon={<Folder size={16} style={iconStyle} />}
-                    label={project.name}
-                    paneCount={paneCounts[project.id] || 0}
-                    hoverColor="var(--term-text-primary)"
-                    defaultColor="var(--term-text-secondary)"
-                    actionLabel="New"
-                    onClick={() => handleProjectClick(project)}
-                  />
-                ))}
+              <div className="rounded-lg p-2" style={{ backgroundColor: 'rgba(10, 14, 20, 0.35)', border: '1px solid var(--term-border)' }}>
+                <div className="space-y-1 pr-1 md:max-h-[420px] md:overflow-y-auto">
+                  {visibleProjectRows.map((row) => (
+                    <ProjectSessionRow
+                      key={row.project.id}
+                      row={row}
+                      selectedSessionId={selectedSessionsByProject[row.project.id]}
+                      onSelectSession={handleProjectSessionSelect}
+                      onAttachSession={handleAttachExternalSession}
+                      onCreateProjectTerminal={handleCreateProjectTerminal}
+                    />
+                  ))}
+                </div>
+                {projects.length === 0 && (
+                  <p className="px-3 py-6 text-center text-sm" style={{ color: 'var(--term-text-muted)' }}>
+                    No projects found yet. You can still open an ad-hoc shell.
+                  </p>
+                )}
+                {projects.length > 0 && visibleProjectRows.length === 0 && (
+                  <p className="px-3 py-6 text-center text-sm" style={{ color: 'var(--term-text-muted)' }}>
+                    No projects match &quot;{trimmedSearch}&quot;.
+                  </p>
+                )}
               </div>
-              {projects.length === 0 && (
-                <p className="px-3 py-6 text-center text-sm" style={{ color: 'var(--term-text-muted)' }}>
-                  No projects found yet. You can still open an ad-hoc shell.
-                </p>
-              )}
-              {projects.length > 0 && visibleProjects.length === 0 && (
-                <p className="px-3 py-6 text-center text-sm" style={{ color: 'var(--term-text-muted)' }}>
-                  No projects match &quot;{trimmedSearch}&quot;.
-                </p>
-              )}
             </div>
 
             <SessionSection
-              title="External Sessions"
-              countLabel={`${visibleExternalSessions.length} live`}
-              total={externalSessions.length}
-              visible={visibleExternalSessions}
+              title="Other Sessions"
+              countLabel={`${visibleOtherSessions.length} session${visibleOtherSessions.length === 1 ? '' : 's'}`}
+              total={unmatchedExternalSessions.length}
+              visible={visibleOtherSessions}
               searchQuery={trimmedSearch}
-              emptyLabel="external sessions"
+              emptyLabel="other sessions"
               actionLabel="Attach"
-              onAction={handleExternalSessionClick}
-            />
-            <SessionSection
-              title="Hidden External Sessions"
-              countLabel={`${visibleHiddenExternalSessions.length} hidden`}
-              total={hiddenExternalSessions.length}
-              visible={visibleHiddenExternalSessions}
-              searchQuery={trimmedSearch}
-              emptyLabel="hidden external sessions"
-              actionLabel="Restore"
-              maxHeight="md:max-h-[280px]"
-              onAction={handleRestoreExternalSession}
+              onAction={(session) => handleAttachExternalSession(session.id)}
             />
           </div>
         </Dialog.Content>

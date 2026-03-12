@@ -13,7 +13,6 @@ import {
 interface UseTerminalSlotHandlersParams {
   terminalRefs: MutableRefObject<Map<string, TerminalHandle | null>>
   switchToSession: (sessionId: string) => void
-  dismissExternalSession: (sessionId: string) => void
   reset: (sessionId: string) => Promise<TerminalSession>
   disableProject: (projectId: string) => Promise<void>
   remove: (sessionId: string) => Promise<void>
@@ -38,7 +37,6 @@ interface UseTerminalSlotHandlersParams {
 export function useTerminalSlotHandlers({
   terminalRefs,
   switchToSession,
-  dismissExternalSession,
   reset,
   disableProject,
   remove,
@@ -107,7 +105,6 @@ export function useTerminalSlotHandlers({
       const session = findSession(sessionId)
 
       if (session?.is_external) {
-        dismissExternalSession(session.id)
         const targetSessionId = findDetachTargetSessionId(session.id)
         if (targetSessionId) {
           switchToSession(targetSessionId)
@@ -134,7 +131,6 @@ export function useTerminalSlotHandlers({
       remove,
       findSession,
       findDetachTargetSessionId,
-      dismissExternalSession,
       switchToSession,
     ],
   )

@@ -13,7 +13,6 @@ import {
 } from './use-terminal-sessions'
 
 const LAST_ACTIVE_SESSION_KEY = 'terminal:last-active-session-id'
-const DISMISSED_EXTERNAL_SESSIONS_KEY = 'terminal:dismissed-external-session-ids'
 
 export function parsePersistedSessionId(storedValue: string | null): string | null {
   if (storedValue === null) {
@@ -95,17 +94,8 @@ export interface UseActiveSessionResult {
   /** External tmux sessions for reference */
   externalSessions: TerminalSession[]
 
-  /** External tmux sessions hidden from the main UI until explicitly restored */
-  hiddenExternalSessions: TerminalSession[]
-
   /** Loading state */
   isLoading: boolean
-
-  /** Hide an external session from Terminal until explicitly restored */
-  dismissExternalSession: (sessionId: string) => void
-
-  /** Restore a previously dismissed external session */
-  restoreExternalSession: (sessionId: string) => void
 }
 
 // ============================================================================
@@ -152,11 +142,6 @@ export function useActiveSession(): UseActiveSessionResult {
       LAST_ACTIVE_SESSION_KEY,
       null,
     )
-  const [dismissedExternalSessionIds, setDismissedExternalSessionIds] =
-    useLocalStorageState<string[]>(
-      DISMISSED_EXTERNAL_SESSIONS_KEY,
-      [],
-    )
 
   // Get session data from existing hooks
   const {
@@ -164,14 +149,7 @@ export function useActiveSession(): UseActiveSessionResult {
     isLoading: sessionsLoading,
     isError: sessionsError,
   } = useTerminalSessions()
-  const sessions = useMemo(
-    () =>
-      rawSessions.filter(
-        (session) =>
-          !session.is_external || !dismissedExternalSessionIds.includes(session.id),
-      ),
-    [rawSessions, dismissedExternalSessionIds],
-  )
+  const sessions = rawSessions
   const {
     projectTerminals,
     adHocSessions,
@@ -182,14 +160,6 @@ export function useActiveSession(): UseActiveSessionResult {
     sessionsLoadingOverride: sessionsLoading,
     sessionsErrorOverride: sessionsError,
   })
-  const hiddenExternalSessions = useMemo(
-    () =>
-      rawSessions.filter(
-        (session) =>
-          session.is_external && dismissedExternalSessionIds.includes(session.id),
-      ),
-    [rawSessions, dismissedExternalSessionIds],
-  )
 
   const isLoading = sessionsLoading || projectsLoading
 
@@ -259,29 +229,6 @@ export function useActiveSession(): UseActiveSessionResult {
     [searchParamsString, router],
   )
 
-  const dismissExternalSession = useCallback(
-    (sessionId: string) => {
-      if (!rawSessions.some((session) => session.id === sessionId && session.is_external)) {
-        return
-      }
-      setDismissedExternalSessionIds(
-        dismissedExternalSessionIds.includes(sessionId)
-          ? dismissedExternalSessionIds
-          : [...dismissedExternalSessionIds, sessionId],
-      )
-    },
-    [dismissedExternalSessionIds, rawSessions, setDismissedExternalSessionIds],
-  )
-
-  const restoreExternalSession = useCallback(
-    (sessionId: string) => {
-      setDismissedExternalSessionIds(
-        dismissedExternalSessionIds.filter((id) => id !== sessionId),
-      )
-    },
-    [dismissedExternalSessionIds, setDismissedExternalSessionIds],
-  )
-
   // Get the active session for a project based on its current mode
   const getProjectActiveSession = useCallback(
     (projectId: string): TerminalSession | null => {
@@ -304,9 +251,6 @@ export function useActiveSession(): UseActiveSessionResult {
     projectTerminals,
     adHocSessions,
     externalSessions,
-    hiddenExternalSessions,
     isLoading,
-    dismissExternalSession,
-    restoreExternalSession,
   }
 }

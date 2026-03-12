@@ -44,7 +44,6 @@ export function useTerminalOrchestration({
     terminalSlots,
     orderedIds,
     terminalRefs,
-    dismissExternalSession,
     reset,
     disableProject,
     remove,
@@ -79,7 +78,6 @@ export function useTerminalOrchestration({
   const slotHandlers = useTerminalSlotHandlers({
     terminalRefs,
     switchToSession,
-    dismissExternalSession,
     reset,
     disableProject,
     remove,

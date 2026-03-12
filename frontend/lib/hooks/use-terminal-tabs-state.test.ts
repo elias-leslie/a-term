@@ -100,9 +100,6 @@ function buildActiveSessionState(overrides: Partial<ReturnType<typeof mockUseAct
     projectTerminals: [],
     adHocSessions: [sessions[2]],
     externalSessions: [],
-    hiddenExternalSessions: [],
-    dismissExternalSession: vi.fn(),
-    restoreExternalSession: vi.fn(),
     isLoading: false,
     ...overrides,
   }
