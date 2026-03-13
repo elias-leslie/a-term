@@ -10,6 +10,15 @@ interface FileUploadDropzoneProps {
   className?: string
 }
 
+function isFileDragEvent(event: React.DragEvent): boolean {
+  const types = Array.from(event.dataTransfer?.types ?? [])
+  if (types.includes('Files')) {
+    return true
+  }
+
+  return Array.from(event.dataTransfer?.items ?? []).some((item) => item.kind === 'file')
+}
+
 /**
  * Wraps content with drag-and-drop file upload support.
  * Shows overlay when dragging files over the drop zone.
@@ -25,9 +34,11 @@ export function FileUploadDropzone({
 
   const handleDragEnter = useCallback(
     (e: React.DragEvent) => {
+      if (disabled) return
+      if (!isFileDragEvent(e)) return
+
       e.preventDefault()
       e.stopPropagation()
-      if (disabled) return
 
       dragCounter.current++
       if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
@@ -38,6 +49,8 @@ export function FileUploadDropzone({
   )
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
+    if (dragCounter.current === 0) return
+
     e.preventDefault()
     e.stopPropagation()
 
@@ -48,12 +61,16 @@ export function FileUploadDropzone({
   }, [])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (!isFileDragEvent(e)) return
+
     e.preventDefault()
     e.stopPropagation()
   }, [])
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
+      if (e.defaultPrevented || !isFileDragEvent(e)) return
+
       e.preventDefault()
       e.stopPropagation()
 

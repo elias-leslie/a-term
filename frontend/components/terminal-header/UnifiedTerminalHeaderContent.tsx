@@ -1,7 +1,7 @@
 'use client'
 
 import { clsx } from 'clsx'
-import { Mic, Paperclip, RefreshCw, Settings, Sparkles, X } from 'lucide-react'
+import { GripVertical, Mic, Paperclip, RefreshCw, Settings, Sparkles, X } from 'lucide-react'
 import { memo, useCallback, useMemo, useState, type DragEvent } from 'react'
 import { useAgentTools } from '@/lib/hooks/use-agent-tools'
 import { LayoutModeButtons } from '@/components/LayoutModeButton'
@@ -57,7 +57,7 @@ export const UnifiedTerminalHeaderContent = memo(
     )
 
     const handleDragStart = useCallback(
-      (event: DragEvent<HTMLDivElement>) => {
+      (event: DragEvent<HTMLButtonElement>) => {
         if (!canSwapByDrag) return
         setDraggedPaneSlotId(event, slotId)
       },
@@ -104,16 +104,12 @@ export const UnifiedTerminalHeaderContent = memo(
     return (
       <div
         data-testid={`terminal-header-${slotId}`}
-        draggable={canSwapByDrag}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={clsx(
           'flex-shrink-0 flex items-center gap-1 transition-colors duration-150',
           isMobile ? 'h-9 px-1.5' : 'h-8 px-2',
-          canSwapByDrag && 'cursor-grab active:cursor-grabbing',
           isDragTarget && 'ring-1 ring-inset ring-[var(--term-accent)]',
         )}
         style={{
@@ -128,6 +124,27 @@ export const UnifiedTerminalHeaderContent = memo(
             : undefined
         }
       >
+        {canSwapByDrag && (
+          <button
+            type="button"
+            data-testid={`pane-drag-handle-${slotId}`}
+            draggable={true}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            className={clsx(
+              'flex items-center justify-center rounded transition-all duration-150',
+              isMobile ? 'w-8 h-8' : 'w-6 h-6',
+              'cursor-grab active:cursor-grabbing',
+              'text-[var(--term-text-muted)] hover:bg-[var(--term-bg-elevated)] hover:text-[var(--term-accent)]',
+              'focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--term-accent)]',
+            )}
+            title={`Drag ${slotName} to swap panes`}
+            aria-label={`Drag ${slotName} to swap panes`}
+          >
+            <GripVertical className="w-3.5 h-3.5" />
+          </button>
+        )}
+
         {/* Mode toggle (shell <-> claude) - only for project slots */}
         {slot.type === 'project' && onModeSwitch && (
           <ModeToggle

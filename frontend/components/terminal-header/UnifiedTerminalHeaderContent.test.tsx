@@ -79,11 +79,11 @@ describe('UnifiedTerminalHeaderContent', () => {
       </>,
     )
 
-    const headerA = screen.getByTestId('terminal-header-pane-a')
+    const dragHandleA = screen.getByTestId('pane-drag-handle-pane-a')
     const headerB = screen.getByTestId('terminal-header-pane-b')
     const dataTransfer = createDataTransfer()
 
-    fireEvent.dragStart(headerA, { dataTransfer })
+    fireEvent.dragStart(dragHandleA, { dataTransfer })
     fireEvent.dragOver(headerB, { dataTransfer })
     fireEvent.drop(headerB, { dataTransfer })
 
