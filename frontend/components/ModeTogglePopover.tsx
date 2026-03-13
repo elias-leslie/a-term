@@ -39,16 +39,16 @@ export function ModeTogglePopover({
           backgroundColor: 'rgba(21, 27, 35, 0.95)',
           backdropFilter: 'blur(12px)',
           border: '1px solid var(--term-border-active)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+          boxShadow: 'var(--term-shadow-dropdown)',
           minWidth: 160,
         }}
       >
         <button
           role="menuitem"
           onClick={() => onSelectMode('shell')}
-          className="flex items-center gap-2 w-full px-3 py-2 text-left text-xs hover:bg-white/5 transition-colors"
+          className="flex items-center gap-2 w-full px-3 py-2 text-left text-xs hover:bg-[var(--term-bg-surface)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--term-accent)]"
           style={{
-            color: value === 'shell' ? 'var(--term-accent)' : 'var(--term-text-secondary)',
+            color: value === 'shell' ? 'var(--term-accent)' : 'var(--term-text-muted)',
             fontFamily: 'var(--font-mono)',
           }}
         >
@@ -61,12 +61,12 @@ export function ModeTogglePopover({
             key={tool.slug}
             role="menuitem"
             onClick={() => onSelectMode(tool.slug)}
-            className="flex items-center gap-2 w-full px-3 py-2 text-left text-xs hover:bg-white/5 transition-colors"
+            className="flex items-center gap-2 w-full px-3 py-2 text-left text-xs hover:bg-[var(--term-bg-surface)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--term-accent)]"
             style={{
               color:
                 value === tool.slug
                   ? tool.color || 'var(--term-accent)'
-                  : 'var(--term-text-secondary)',
+                  : 'var(--term-text-muted)',
               fontFamily: 'var(--font-mono)',
             }}
           >

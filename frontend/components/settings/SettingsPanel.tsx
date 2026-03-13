@@ -63,8 +63,7 @@ export const SettingsPanel = forwardRef<HTMLDivElement, SettingsPanelProps>(
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
           border: '1px solid var(--term-border-active)',
-          boxShadow:
-            '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.1)',
+          boxShadow: 'var(--term-shadow-dropdown)',
         }}
         className="rounded-lg p-4 min-w-[220px] max-h-[80vh] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-150"
       >

@@ -9,32 +9,32 @@ const STATUS_META: Record<
   connected: {
     label: 'Live',
     tone: 'var(--term-success)',
-    glow: 'rgba(34, 197, 94, 0.28)',
+    glow: 'color-mix(in srgb, var(--term-success) 28%, transparent)',
   },
   connecting: {
     label: 'Connecting',
     tone: 'var(--term-warning)',
-    glow: 'rgba(245, 158, 11, 0.24)',
+    glow: 'color-mix(in srgb, var(--term-warning) 24%, transparent)',
   },
   disconnected: {
     label: 'Disconnected',
     tone: 'var(--term-danger)',
-    glow: 'rgba(239, 68, 68, 0.22)',
+    glow: 'color-mix(in srgb, var(--term-danger) 22%, transparent)',
   },
   error: {
     label: 'Error',
     tone: 'var(--term-danger)',
-    glow: 'rgba(239, 68, 68, 0.22)',
+    glow: 'color-mix(in srgb, var(--term-danger) 22%, transparent)',
   },
   session_dead: {
     label: 'Ended',
     tone: 'var(--term-warning)',
-    glow: 'rgba(245, 158, 11, 0.22)',
+    glow: 'color-mix(in srgb, var(--term-warning) 22%, transparent)',
   },
   timeout: {
     label: 'Timed out',
     tone: 'var(--term-danger)',
-    glow: 'rgba(239, 68, 68, 0.22)',
+    glow: 'color-mix(in srgb, var(--term-danger) 22%, transparent)',
   },
 }
 

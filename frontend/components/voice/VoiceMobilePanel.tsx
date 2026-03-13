@@ -61,7 +61,7 @@ export function VoiceMobilePanel({
             borderRadius: 8,
             background: 'var(--term-bg-elevated)',
             border: '1px solid var(--term-border-active)',
-            fontFamily: '"JetBrains Mono", monospace',
+            fontFamily: 'var(--font-mono)',
             fontSize: 13,
             lineHeight: 1.5,
             color: 'var(--term-text-primary)',
@@ -82,7 +82,7 @@ export function VoiceMobilePanel({
         style={{
           textAlign: 'center',
           padding: '6px 0 2px',
-          fontFamily: '"JetBrains Mono", monospace',
+          fontFamily: 'var(--font-mono)',
           fontSize: 11,
           color:
             status === 'error'
@@ -154,10 +154,10 @@ export function VoiceMobilePanel({
                 : 'var(--term-accent)'
             }`,
             background: showPulse
-              ? 'rgba(248, 81, 73, 0.15)'
+              ? 'color-mix(in srgb, var(--term-error) 15%, transparent)'
               : showSendIcon
-                ? 'rgba(0, 255, 159, 0.15)'
-                : 'rgba(0, 255, 159, 0.08)',
+                ? 'color-mix(in srgb, var(--term-accent) 15%, transparent)'
+                : 'color-mix(in srgb, var(--term-accent) 8%, transparent)',
             color: showPulse
               ? 'var(--term-error)'
               : 'var(--term-accent)',

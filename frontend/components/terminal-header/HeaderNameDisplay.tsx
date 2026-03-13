@@ -51,6 +51,7 @@ export const HeaderNameDisplay = memo(function HeaderNameDisplay({
         className={clsx(
           'flex items-center gap-1 px-1.5 py-0.5 rounded text-xs truncate max-w-[140px] transition-all duration-150',
           'hover:bg-[var(--term-bg-elevated)]',
+          'focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--term-accent)]',
         )}
         style={{ color: textColor }}
         title={name}
