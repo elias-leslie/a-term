@@ -2,18 +2,30 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
+import pytest
+
+from terminal.utils import tmux
 from terminal.utils.tmux import (
     TMUX_SESSION_PREFIX,
+    apply_external_attach_options,
     get_external_agent_tmux_session,
     get_tmux_session_name,
     is_managed_tmux_session_name,
     list_external_agent_tmux_sessions,
     list_tmux_sessions,
     reset_tmux_window_size_policy,
+    restore_external_attach_options,
     validate_session_name,
 )
+
+
+@pytest.fixture(autouse=True)
+def clear_external_attach_state():
+    tmux._EXTERNAL_ATTACH_STATES.clear()
+    yield
+    tmux._EXTERNAL_ATTACH_STATES.clear()
 
 
 class TestValidateSessionName:
@@ -106,3 +118,52 @@ def test_reset_tmux_window_size_policy_sets_latest() -> None:
     mock_run.assert_called_once_with(
         ["set-window-option", "-t", "codex-agent-hub", "window-size", "latest"]
     )
+
+
+def test_apply_external_attach_options_refcounts_and_restores_original_values() -> None:
+    with patch(
+        "terminal.utils.tmux.run_tmux_command",
+        side_effect=[
+            (True, "on"),
+            (True, "on"),
+            (True, ""),
+            (True, ""),
+            (True, ""),
+            (True, ""),
+        ],
+    ) as mock_run:
+        assert apply_external_attach_options("codex-agent-hub") is True
+        assert apply_external_attach_options("codex-agent-hub") is True
+        assert restore_external_attach_options("codex-agent-hub") is True
+        assert restore_external_attach_options("codex-agent-hub") is True
+
+    assert mock_run.call_args_list == [
+        call(["show-options", "-qv", "-t", "codex-agent-hub", "status"]),
+        call(["show-options", "-qv", "-t", "codex-agent-hub", "mouse"]),
+        call(["set-option", "-t", "codex-agent-hub", "status", "off"]),
+        call(["set-option", "-t", "codex-agent-hub", "mouse", "off"]),
+        call(["set-option", "-t", "codex-agent-hub", "mouse", "on"]),
+        call(["set-option", "-t", "codex-agent-hub", "status", "on"]),
+    ]
+
+
+def test_apply_external_attach_options_rolls_back_partial_changes() -> None:
+    with patch(
+        "terminal.utils.tmux.run_tmux_command",
+        side_effect=[
+            (True, "on"),
+            (True, "on"),
+            (True, ""),
+            (False, "failed"),
+            (True, ""),
+        ],
+    ) as mock_run:
+        assert apply_external_attach_options("codex-agent-hub") is False
+
+    assert mock_run.call_args_list == [
+        call(["show-options", "-qv", "-t", "codex-agent-hub", "status"]),
+        call(["show-options", "-qv", "-t", "codex-agent-hub", "mouse"]),
+        call(["set-option", "-t", "codex-agent-hub", "status", "off"]),
+        call(["set-option", "-t", "codex-agent-hub", "mouse", "off"]),
+        call(["set-option", "-t", "codex-agent-hub", "status", "on"]),
+    ]

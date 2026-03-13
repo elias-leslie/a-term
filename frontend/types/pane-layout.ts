@@ -34,7 +34,7 @@ export interface ResizablePaneLayoutProps {
   onSettings?: () => void
   onReset?: (slot: TerminalSlot | PaneSlot) => void
   onClose?: (slot: TerminalSlot | PaneSlot) => void
-  onUpload?: () => void
+  onUpload?: (sessionId?: string) => void
   onClean?: (slot: TerminalSlot | PaneSlot) => void
   onOpenModal?: () => void
   canAddPane?: boolean

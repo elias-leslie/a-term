@@ -10,7 +10,9 @@ import os
 import re
 import subprocess
 import uuid as _uuid_mod
+from dataclasses import dataclass
 from pathlib import Path
+from threading import Lock
 
 from ..config import TMUX_DEFAULT_COLS, TMUX_DEFAULT_ROWS
 from ..logging_config import get_logger
@@ -39,6 +41,17 @@ FILTERED_ENV_VARS = {
     "SLACK_TOKEN",
     "DISCORD_TOKEN",
 }
+
+
+@dataclass
+class _ExternalAttachState:
+    refcount: int
+    status: str
+    mouse: str
+
+
+_EXTERNAL_ATTACH_LOCK = Lock()
+_EXTERNAL_ATTACH_STATES: dict[str, _ExternalAttachState] = {}
 
 
 class TmuxError(Exception):
@@ -323,3 +336,112 @@ def reset_tmux_window_size_policy(session_name: str) -> bool:
     else:
         logger.warning("tmux_window_size_policy_reset_failed", session=session_name)
     return success
+
+
+def _normalize_tmux_toggle(value: str) -> str | None:
+    normalized = value.strip().lower()
+    if normalized in {"on", "1", "yes"}:
+        return "on"
+    if normalized in {"off", "0", "no"}:
+        return "off"
+    return None
+
+
+def get_tmux_session_option(session_name: str, option: str) -> str | None:
+    """Return the effective session option value normalized to on/off."""
+    commands = (
+        ["show-options", "-qv", "-t", session_name, option],
+        ["show-options", "-gqv", option],
+    )
+    for args in commands:
+        success, output = run_tmux_command(args)
+        if not success or not output.strip():
+            continue
+        normalized = _normalize_tmux_toggle(output)
+        if normalized:
+            return normalized
+
+    logger.warning("tmux_option_read_failed", session=session_name, option=option)
+    return None
+
+
+def set_tmux_session_option(session_name: str, option: str, value: str) -> bool:
+    """Set a tmux session option to a normalized on/off value."""
+    success, _ = run_tmux_command(["set-option", "-t", session_name, option, value])
+    if success:
+        logger.debug("tmux_option_set", session=session_name, option=option, value=value)
+    else:
+        logger.warning("tmux_option_set_failed", session=session_name, option=option, value=value)
+    return success
+
+
+def apply_external_attach_options(session_name: str) -> bool:
+    """Normalize external tmux UI while Terminal is attached."""
+    with _EXTERNAL_ATTACH_LOCK:
+        existing = _EXTERNAL_ATTACH_STATES.get(session_name)
+        if existing:
+            existing.refcount += 1
+            logger.debug(
+                "tmux_external_attach_reused",
+                session=session_name,
+                refcount=existing.refcount,
+            )
+            return True
+
+        status = get_tmux_session_option(session_name, "status")
+        mouse = get_tmux_session_option(session_name, "mouse")
+        if status is None or mouse is None:
+            return False
+
+        changed_options: list[tuple[str, str]] = []
+        for option, original_value in (("status", status), ("mouse", mouse)):
+            if original_value == "off":
+                continue
+            if not set_tmux_session_option(session_name, option, "off"):
+                for changed_option, restore_value in reversed(changed_options):
+                    set_tmux_session_option(session_name, changed_option, restore_value)
+                return False
+            changed_options.append((option, original_value))
+
+        _EXTERNAL_ATTACH_STATES[session_name] = _ExternalAttachState(
+            refcount=1,
+            status=status,
+            mouse=mouse,
+        )
+        logger.debug(
+            "tmux_external_attach_applied",
+            session=session_name,
+            status=status,
+            mouse=mouse,
+        )
+        return True
+
+
+def restore_external_attach_options(session_name: str) -> bool:
+    """Restore external tmux UI after the last Terminal attachment ends."""
+    with _EXTERNAL_ATTACH_LOCK:
+        existing = _EXTERNAL_ATTACH_STATES.get(session_name)
+        if not existing:
+            return True
+
+        if existing.refcount > 1:
+            existing.refcount -= 1
+            logger.debug(
+                "tmux_external_attach_released",
+                session=session_name,
+                refcount=existing.refcount,
+            )
+            return True
+
+        success = True
+        for option, original_value in (("mouse", existing.mouse), ("status", existing.status)):
+            if original_value == "off":
+                continue
+            success = set_tmux_session_option(session_name, option, original_value) and success
+
+        _EXTERNAL_ATTACH_STATES.pop(session_name, None)
+        if success:
+            logger.debug("tmux_external_attach_restored", session=session_name)
+        else:
+            logger.warning("tmux_external_attach_restore_failed", session=session_name)
+        return success

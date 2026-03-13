@@ -16,7 +16,12 @@ from ...services.scrollback_sync import (
     ScrollbackSyncScheduler,
     prepare_scrollback_for_transport,
 )
-from ...utils.tmux import get_scrollback, reset_tmux_window_size_policy
+from ...utils.tmux import (
+    apply_external_attach_options,
+    get_scrollback,
+    reset_tmux_window_size_policy,
+    restore_external_attach_options,
+)
 from .session_validation import validate_and_prepare_session
 from .websocket_cleanup import cleanup_pty_process, cleanup_tasks
 from .websocket_heartbeat import heartbeat_loop
@@ -43,31 +48,42 @@ async def _setup_connection(
         validate_and_prepare_session, session_id
     )
     resize_tmux = not bool(session.get("is_external"))
-    if session.get("is_external"):
-        await asyncio.to_thread(reset_tmux_window_size_policy, tmux_session_name)
-    stored_target_session = session.get("last_claude_session")
-    master_fd, pid = spawn_pty_for_tmux(tmux_session_name, stored_target_session)
-    await wait_for_initial_resize(
-        websocket,
-        master_fd,
-        session_id,
-        tmux_session_name,
-        resize_tmux=resize_tmux,
-    )
-
-    scrollback = get_scrollback(tmux_session_name)
-    if scrollback:
-        prepared_scrollback = prepare_scrollback_for_transport(scrollback)
-        if prepared_scrollback:
-            await websocket.send_text(prepared_scrollback)
-            logger.info(
-                "scrollback_sent",
-                session_id=session_id,
-                bytes=len(prepared_scrollback),
-                original_bytes=len(scrollback),
+    external_attach_applied = False
+    try:
+        if session.get("is_external"):
+            await asyncio.to_thread(reset_tmux_window_size_policy, tmux_session_name)
+            external_attach_applied = await asyncio.to_thread(
+                apply_external_attach_options,
+                tmux_session_name,
             )
 
-    return session, tmux_session_name, master_fd, pid, resize_tmux
+        stored_target_session = session.get("last_claude_session")
+        master_fd, pid = spawn_pty_for_tmux(tmux_session_name, stored_target_session)
+        await wait_for_initial_resize(
+            websocket,
+            master_fd,
+            session_id,
+            tmux_session_name,
+            resize_tmux=resize_tmux,
+        )
+
+        scrollback = get_scrollback(tmux_session_name)
+        if scrollback:
+            prepared_scrollback = prepare_scrollback_for_transport(scrollback)
+            if prepared_scrollback:
+                await websocket.send_text(prepared_scrollback)
+                logger.info(
+                    "scrollback_sent",
+                    session_id=session_id,
+                    bytes=len(prepared_scrollback),
+                    original_bytes=len(scrollback),
+                )
+
+        return session, tmux_session_name, master_fd, pid, resize_tmux
+    except Exception:
+        if external_attach_applied:
+            await asyncio.to_thread(restore_external_attach_options, tmux_session_name)
+        raise
 
 
 async def _run_message_loop(
@@ -151,6 +167,8 @@ async def _run_session(
     finally:
         if scrollback_sync:
             await scrollback_sync.close()
+        if session.get("is_external"):
+            await asyncio.to_thread(restore_external_attach_options, tmux_session_name)
     return pid, master_fd
 
 

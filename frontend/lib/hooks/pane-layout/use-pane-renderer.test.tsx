@@ -1,9 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { usePaneRenderer } from './use-pane-renderer'
-import type { PaneSlot } from '@/lib/utils/slot'
+import { getSlotPanelId, type PaneSlot, type TerminalSlot } from '@/lib/utils/slot'
 
 const terminalProps = vi.hoisted(() => [] as Array<{ sessionId: string; isVisible?: boolean }>)
+const headerProps = vi.hoisted(() => [] as Array<Record<string, unknown>>)
 
 vi.mock('@/components/Terminal', () => ({
   TerminalComponent: ({
@@ -19,15 +20,22 @@ vi.mock('@/components/Terminal', () => ({
 }))
 
 vi.mock('@/components/UnifiedTerminalHeader', () => ({
-  UnifiedTerminalHeader: () => <div data-testid="terminal-header" />,
+  UnifiedTerminalHeader: (props: Record<string, unknown>) => {
+    headerProps.push(props)
+    const slot = props.slot as { paneId?: string; sessionId?: string }
+    const id = slot.paneId ?? slot.sessionId ?? 'unknown'
+    return <div data-testid={`terminal-header-${id}`} />
+  },
 }))
 
 function RenderHarness({
   slots,
   onSwapPanes,
+  onUpload,
 }: {
-  slots: PaneSlot[]
+  slots: Array<TerminalSlot | PaneSlot>
   onSwapPanes?: (slotIdA: string, slotIdB: string) => void
+  onUpload?: (sessionId?: string) => void
 }) {
   const renderPane = usePaneRenderer({
     props: {
@@ -62,6 +70,7 @@ function RenderHarness({
         brightWhite: '#f5f5f5',
       },
       onSwapPanes,
+      onUpload,
     },
     displaySlots: slots,
     paneCount: slots.length,
@@ -70,7 +79,7 @@ function RenderHarness({
   return (
     <div>
       {slots.map((slot, index) => (
-        <div key={slot.paneId}>{renderPane(slot, index)}</div>
+        <div key={getSlotPanelId(slot)}>{renderPane(slot, index)}</div>
       ))}
     </div>
   )
@@ -79,6 +88,7 @@ function RenderHarness({
 describe('usePaneRenderer', () => {
   it('keeps all rendered desktop terminals visible', () => {
     terminalProps.length = 0
+    headerProps.length = 0
 
     const slots: PaneSlot[] = [
       {
@@ -114,6 +124,7 @@ describe('usePaneRenderer', () => {
   })
 
   it('swaps panes when a dragged pane is dropped anywhere on another pane', () => {
+    headerProps.length = 0
     const onSwapPanes = vi.fn()
     const slots: PaneSlot[] = [
       {
@@ -155,5 +166,50 @@ describe('usePaneRenderer', () => {
     fireEvent.drop(paneTarget, { dataTransfer })
 
     expect(onSwapPanes).toHaveBeenCalledWith('pane-2', 'pane-1')
+  })
+
+  it('matches external pane capabilities with supported controls only', () => {
+    headerProps.length = 0
+
+    const slots: TerminalSlot[] = [
+      {
+        type: 'adhoc',
+        sessionId: 'external-codex',
+        name: 'codex-agent-hub',
+        workingDir: '/home/kasadis/agent-hub',
+        isExternal: true,
+      },
+    ]
+
+    render(<RenderHarness slots={slots} />)
+
+    expect(headerProps).toHaveLength(1)
+    expect(headerProps[0]?.showCleanButton).toBe(true)
+    expect(headerProps[0]?.onReset).toBeUndefined()
+    expect(headerProps[0]?.closeTooltip).toBe('Detach terminal')
+  })
+
+  it('routes pane upload actions to the pane session', () => {
+    headerProps.length = 0
+    const onUpload = vi.fn()
+
+    const slots: TerminalSlot[] = [
+      {
+        type: 'adhoc',
+        sessionId: 'external-codex',
+        name: 'codex-agent-hub',
+        workingDir: '/home/kasadis/agent-hub',
+        isExternal: true,
+      },
+    ]
+
+    render(<RenderHarness slots={slots} onUpload={onUpload} />)
+
+    const handleUpload = headerProps[0]?.onUpload as (() => void) | undefined
+    expect(handleUpload).toBeTypeOf('function')
+
+    handleUpload?.()
+
+    expect(onUpload).toHaveBeenCalledWith('external-codex')
   })
 })

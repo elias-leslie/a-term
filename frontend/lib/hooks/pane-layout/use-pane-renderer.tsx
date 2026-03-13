@@ -90,6 +90,10 @@ export function usePaneRenderer({
       const sessionId = getSlotSessionId(slot)
       const workingDir = getSlotWorkingDir(slot)
       const panelId = getSlotPanelId(slot)
+      const isExternalSlot = slot.type === 'adhoc' && slot.isExternal
+      const canResetSlot = !isExternalSlot
+      const canCleanSlot =
+        (slot.type === 'project' && slot.activeMode !== 'shell') || isExternalSlot
       const canSwapByDrop = !!onSwapPanes && paneCount > 1
       const isDragTarget = dragTargetPanelId === panelId
 
@@ -138,14 +142,13 @@ export function usePaneRenderer({
         >
           <UnifiedTerminalHeader
             slot={slot}
-            showCleanButton={
-              slot.type === 'project' && slot.activeMode !== 'shell'
-            }
+            showCleanButton={canCleanSlot}
             onSwitch={onSwitch ? () => onSwitch(slot) : undefined}
             onSettings={onSettings}
-            onReset={onReset ? () => onReset(slot) : undefined}
+            onReset={onReset && canResetSlot ? () => onReset(slot) : undefined}
             onClose={onClose ? () => onClose(slot) : undefined}
-            onUpload={onUpload}
+            closeTooltip={isExternalSlot ? 'Detach terminal' : 'Close terminal'}
+            onUpload={onUpload ? () => onUpload(sessionId ?? undefined) : undefined}
             onClean={onClean ? () => onClean(slot) : undefined}
             onOpenModal={onOpenModal}
             canAddPane={canAddPane}

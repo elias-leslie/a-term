@@ -11,6 +11,7 @@ export interface UnifiedTerminalHeaderProps {
   onSettings?: () => void
   onReset?: () => void
   onClose?: () => void
+  closeTooltip?: string
   onUpload?: () => void
   onVoice?: () => void
   onClean?: () => void

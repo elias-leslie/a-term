@@ -56,8 +56,10 @@ export function useTerminalActionHandlers({
     error: uploadError,
     clearError: clearUploadError,
   } = useFileUpload()
+  const uploadTargetRef = useRef<string | null>(null)
 
-  const handleUploadClick = useCallback(() => {
+  const handleUploadClick = useCallback((targetSessionId?: string) => {
+    uploadTargetRef.current = targetSessionId ?? null
     fileInputRef.current?.click()
   }, [])
 
@@ -65,11 +67,14 @@ export function useTerminalActionHandlers({
     async (file: File) => {
       const result = await uploadFile(file)
       if (result) {
-        const terminalRef = findActiveRef(terminalRefs.current, activeSessionId)
+        const terminalRef = uploadTargetRef.current
+          ? terminalRefs.current.get(uploadTargetRef.current) ?? null
+          : findActiveRef(terminalRefs.current, activeSessionId)
         if (terminalRef) {
           terminalRef.pasteInput(result.path)
         }
       }
+      uploadTargetRef.current = null
     },
     [uploadFile, activeSessionId, terminalRefs],
   )
@@ -80,6 +85,8 @@ export function useTerminalActionHandlers({
       if (file) {
         // Errors are captured by useFileUpload's error state; void the promise
         void handleFileSelect(file)
+      } else {
+        uploadTargetRef.current = null
       }
       // Reset input so the same file can be selected again
       e.target.value = ''

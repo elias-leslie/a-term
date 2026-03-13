@@ -16,7 +16,7 @@ export function useClickOutside(
   useEffect(() => {
     if (!enabled) return
 
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = (e: PointerEvent) => {
       const clickedOutsideAll = refs.every(
         (ref) => ref.current && !ref.current.contains(e.target as Node),
       )
@@ -25,7 +25,7 @@ export function useClickOutside(
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('pointerdown', handleClickOutside, true)
+    return () => document.removeEventListener('pointerdown', handleClickOutside, true)
   }, [refs, handler, enabled])
 }

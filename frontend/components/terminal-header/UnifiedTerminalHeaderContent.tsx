@@ -29,6 +29,7 @@ export const UnifiedTerminalHeaderContent = memo(
     onSettings,
     onReset,
     onClose,
+    closeTooltip,
     onUpload,
     onVoice,
     onClean,
@@ -49,7 +50,9 @@ export const UnifiedTerminalHeaderContent = memo(
   }: UnifiedTerminalHeaderProps) {
     const { enabledTools } = useAgentTools()
     const [isDragTarget, setIsDragTarget] = useState(false)
-    const isAgentMode = slot.type === 'project' && slot.activeMode !== 'shell'
+    const isAgentMode =
+      (slot.type === 'project' && slot.activeMode !== 'shell') ||
+      (slot.type === 'adhoc' && slot.isExternal)
     const shouldShowClean = showCleanButton && isAgentMode
     const slotId = getSlotPanelId(slot)
     const slotName = getSlotName(slot)
@@ -249,7 +252,7 @@ export const UnifiedTerminalHeaderContent = memo(
             <HeaderIconButton
               icon={<X className="w-3.5 h-3.5" />}
               onClick={onClose}
-              tooltip="Close terminal"
+              tooltip={closeTooltip ?? 'Close terminal'}
               variant="danger"
               isMobile={isMobile}
             />

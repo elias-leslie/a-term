@@ -48,7 +48,7 @@ interface TerminalLayoutRendererProps {
   // UI callbacks
   onShowSettings: () => void
   onShowTerminalManager: () => void
-  onUploadClick: () => void
+  onUploadClick: (sessionId?: string) => void
 
   // Mode switch handler for project slots
   onModeSwitch?: (
