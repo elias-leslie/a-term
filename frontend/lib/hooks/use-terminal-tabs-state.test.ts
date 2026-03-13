@@ -146,8 +146,8 @@ describe('useTerminalTabsState', () => {
       projectsLoading: false,
     })
 
-    mockUseLocalStorageState.mockImplementation(
-      (_key: string, defaultValue: unknown) => [defaultValue, vi.fn()],
+    mockUseLocalStorageState.mockImplementation((_key: string, defaultValue: unknown) =>
+      useState(defaultValue),
     )
     mockUseTabEditing.mockReturnValue({
       editingSessionId: null,
@@ -557,5 +557,100 @@ describe('useTerminalTabsState', () => {
       'adhoc-external-codex',
     ])
     expect(swapPanePositions).not.toHaveBeenCalled()
+  })
+
+  it('restores persisted attached external panes and keeps the persisted layout after refresh', () => {
+    let activeSessionState = buildActiveSessionState({
+      externalSessions: [],
+      isLoading: true,
+    })
+    const persistedState: Record<string, unknown> = {
+      'terminal-layout-mode': 'split-vertical',
+      'terminal-slot-order': ['pane-pane-project-a', 'adhoc-external-codex'],
+      'terminal-attached-external-session-ids': ['external-codex'],
+    }
+
+    mockUseActiveSession.mockImplementation(() => activeSessionState)
+    mockUseLocalStorageState.mockImplementation((key: string, defaultValue: unknown) =>
+      useState((persistedState[key] ?? defaultValue) as typeof defaultValue),
+    )
+    mockUseAvailableLayouts.mockImplementation((paneCount: number) =>
+      paneCount > 1 ? ['split-horizontal', 'split-vertical'] : ['split-horizontal'],
+    )
+    mockUseTerminalPanes.mockReturnValue({
+      panes: [
+        {
+          id: 'pane-project-a',
+          pane_type: 'project',
+          project_id: 'project-a',
+          pane_order: 0,
+          pane_name: 'Project A',
+          active_mode: 'shell',
+          created_at: '2026-03-06T00:00:00Z',
+          sessions: [
+            {
+              id: 'session-project-a',
+              name: 'Project A Shell',
+              mode: 'shell',
+              session_number: 1,
+              is_alive: true,
+              working_dir: '/workspace/project-a',
+              claude_state: 'not_started',
+            },
+          ],
+          width_percent: 100,
+          height_percent: 100,
+          grid_row: 0,
+          grid_col: 0,
+        },
+      ],
+      atLimit: false,
+      isLoading: false,
+      hasLoadedOnce: true,
+      swapPanePositions: vi.fn(),
+      removePane: vi.fn(),
+      setActiveMode: vi.fn(),
+      createAdHocPane: vi.fn(),
+      createProjectPane: vi.fn(),
+      isCreating: false,
+      saveLayouts: vi.fn(),
+      maxPanes: 6,
+    })
+
+    const { result, rerender } = renderHook(() =>
+      useTerminalTabsState({ projectId: undefined, projectPath: undefined }),
+    )
+
+    expect(result.current.layoutMode).toBe('split-vertical')
+    expect(result.current.terminalSlots).toHaveLength(1)
+
+    activeSessionState = buildActiveSessionState({
+      externalSessions: [
+        {
+          id: 'external-codex',
+          name: 'codex-agent-hub',
+          user_id: null,
+          project_id: 'project-a',
+          working_dir: '/workspace/project-a',
+          mode: 'codex',
+          display_order: 3,
+          is_alive: true,
+          created_at: '2026-03-06T00:00:00Z',
+          last_accessed_at: '2026-03-06T00:00:00Z',
+          is_external: true,
+          source: 'tmux_external',
+        },
+      ],
+      isLoading: false,
+    })
+
+    rerender()
+
+    expect(result.current.layoutMode).toBe('split-vertical')
+    expect(result.current.orderedIds).toEqual([
+      'pane-pane-project-a',
+      'adhoc-external-codex',
+    ])
+    expect(result.current.terminalSlots).toHaveLength(2)
   })
 })

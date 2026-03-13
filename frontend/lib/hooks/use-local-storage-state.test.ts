@@ -34,4 +34,17 @@ describe('useLocalStorageState', () => {
     expect(result.current[0]).toBe(null)
     expect(window.localStorage.getItem('terminal:test-key')).toBeNull()
   })
+
+  it('supports functional updates', () => {
+    const { result } = renderHook(() =>
+      useLocalStorageState('terminal:test-key', ['a']),
+    )
+
+    act(() => {
+      result.current[1]((current) => [...current, 'b'])
+    })
+
+    expect(result.current[0]).toEqual(['a', 'b'])
+    expect(window.localStorage.getItem('terminal:test-key')).toBe('["a","b"]')
+  })
 })

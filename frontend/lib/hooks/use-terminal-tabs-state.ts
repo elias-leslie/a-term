@@ -78,8 +78,11 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
   const [showSettings, setShowSettings] = useState(false)
   const [keyboardSize, setKeyboardSize] = useLocalStorageState<KeyboardSizePreset>('terminal-keyboard-size', 'medium')
   const [storedSlotOrderIds, setStoredSlotOrderIds] = useLocalStorageState<string[]>('terminal-slot-order', [])
+  const [attachedExternalSessionIds, setAttachedExternalSessionIds] = useLocalStorageState<string[]>(
+    'terminal-attached-external-session-ids',
+    [],
+  )
   const [showTerminalManager, setShowTerminalManager] = useState(false)
-  const [attachedExternalSessionIds, setAttachedExternalSessionIds] = useState<string[]>([])
   const terminalRefs = useRef<Map<string, TerminalHandle>>(new Map())
   const [terminalStatuses, setTerminalStatuses] = useState<Map<string, ConnectionStatus>>(new Map())
   const projectTabRefs = useRef<Map<string, HTMLDivElement>>(new Map())
@@ -95,10 +98,11 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
   const visiblePanesAtLimit = visiblePaneCount >= paneCountLimit
 
   useEffect(() => {
+    if (activeSessionLoading) return
     setAttachedExternalSessionIds((current) =>
       current.filter((sessionId) => externalSessions.some((session) => session.id === sessionId)),
     )
-  }, [externalSessions])
+  }, [activeSessionLoading, externalSessions, setAttachedExternalSessionIds])
 
   const attachExternalSession = useCallback((sessionId: string) => {
     setAttachedExternalSessionIds((current) =>
@@ -106,13 +110,18 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
         ? current
         : [...current, sessionId],
     )
-  }, [backendPanesAtLimit, paneCountLimit, panes.length])
+  }, [
+    backendPanesAtLimit,
+    paneCountLimit,
+    panes.length,
+    setAttachedExternalSessionIds,
+  ])
 
   const detachExternalSession = useCallback((sessionId: string) => {
     setAttachedExternalSessionIds((current) =>
       current.filter((currentSessionId) => currentSessionId !== sessionId),
     )
-  }, [])
+  }, [setAttachedExternalSessionIds])
 
   const {
     handleKeyboardSizeChange,
@@ -167,10 +176,16 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     [storedSlotOrderIds, visibleSlots],
   )
   useEffect(() => {
+    if (activeSessionLoading) return
     if (JSON.stringify(reconciledSlotOrderIds) !== JSON.stringify(storedSlotOrderIds)) {
       setStoredSlotOrderIds(reconciledSlotOrderIds)
     }
-  }, [reconciledSlotOrderIds, setStoredSlotOrderIds, storedSlotOrderIds])
+  }, [
+    activeSessionLoading,
+    reconciledSlotOrderIds,
+    setStoredSlotOrderIds,
+    storedSlotOrderIds,
+  ])
   const terminalSlots = useMemo(
     () => orderTerminalSlots(visibleSlots, reconciledSlotOrderIds),
     [reconciledSlotOrderIds, visibleSlots],
@@ -219,7 +234,7 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     availableLayouts,
     layoutMode,
     setLayoutMode,
-    panesLoadedOnce && visiblePaneCount > 0,
+    panesLoadedOnce && !activeSessionLoading && visiblePaneCount > 0,
   )
   useAutoCreatePane({
     panes,
@@ -236,7 +251,7 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     setAttachedExternalSessionIds([])
     setStoredSlotOrderIds([])
     await handleCloseAll()
-  }, [handleCloseAll, setStoredSlotOrderIds])
+  }, [handleCloseAll, setAttachedExternalSessionIds, setStoredSlotOrderIds])
 
   useEffect(() => {
     if (!projectId) {
