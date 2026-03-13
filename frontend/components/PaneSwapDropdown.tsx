@@ -5,20 +5,25 @@ import { ArrowLeftRight, ChevronDown } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState, type DragEvent } from 'react'
 import { useClickOutside } from '@/lib/hooks/use-click-outside'
 import {
+  type PaneSlot,
   getSlotName,
   getSlotPanelId,
   type TerminalSlot,
 } from '@/lib/utils/slot'
+import {
+  getDraggedPaneSlotId,
+  setDraggedPaneSlotId,
+} from '@/lib/utils/pane-swap-dnd'
 
 export interface PaneSwapDropdownProps {
   /** Current slot being displayed */
-  currentSlot: TerminalSlot
+  currentSlot: TerminalSlot | PaneSlot
   /** All available slots for swapping */
-  allSlots: TerminalSlot[]
+  allSlots: Array<TerminalSlot | PaneSlot>
   /** Callback when user selects another slot to swap with (desktop: swap positions) */
   onSwapWith: (otherSlotId: string) => void
   /** Callback to switch to another slot (mobile: navigate to pane) */
-  onSwitchTo?: (slot: TerminalSlot) => void
+  onSwitchTo?: (slot: TerminalSlot | PaneSlot) => void
   isMobile?: boolean
 }
 
@@ -39,7 +44,6 @@ export function PaneSwapDropdown({
   const dropdownRef = useRef<HTMLDivElement>(null)
   const currentName = getSlotName(currentSlot)
   const currentId = getSlotPanelId(currentSlot)
-  const dragMimeType = 'application/x-terminal-pane-slot'
 
   // Other slots to show in dropdown (exclude current)
   const otherSlots = allSlots.filter((s) => getSlotPanelId(s) !== currentId)
@@ -49,16 +53,14 @@ export function PaneSwapDropdown({
   useClickOutside(clickOutsideRefs, closeDropdown, isOpen)
 
   const readDraggedSlotId = useCallback(
-    (event: React.DragEvent<HTMLElement>) =>
-      event.dataTransfer?.getData(dragMimeType) ?? '',
+    (event: React.DragEvent<HTMLElement>) => getDraggedPaneSlotId(event),
     [],
   )
 
   const handleDragStart = useCallback(
     (event: DragEvent<HTMLButtonElement>) => {
       if (isMobile) return
-      event.dataTransfer.effectAllowed = 'move'
-      event.dataTransfer.setData(dragMimeType, currentId)
+      setDraggedPaneSlotId(event, currentId)
     },
     [currentId, isMobile],
   )
@@ -125,6 +127,7 @@ export function PaneSwapDropdown({
         onDrop={handleDrop}
         className={clsx(
           'flex items-center gap-1 px-1.5 py-0.5 rounded text-xs truncate max-w-[140px] transition-all duration-150',
+          !isMobile && 'cursor-grab active:cursor-grabbing',
           'hover:bg-[var(--term-bg-elevated)]',
           isDragTarget && 'ring-1 ring-[var(--term-accent)] bg-[var(--term-bg-elevated)]',
         )}

@@ -1,4 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
+import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTerminalTabsState } from './use-terminal-tabs-state'
 
@@ -477,5 +478,84 @@ describe('useTerminalTabsState', () => {
       result.current.detachExternalSession('external-codex')
     })
     expect(result.current.terminalSlots).toHaveLength(1)
+  })
+
+  it('swaps externally attached panes in the visible slot order', async () => {
+    const swapPanePositions = vi.fn()
+    mockUseLocalStorageState.mockImplementation((_key: string, defaultValue: unknown) =>
+      useState(defaultValue),
+    )
+    mockUseActiveSession.mockReturnValue(
+      buildActiveSessionState({
+        externalSessions: [
+          {
+            id: 'external-codex',
+            name: 'codex-terminal',
+            user_id: null,
+            project_id: 'project-a',
+            working_dir: '/workspace/project-a',
+            mode: 'codex',
+            display_order: 3,
+            is_alive: true,
+            created_at: '2026-03-06T00:00:00Z',
+            last_accessed_at: '2026-03-06T00:00:00Z',
+            is_external: true,
+            source: 'tmux_external',
+          },
+          {
+            id: 'external-claude',
+            name: 'claude-terminal',
+            user_id: null,
+            project_id: 'project-b',
+            working_dir: '/workspace/project-b',
+            mode: 'claude',
+            display_order: 4,
+            is_alive: true,
+            created_at: '2026-03-06T00:00:00Z',
+            last_accessed_at: '2026-03-06T00:00:00Z',
+            is_external: true,
+            source: 'tmux_external',
+          },
+        ],
+      }),
+    )
+    mockUseTerminalPanes.mockReturnValue({
+      panes: [],
+      atLimit: false,
+      isLoading: false,
+      hasLoadedOnce: true,
+      swapPanePositions,
+      removePane: vi.fn(),
+      setActiveMode: vi.fn(),
+      createAdHocPane: vi.fn(),
+      createProjectPane: vi.fn(),
+      isCreating: false,
+      saveLayouts: vi.fn(),
+      maxPanes: 6,
+    })
+
+    const { result } = renderHook(() =>
+      useTerminalTabsState({ projectId: undefined, projectPath: undefined }),
+    )
+
+    act(() => {
+      result.current.attachExternalSession('external-codex')
+      result.current.attachExternalSession('external-claude')
+    })
+
+    expect(result.current.orderedIds).toEqual([
+      'adhoc-external-codex',
+      'adhoc-external-claude',
+    ])
+
+    await act(async () => {
+      await result.current.swapPanes('adhoc-external-codex', 'adhoc-external-claude')
+    })
+
+    expect(result.current.orderedIds).toEqual([
+      'adhoc-external-claude',
+      'adhoc-external-codex',
+    ])
+    expect(swapPanePositions).not.toHaveBeenCalled()
   })
 })

@@ -23,15 +23,18 @@ import {
   findSessionByMode,
   generateProjectPaneName,
 } from '@/lib/hooks/terminal-handler-utils'
+import { getSlotPanelId, isPaneSlot } from '@/lib/utils/slot'
 import type { UseTerminalTabsStateProps } from './terminal-tabs-state/types'
 import {
   getActiveSessionProjectId,
   getPanesToSlots,
   getOrderedIds,
   isGridLayoutMode,
+  orderTerminalSlots,
+  reconcileOrderedIds,
+  swapOrderedIds,
 } from './terminal-tabs-state/utils'
 import {
-  useSwapPanes,
   useLayoutAutoDowngrade,
   useConnectionStatus,
 } from './terminal-tabs-state/hooks'
@@ -74,6 +77,7 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
   const isMobile = useMediaQuery('(max-width: 767px)')
   const [showSettings, setShowSettings] = useState(false)
   const [keyboardSize, setKeyboardSize] = useLocalStorageState<KeyboardSizePreset>('terminal-keyboard-size', 'medium')
+  const [storedSlotOrderIds, setStoredSlotOrderIds] = useLocalStorageState<string[]>('terminal-slot-order', [])
   const [showTerminalManager, setShowTerminalManager] = useState(false)
   const [attachedExternalSessionIds, setAttachedExternalSessionIds] = useState<string[]>([])
   const terminalRefs = useRef<Map<string, TerminalHandle>>(new Map())
@@ -147,7 +151,7 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
 
   const isLoading = activeSessionLoading || sessionsLoading || projectsLoading || panesLoading
   const availableLayouts = useAvailableLayouts(visiblePaneCount)
-  const terminalSlots = useMemo(() => {
+  const visibleSlots = useMemo(() => {
     const paneSlots = getPanesToSlots(panes)
     const externalSlots = attachedExternalSessions.map((session) => ({
       type: 'adhoc' as const,
@@ -158,9 +162,46 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
     }))
     return [...paneSlots, ...externalSlots]
   }, [attachedExternalSessions, panes])
+  const reconciledSlotOrderIds = useMemo(
+    () => reconcileOrderedIds(visibleSlots, storedSlotOrderIds),
+    [storedSlotOrderIds, visibleSlots],
+  )
+  useEffect(() => {
+    if (JSON.stringify(reconciledSlotOrderIds) !== JSON.stringify(storedSlotOrderIds)) {
+      setStoredSlotOrderIds(reconciledSlotOrderIds)
+    }
+  }, [reconciledSlotOrderIds, setStoredSlotOrderIds, storedSlotOrderIds])
+  const terminalSlots = useMemo(
+    () => orderTerminalSlots(visibleSlots, reconciledSlotOrderIds),
+    [reconciledSlotOrderIds, visibleSlots],
+  )
   const orderedIds = useMemo(() => getOrderedIds(terminalSlots), [terminalSlots])
   const hasVisibleExternalSlot = attachedExternalSessions.length > 0
-  const swapPanes = useSwapPanes(terminalSlots, swapPanePositions)
+  const swapPanes = useCallback(
+    async (slotIdA: string, slotIdB: string) => {
+      const slotA = terminalSlots.find((slot) => getSlotPanelId(slot) === slotIdA)
+      const slotB = terminalSlots.find((slot) => getSlotPanelId(slot) === slotIdB)
+      if (!slotA || !slotB) return
+
+      const currentOrderedIds = getOrderedIds(terminalSlots)
+      const nextOrderedIds = swapOrderedIds(currentOrderedIds, slotIdA, slotIdB)
+      if (nextOrderedIds === currentOrderedIds) return
+
+      setStoredSlotOrderIds(nextOrderedIds)
+
+      if (!isPaneSlot(slotA) || !isPaneSlot(slotB)) {
+        return
+      }
+
+      try {
+        await swapPanePositions(slotA.paneId, slotB.paneId)
+      } catch (error) {
+        setStoredSlotOrderIds(currentOrderedIds)
+        throw error
+      }
+    },
+    [setStoredSlotOrderIds, swapPanePositions, terminalSlots],
+  )
   const canAddPane = useCallback(
     () => visiblePaneCount < paneCountLimit && !backendPanesAtLimit,
     [backendPanesAtLimit, paneCountLimit, visiblePaneCount],
@@ -193,8 +234,9 @@ export function useTerminalTabsState({ projectId, projectPath }: UseTerminalTabs
   const startupLaunchKeyRef = useRef<string | null>(null)
   const handleCloseAllWithDetachedExternal = useCallback(async () => {
     setAttachedExternalSessionIds([])
+    setStoredSlotOrderIds([])
     await handleCloseAll()
-  }, [handleCloseAll])
+  }, [handleCloseAll, setStoredSlotOrderIds])
 
   useEffect(() => {
     if (!projectId) {

@@ -1,12 +1,17 @@
 import { useCallback } from 'react'
-import type { TerminalSlot } from '@/lib/utils/slot'
+import {
+  getSlotPanelId,
+  getSlotSessionId,
+  type PaneSlot,
+  type TerminalSlot,
+} from '@/lib/utils/slot'
 
 interface UseTerminalNavigationProps {
-  terminalSlots: TerminalSlot[]
+  terminalSlots: Array<TerminalSlot | PaneSlot>
   orderedIds: string[]
   activeSessionId: string | null
-  onSlotSwitch: (slot: TerminalSlot) => void
-  onSlotClose: (slot: TerminalSlot) => void
+  onSlotSwitch: (slot: TerminalSlot | PaneSlot) => void
+  onSlotClose: (slot: TerminalSlot | PaneSlot) => void
 }
 
 interface UseTerminalNavigationReturn {
@@ -29,38 +34,19 @@ export function useTerminalNavigation({
 }: UseTerminalNavigationProps): UseTerminalNavigationReturn {
   // Find the active slot
   const findActiveSlot = useCallback(() => {
-    return terminalSlots.find(
-      (slot) =>
-        (slot.type === 'project' &&
-          slot.activeSessionId === activeSessionId) ||
-        (slot.type === 'adhoc' && slot.sessionId === activeSessionId),
-    )
+    return terminalSlots.find((slot) => getSlotSessionId(slot) === activeSessionId)
   }, [terminalSlots, activeSessionId])
 
   // Find the current index in orderedIds
   const findCurrentIndex = useCallback(() => {
-    return orderedIds.findIndex((id) =>
-      terminalSlots.some(
-        (slot) =>
-          (slot.type === 'project' &&
-            slot.activeSessionId === activeSessionId &&
-            `project-${slot.projectId}` === id) ||
-          (slot.type === 'adhoc' &&
-            slot.sessionId === activeSessionId &&
-            `adhoc-${slot.sessionId}` === id),
-      ),
-    )
-  }, [orderedIds, terminalSlots, activeSessionId])
+    const activeSlot = findActiveSlot()
+    return activeSlot ? orderedIds.indexOf(getSlotPanelId(activeSlot)) : -1
+  }, [findActiveSlot, orderedIds])
 
   // Find slot by orderedId
   const findSlotByOrderedId = useCallback(
     (orderedId: string) => {
-      return terminalSlots.find(
-        (slot) =>
-          (slot.type === 'project' &&
-            `project-${slot.projectId}` === orderedId) ||
-          (slot.type === 'adhoc' && `adhoc-${slot.sessionId}` === orderedId),
-      )
+      return terminalSlots.find((slot) => getSlotPanelId(slot) === orderedId)
     },
     [terminalSlots],
   )

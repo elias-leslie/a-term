@@ -30,6 +30,25 @@ function createDataTransfer() {
 }
 
 describe('PaneSwapDropdown', () => {
+  it('swaps panes when another pane is chosen from the dropdown menu', () => {
+    const slotA = makeProjectSlot('a', 'Alpha')
+    const slotB = makeProjectSlot('b', 'Beta')
+    const onSwap = vi.fn()
+
+    render(
+      <PaneSwapDropdown
+        currentSlot={slotA}
+        allSlots={[slotA, slotB]}
+        onSwapWith={onSwap}
+      />,
+    )
+
+    fireEvent.click(screen.getByTestId('pane-swap-dropdown'))
+    fireEvent.click(screen.getByRole('button', { name: /beta/i }))
+
+    expect(onSwap).toHaveBeenCalledWith('pane-b')
+  })
+
   it('swaps panes when a pane header is dropped onto another header', () => {
     const slotA = makeProjectSlot('a', 'Alpha')
     const slotB = makeProjectSlot('b', 'Beta')

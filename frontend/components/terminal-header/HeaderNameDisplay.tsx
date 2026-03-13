@@ -3,16 +3,16 @@
 import { memo } from 'react'
 import { clsx } from 'clsx'
 import { ChevronDown } from 'lucide-react'
-import { getSlotName, type TerminalSlot } from '@/lib/utils/slot'
+import { getSlotName, type PaneSlot, type TerminalSlot } from '@/lib/utils/slot'
 import { PaneSwapDropdown } from '../PaneSwapDropdown'
 
 interface HeaderNameDisplayProps {
-  slot: TerminalSlot
+  slot: TerminalSlot | PaneSlot
   isActive: boolean
   isMobile: boolean
-  allSlots?: TerminalSlot[]
+  allSlots?: Array<TerminalSlot | PaneSlot>
   onSwapWith?: (otherSlotId: string) => void
-  onSwitchTo?: (slot: TerminalSlot) => void
+  onSwitchTo?: (slot: TerminalSlot | PaneSlot) => void
   onSwitch?: () => void
 }
 

@@ -1,10 +1,10 @@
-import type { TerminalSlot } from '@/lib/utils/slot'
+import type { PaneSlot, TerminalSlot } from '@/lib/utils/slot'
 import type { TerminalMode } from '../ModeToggle'
 import type { LayoutMode } from '@/lib/constants/terminal'
 import type { ConnectionStatus } from '@/components/terminal.types'
 
 export interface UnifiedTerminalHeaderProps {
-  slot: TerminalSlot
+  slot: TerminalSlot | PaneSlot
   isActive?: boolean
   showCleanButton?: boolean
   onSwitch?: () => void
@@ -24,11 +24,11 @@ export interface UnifiedTerminalHeaderProps {
   isModeSwitching?: boolean
   isMobile?: boolean
   /** All slots for swap dropdown (split/grid mode) - shows dropdown when provided */
-  allSlots?: TerminalSlot[]
+  allSlots?: Array<TerminalSlot | PaneSlot>
   /** Callback when user selects another slot to swap positions with */
   onSwapWith?: (otherSlotId: string) => void
   /** Callback to switch to another slot (mobile: navigate instead of swap) */
-  onSwitchTo?: (slot: TerminalSlot) => void
+  onSwitchTo?: (slot: TerminalSlot | PaneSlot) => void
   /** Callback to reset all panes (overflow menu) */
   onResetAll?: () => void
   /** Callback to close all panes (overflow menu) */

@@ -2,9 +2,14 @@
 
 import { clsx } from 'clsx'
 import { Mic, Paperclip, RefreshCw, Settings, Sparkles, X } from 'lucide-react'
-import { memo } from 'react'
+import { memo, useCallback, useMemo, useState, type DragEvent } from 'react'
 import { useAgentTools } from '@/lib/hooks/use-agent-tools'
 import { LayoutModeButtons } from '@/components/LayoutModeButton'
+import { getSlotName, getSlotPanelId } from '@/lib/utils/slot'
+import {
+  getDraggedPaneSlotId,
+  setDraggedPaneSlotId,
+} from '@/lib/utils/pane-swap-dnd'
 import { ModeToggle } from '../ModeToggle'
 import { PaneOverflowMenu } from '../PaneOverflowMenu'
 import { AddTerminalButton } from './AddTerminalButton'
@@ -41,14 +46,75 @@ export const UnifiedTerminalHeaderContent = memo(
     connectionStatus,
   }: UnifiedTerminalHeaderProps) {
     const { enabledTools } = useAgentTools()
+    const [isDragTarget, setIsDragTarget] = useState(false)
     const isAgentMode = slot.type === 'project' && slot.activeMode !== 'shell'
     const shouldShowClean = showCleanButton && isAgentMode
+    const slotId = getSlotPanelId(slot)
+    const slotName = getSlotName(slot)
+    const canSwapByDrag = useMemo(
+      () => !isMobile && !!onSwapWith && (allSlots?.length ?? 0) > 1,
+      [allSlots, isMobile, onSwapWith],
+    )
+
+    const handleDragStart = useCallback(
+      (event: DragEvent<HTMLDivElement>) => {
+        if (!canSwapByDrag) return
+        setDraggedPaneSlotId(event, slotId)
+      },
+      [canSwapByDrag, slotId],
+    )
+
+    const handleDragEnd = useCallback(() => {
+      setIsDragTarget(false)
+    }, [])
+
+    const handleDragOver = useCallback(
+      (event: DragEvent<HTMLDivElement>) => {
+        if (!canSwapByDrag) return
+        const draggedSlotId = getDraggedPaneSlotId(event)
+        if (!draggedSlotId || draggedSlotId === slotId) return
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'move'
+        setIsDragTarget(true)
+      },
+      [canSwapByDrag, slotId],
+    )
+
+    const handleDragLeave = useCallback(
+      (event: DragEvent<HTMLDivElement>) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setIsDragTarget(false)
+        }
+      },
+      [],
+    )
+
+    const handleDrop = useCallback(
+      (event: DragEvent<HTMLDivElement>) => {
+        if (!canSwapByDrag || !onSwapWith) return
+        const draggedSlotId = getDraggedPaneSlotId(event)
+        setIsDragTarget(false)
+        if (!draggedSlotId || draggedSlotId === slotId) return
+        event.preventDefault()
+        onSwapWith(draggedSlotId)
+      },
+      [canSwapByDrag, onSwapWith, slotId],
+    )
 
     return (
       <div
+        data-testid={`terminal-header-${slotId}`}
+        draggable={canSwapByDrag}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         className={clsx(
-          'flex-shrink-0 flex items-center gap-1',
+          'flex-shrink-0 flex items-center gap-1 transition-colors duration-150',
           isMobile ? 'h-9 px-1.5' : 'h-8 px-2',
+          canSwapByDrag && 'cursor-grab active:cursor-grabbing',
+          isDragTarget && 'ring-1 ring-inset ring-[var(--term-accent)]',
         )}
         style={{
           backgroundColor: isActive
@@ -56,6 +122,11 @@ export const UnifiedTerminalHeaderContent = memo(
             : 'var(--term-bg-surface)',
           borderBottom: '1px solid var(--term-border)',
         }}
+        title={
+          canSwapByDrag
+            ? `${slotName}: drag this header onto another pane to swap positions`
+            : undefined
+        }
       >
         {/* Mode toggle (shell <-> claude) - only for project slots */}
         {slot.type === 'project' && onModeSwitch && (

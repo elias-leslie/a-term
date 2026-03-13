@@ -66,7 +66,7 @@ export function getSlotPanelId(slot: TerminalSlot | PaneSlot): string {
 /**
  * Get display name for a slot (includes badge if applicable).
  */
-export function getSlotName(slot: TerminalSlot): string {
+export function getSlotName(slot: TerminalSlot | PaneSlot): string {
   if (slot.type === 'project') {
     const badge = slot.sessionBadge
     if (badge !== null && badge > 1) {
@@ -80,7 +80,7 @@ export function getSlotName(slot: TerminalSlot): string {
 /**
  * Get base project name without badge.
  */
-export function getSlotBaseName(slot: TerminalSlot): string {
+export function getSlotBaseName(slot: TerminalSlot | PaneSlot): string {
   if (slot.type === 'project') {
     return slot.projectName
   }
@@ -90,7 +90,7 @@ export function getSlotBaseName(slot: TerminalSlot): string {
 /**
  * Get working directory for a slot.
  */
-export function getSlotWorkingDir(slot: TerminalSlot): string | null {
+export function getSlotWorkingDir(slot: TerminalSlot | PaneSlot): string | null {
   if (slot.type === 'project') {
     return slot.rootPath
   }
