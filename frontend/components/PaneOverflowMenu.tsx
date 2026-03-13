@@ -83,10 +83,13 @@ export function PaneOverflowMenu({
           role="menu"
           aria-label="Pane actions"
           data-testid="pane-overflow-menu-items"
-          className="absolute right-0 top-full mt-1 z-50 min-w-[140px] py-1 rounded-md shadow-lg"
+          className="absolute right-0 top-full mt-1 z-50 min-w-[140px] py-1 rounded-md shadow-lg animate-in fade-in slide-in-from-top-1 duration-100"
           style={{
-            backgroundColor: 'var(--term-bg-elevated)',
-            border: '1px solid var(--term-border)',
+            backgroundColor: 'rgba(21, 27, 35, 0.95)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid var(--term-border-active)',
+            boxShadow: 'var(--term-shadow-dropdown)',
           }}
         >
           {onResetAll && (

@@ -1,6 +1,6 @@
 'use client'
 
-import { Loader2 } from 'lucide-react'
+import { Loader2, X } from 'lucide-react'
 
 const TOAST_BASE_CLASSES =
   'absolute top-10 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-md shadow-lg'
@@ -30,15 +30,29 @@ export function UploadProgressToast({ progress }: UploadProgressToastProps) {
           Uploading... {progress}%
         </span>
       </div>
+      {/* Progress bar */}
+      <div
+        className="mt-1.5 h-1 rounded-full overflow-hidden"
+        style={{ backgroundColor: 'var(--term-bg-deep)' }}
+      >
+        <div
+          className="h-full rounded-full transition-all duration-300 ease-out"
+          style={{
+            width: `${progress}%`,
+            backgroundColor: 'var(--term-accent)',
+          }}
+        />
+      </div>
     </div>
   )
 }
 
 interface UploadErrorToastProps {
   message: string
+  onDismiss?: () => void
 }
 
-export function UploadErrorToast({ message }: UploadErrorToastProps) {
+export function UploadErrorToast({ message, onDismiss }: UploadErrorToastProps) {
   return (
     <div
       data-testid="upload-error-toast"
@@ -49,9 +63,21 @@ export function UploadErrorToast({ message }: UploadErrorToastProps) {
         border: '1px solid var(--term-error)',
       }}
     >
-      <span className="text-sm" style={{ color: 'var(--term-error)' }}>
-        {message}
-      </span>
+      <div className="flex items-center gap-2">
+        <span className="text-sm flex-1" style={{ color: 'var(--term-error)' }}>
+          {message}
+        </span>
+        {onDismiss && (
+          <button
+            onClick={onDismiss}
+            className="flex-shrink-0 p-0.5 rounded transition-colors hover:bg-white/5"
+            style={{ color: 'var(--term-text-muted)' }}
+            aria-label="Dismiss error"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
     </div>
   )
 }

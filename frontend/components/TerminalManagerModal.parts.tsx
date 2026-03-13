@@ -231,7 +231,7 @@ export function SessionSection({
               key={session.id}
               type="button"
               onClick={() => onAction(session)}
-              className="flex items-center gap-3 w-full px-3 py-3 min-h-[44px] rounded-md transition-colors text-left"
+              className="interactive-row flex items-center gap-3 w-full px-3 py-3 min-h-[44px] rounded-md text-left"
               style={{ fontFamily: 'var(--font-mono)' }}
             >
               <Terminal size={16} style={iconStyle} />

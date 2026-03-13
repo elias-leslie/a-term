@@ -67,6 +67,7 @@ export interface TerminalContentProps {
   progress: number
   isUploading: boolean
   uploadError: { message: string } | null
+  clearUploadError?: () => void
   handleFileInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   handleFileSelect: (file: File) => void
 

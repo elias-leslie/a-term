@@ -15,10 +15,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
-  ],
+  themeColor: '#0a0e14',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
@@ -38,7 +35,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Terminal" />
       </head>
-      <body className={`${jetbrainsMono.variable} antialiased bg-slate-900`}>
+      <body className={`${jetbrainsMono.variable} antialiased`} style={{ backgroundColor: 'var(--term-bg-deep)' }}>
         <Providers>{children}</Providers>
         <Script
           id="sw-register"

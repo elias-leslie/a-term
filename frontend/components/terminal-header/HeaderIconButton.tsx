@@ -15,7 +15,7 @@ export const HeaderIconButton = memo(function HeaderIconButton({
     <button
       onClick={onClick}
       className={clsx(
-        'flex items-center justify-center rounded transition-all duration-150',
+        'flex items-center justify-center rounded transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--term-accent)]',
         isMobile ? 'w-8 h-8' : 'w-6 h-6',
       )}
       style={{

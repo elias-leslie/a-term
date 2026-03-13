@@ -105,7 +105,7 @@ export function AgentToolsSettings() {
       {feedback && (
         <div
           className="mb-2 rounded px-2 py-1.5 text-[10px]"
-          style={{ backgroundColor: 'rgba(248,81,73,0.12)', color: '#ffb4af' }}
+          style={{ backgroundColor: 'var(--term-error-muted)', color: 'var(--term-error-text)' }}
           role="alert"
         >
           {feedback}

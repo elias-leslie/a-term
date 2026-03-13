@@ -91,12 +91,15 @@ export function PaneSwapDropdown({
         <div
           data-testid="pane-swap-dropdown-menu"
           className={clsx(
-            'absolute left-0 top-full mt-1 z-50 rounded-md shadow-lg overflow-hidden',
+            'absolute left-0 top-full mt-1 z-50 rounded-md shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-1 duration-100',
             isMobile ? 'min-w-[200px]' : 'min-w-[180px]',
           )}
           style={{
-            backgroundColor: 'var(--term-bg-elevated)',
-            border: '1px solid var(--term-border)',
+            backgroundColor: 'rgba(21, 27, 35, 0.95)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid var(--term-border-active)',
+            boxShadow: 'var(--term-shadow-dropdown)',
           }}
         >
           {/* Header */}

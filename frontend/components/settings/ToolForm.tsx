@@ -47,7 +47,10 @@ const inputStyle: React.CSSProperties = {
   borderRadius: 4,
   color: 'var(--term-text-primary)',
   outline: 'none',
+  transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
 }
+
+// Note: inputs use className="term-input" for CSS focus ring defined in globals.css
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
@@ -132,32 +135,32 @@ export function ToolForm({
     <form onSubmit={handleSubmit} className="space-y-2 p-2 rounded" style={{ backgroundColor: 'var(--term-bg-surface)' }}>
       <div>
         <label style={labelStyle}>Name *</label>
-        <input style={inputStyle} value={form.name} onChange={(e) => handleNameChange(e.target.value)} placeholder="OpenCode" aria-label="Tool name" />
+        <input className="term-input" style={inputStyle} value={form.name} onChange={(e) => handleNameChange(e.target.value)} placeholder="OpenCode" aria-label="Tool name" />
       </div>
       <div>
         <label style={labelStyle}>Slug {isEdit && '(read-only)'}</label>
-        <input style={{ ...inputStyle, opacity: isEdit ? 0.5 : 1 }} value={form.slug} onChange={(e) => !isEdit && setForm((f) => ({ ...f, slug: e.target.value }))} readOnly={isEdit} placeholder="opencode" aria-label="Tool slug" />
+        <input className="term-input" style={{ ...inputStyle, opacity: isEdit ? 0.5 : 1 }} value={form.slug} onChange={(e) => !isEdit && setForm((f) => ({ ...f, slug: e.target.value }))} readOnly={isEdit} placeholder="opencode" aria-label="Tool slug" />
       </div>
       <div>
         <label style={labelStyle}>Command *</label>
-        <input style={inputStyle} value={form.command} onChange={(e) => handleCommandChange(e.target.value)} placeholder="codex --model gpt-5.4" aria-label="Tool command" />
+        <input className="term-input" style={inputStyle} value={form.command} onChange={(e) => handleCommandChange(e.target.value)} placeholder="codex --model gpt-5.4" aria-label="Tool command" />
       </div>
       <div>
         <label style={labelStyle}>Process Name *</label>
-        <input style={inputStyle} value={form.process_name} onChange={(e) => setForm((f) => ({ ...f, process_name: e.target.value }))} placeholder="codex" aria-label="Tool process name" />
+        <input className="term-input" style={inputStyle} value={form.process_name} onChange={(e) => setForm((f) => ({ ...f, process_name: e.target.value }))} placeholder="codex" aria-label="Tool process name" />
       </div>
       <div>
         <label style={labelStyle}>Description</label>
-        <input style={inputStyle} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Optional description" aria-label="Tool description" />
+        <input className="term-input" style={inputStyle} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Optional description" aria-label="Tool description" />
       </div>
       <div>
         <label style={labelStyle}>Color</label>
         <div className="flex items-center gap-2">
           <input type="color" value={/^#[0-9a-f]{6}$/i.test(form.color) ? form.color : EMPTY_FORM.color} onChange={(e) => setForm((f) => ({ ...f, color: e.target.value.toUpperCase() }))} style={{ width: 28, height: 22, border: 'none', cursor: 'pointer', background: 'transparent' }} aria-label="Tool color picker" />
-          <input style={{ ...inputStyle, flex: 1 }} value={form.color} onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))} placeholder="#00FF9F" aria-label="Tool color" />
+          <input className="term-input" style={{ ...inputStyle, flex: 1 }} value={form.color} onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))} placeholder="#00FF9F" aria-label="Tool color" />
         </div>
       </div>
-      {error && <div className="text-[10px]" style={{ color: '#ff6b6b' }}>{error}</div>}
+      {error && <div className="text-[10px]" role="alert" style={{ color: 'var(--term-error-text)' }}>{error}</div>}
       <div className="flex gap-2 pt-1">
         <button
           type="submit"

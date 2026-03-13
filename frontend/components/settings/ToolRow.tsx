@@ -67,7 +67,7 @@ export function ToolRow({
           title="Delete"
           aria-label={`Delete ${tool.name}`}
           className="p-1 rounded hover:bg-white/5 transition-colors"
-          style={{ color: 'var(--term-error, #ff6b6b)' }}
+          style={{ color: 'var(--term-error)' }}
         >
           <Trash2 size={10} />
         </button>

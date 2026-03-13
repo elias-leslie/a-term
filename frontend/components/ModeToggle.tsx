@@ -19,16 +19,7 @@ interface ModeToggleProps {
   agentTools?: AgentTool[]
 }
 
-const TOGGLE_STYLES = `
-  @keyframes mode-toggle-pulse {
-    0%,100%{opacity:0.2;transform:scale(1)}50%{opacity:0.4;transform:scale(1.02)}
-  }
-  @keyframes mode-toggle-spin {
-    from{transform:rotate(0deg)}to{transform:rotate(360deg)}
-  }
-  .mode-toggle-btn:focus-visible{outline:2px solid var(--term-accent);outline-offset:2px}
-  .mode-toggle-btn:active:not(:disabled){transform:scale(0.95)}
-`
+// Animations defined in globals.css: mode-toggle-pulse, mode-toggle-spin, .mode-toggle-btn, .mode-toggle-glow
 
 function ModeIcon({
   isCurrentlyLoading,
@@ -50,7 +41,8 @@ function ModeIcon({
       <Loader2
         width={iconSize}
         height={iconSize}
-        style={{ color: accentColor, animation: 'mode-toggle-spin 0.8s linear infinite' }}
+        className="mode-toggle-spin"
+        style={{ color: accentColor }}
       />
     )
   if (isAgentMode)
@@ -134,8 +126,6 @@ export const ModeToggle = memo(function ModeToggle({
   const iconSize = isMobile ? 16 : 14
 
   return (
-    <>
-      <style>{TOGGLE_STYLES}</style>
       <div style={{ position: 'relative', display: 'inline-block' }}>
         <button
           ref={buttonRef}
@@ -168,7 +158,7 @@ export const ModeToggle = memo(function ModeToggle({
           {isAgentMode && !isCurrentlyLoading && (
             <span
               className="mode-toggle-glow"
-              style={{ position: 'absolute', inset: -2, borderRadius: 8, border: `1px solid ${accentColor}`, opacity: 0.3, animation: 'mode-toggle-pulse 2s ease-in-out infinite' }}
+              style={{ position: 'absolute', inset: -2, borderRadius: 8, border: `1px solid ${accentColor}`, opacity: 0.3 }}
             />
           )}
           <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'transform 0.2s ease, color 0.2s ease', transform: isHovered && !isDisabled && !isCurrentlyLoading ? 'scale(1.1)' : 'scale(1)' }}>
@@ -180,6 +170,5 @@ export const ModeToggle = memo(function ModeToggle({
           <ModeTogglePopover buttonRef={buttonRef} value={value} agentTools={agentTools} onClose={() => setShowPopover(false)} onSelectMode={handleSelectMode} />
         )}
       </div>
-    </>
   )
 })

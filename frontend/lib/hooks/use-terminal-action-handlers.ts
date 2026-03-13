@@ -54,6 +54,7 @@ export function useTerminalActionHandlers({
     progress,
     isUploading,
     error: uploadError,
+    clearError: clearUploadError,
   } = useFileUpload()
 
   const handleUploadClick = useCallback(() => {
@@ -172,6 +173,7 @@ export function useTerminalActionHandlers({
     progress,
     isUploading,
     uploadError,
+    clearUploadError,
     handleUploadClick,
     handleFileSelect,
     handleFileInputChange,

@@ -87,7 +87,7 @@ export function FileUploadDropzone({
         <div
           className="absolute inset-0 z-50 flex flex-col items-center justify-center backdrop-blur-sm transition-opacity duration-200"
           style={{
-            backgroundColor: 'rgba(var(--term-bg-surface-rgb), 0.9)',
+            backgroundColor: 'rgba(15, 20, 25, 0.9)',
             border: '2px dashed var(--term-accent)',
           }}
           role="status"

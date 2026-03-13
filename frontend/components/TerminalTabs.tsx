@@ -86,6 +86,7 @@ export function TerminalTabs({
     progress,
     isUploading,
     uploadError,
+    clearUploadError,
     handleUploadClick,
     handleFileSelect,
     handleFileInputChange,
@@ -169,6 +170,7 @@ export function TerminalTabs({
         progress={progress}
         isUploading={isUploading}
         uploadError={uploadError}
+        clearUploadError={clearUploadError}
         handleFileInputChange={handleFileInputChange}
         handleFileSelect={handleFileSelect}
         showCleaner={showCleaner}

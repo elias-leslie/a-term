@@ -55,6 +55,7 @@ export function TerminalContent({
   progress,
   isUploading,
   uploadError,
+  clearUploadError,
   handleFileInputChange,
   handleFileSelect,
   showCleaner,
@@ -140,6 +141,7 @@ export function TerminalContent({
         progress={progress}
         isUploading={isUploading}
         uploadError={uploadError}
+        clearUploadError={clearUploadError}
         handleFileInputChange={handleFileInputChange}
         handleFileSelect={handleFileSelect}
         activeSessionId={activeSessionId}

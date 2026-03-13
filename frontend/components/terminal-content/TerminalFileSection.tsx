@@ -39,6 +39,7 @@ interface TerminalFileSectionProps {
   progress: number
   isUploading: boolean
   uploadError: { message: string } | null
+  clearUploadError?: () => void
   handleFileInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   handleFileSelect: (file: File) => void
   activeSessionId?: string | null
@@ -77,6 +78,7 @@ export function TerminalFileSection({
   progress,
   isUploading,
   uploadError,
+  clearUploadError,
   handleFileInputChange,
   handleFileSelect,
   activeSessionId,
@@ -97,7 +99,7 @@ export function TerminalFileSection({
 
       {/* Upload status indicators */}
       {isUploading && <UploadProgressToast progress={progress} />}
-      {uploadError && <UploadErrorToast message={uploadError.message} />}
+      {uploadError && <UploadErrorToast message={uploadError.message} onDismiss={clearUploadError} />}
 
       {/* Terminal panels with drag-drop upload */}
       <FileUploadDropzone

@@ -28,17 +28,12 @@ export function SettingSelect({
           // Try to parse as number if original value was number
           onChange(typeof value === 'number' ? Number(val) : val)
         }}
-        className="w-full px-2.5 py-3 min-h-[44px] text-sm rounded-md transition-colors focus:outline-none"
+        className="term-input w-full px-2.5 py-3 min-h-[44px] text-sm rounded-md focus:outline-none"
         style={{
           backgroundColor: 'var(--term-bg-deep)',
           border: '1px solid var(--term-border)',
           color: 'var(--term-text-primary)',
-        }}
-        onFocus={(e) => {
-          e.currentTarget.style.borderColor = 'var(--term-accent)'
-        }}
-        onBlur={(e) => {
-          e.currentTarget.style.borderColor = 'var(--term-border)'
+          transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
         }}
       >
         {options.map((opt) => (

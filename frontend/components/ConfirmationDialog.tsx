@@ -72,7 +72,7 @@ export function ConfirmationDialog({
   return (
     <div
       className="fixed inset-0 z-[10000] flex items-center justify-center"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)' }}
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)' }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onCancel()
       }}
@@ -86,7 +86,7 @@ export function ConfirmationDialog({
         aria-describedby="confirm-dialog-message"
         className="rounded-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-w-md w-full mx-4"
         style={{
-          backgroundColor: 'var(--term-bg-surface)',
+          backgroundColor: 'var(--term-bg-elevated)',
           border: `1px solid ${accentColor}`,
           boxShadow: `0 0 20px ${accentColor}40, 0 8px 32px rgba(0, 0, 0, 0.5)`,
         }}
@@ -121,7 +121,7 @@ export function ConfirmationDialog({
             id="confirm-dialog-message"
             className="text-sm"
             style={{
-              color: 'var(--term-text-secondary)',
+              color: 'var(--term-text-muted)',
               fontFamily: 'var(--font-mono)',
               lineHeight: 1.5,
             }}
@@ -141,7 +141,7 @@ export function ConfirmationDialog({
           <button
             data-testid="confirm-dialog-cancel"
             onClick={onCancel}
-            className="px-3 py-1.5 text-xs rounded transition-colors"
+            className="px-4 py-2 text-xs rounded-md transition-colors"
             style={{
               backgroundColor: 'transparent',
               color: 'var(--term-text-muted)',
@@ -163,10 +163,10 @@ export function ConfirmationDialog({
             ref={confirmButtonRef}
             data-testid="confirm-dialog-confirm"
             onClick={onConfirm}
-            className="px-3 py-1.5 text-xs rounded transition-colors"
+            className="px-4 py-2 text-xs rounded-md transition-colors"
             style={{
               backgroundColor: accentColor,
-              color: 'var(--term-bg)',
+              color: 'var(--term-bg-deep)',
               border: 'none',
               fontFamily: 'var(--font-mono)',
               fontWeight: 500,

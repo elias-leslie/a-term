@@ -44,28 +44,10 @@ export function AgentIndicator({
               state === 'active'
                 ? `0 0 6px ${accentColor}`
                 : `0 0 4px ${accentColor}`,
-            // CSS custom property for animation
             ['--agent-color' as string]: accentColor,
           }}
         />
       )}
-
-      <style jsx>{`
-        @keyframes agent-breathe {
-          0%, 100% {
-            opacity: 0.6;
-            box-shadow: 0 0 4px var(--agent-color, var(--term-accent));
-          }
-          50% {
-            opacity: 1;
-            box-shadow: 0 0 12px var(--agent-color, var(--term-accent));
-          }
-        }
-
-        .agent-indicator-active {
-          animation: agent-breathe 2s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   )
 }

@@ -10,7 +10,7 @@ function TerminalPage() {
   const projectPath = searchParams.get('dir') || undefined
 
   return (
-    <div className="h-dvh flex flex-col bg-slate-900">
+    <div className="h-dvh flex flex-col" style={{ backgroundColor: 'var(--term-bg-deep)' }}>
       <TerminalTabs
         projectId={projectId}
         projectPath={projectPath}
@@ -26,7 +26,8 @@ export default function Home() {
     <Suspense
       fallback={
         <div
-          className="h-dvh flex items-center justify-center bg-slate-900 px-6 text-center text-slate-400"
+          className="h-dvh flex items-center justify-center px-6 text-center text-sm"
+          style={{ backgroundColor: 'var(--term-bg-deep)', color: 'var(--term-text-muted)', fontFamily: 'var(--font-mono)' }}
           aria-live="polite"
         >
           Preparing terminal workspace…

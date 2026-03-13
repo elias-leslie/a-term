@@ -44,11 +44,15 @@ export function KeyboardShortcuts({ isOpen, onClose }: KeyboardShortcutsProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-[10000] flex items-center justify-center"
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)' }}
       onClick={onClose}
     >
       <div
         data-testid="keyboard-shortcuts-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="keyboard-shortcuts-title"
         className="w-full max-w-md mx-4 rounded-lg overflow-hidden shadow-2xl"
         style={{
           backgroundColor: 'var(--term-bg-surface)',
@@ -70,6 +74,7 @@ export function KeyboardShortcuts({ isOpen, onClose }: KeyboardShortcutsProps) {
               style={{ color: 'var(--term-accent)' }}
             />
             <span
+              id="keyboard-shortcuts-title"
               className="font-medium"
               style={{ color: 'var(--term-text-primary)' }}
             >
@@ -79,19 +84,21 @@ export function KeyboardShortcuts({ isOpen, onClose }: KeyboardShortcutsProps) {
           <button
             data-testid="keyboard-shortcuts-modal-close"
             onClick={onClose}
-            className="p-1 rounded hover:bg-[var(--term-bg-deep)] transition-colors"
+            className="p-1.5 rounded hover:bg-[var(--term-bg-deep)] transition-colors"
             style={{ color: 'var(--term-text-muted)' }}
+            aria-label="Close keyboard shortcuts"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Shortcuts list */}
-        <div className="p-4 space-y-2">
+        <div className="p-4 space-y-1">
           {SHORTCUTS.map((shortcut) => (
             <div
               key={shortcut.keys}
-              className="flex items-center justify-between py-1"
+              className="flex items-center justify-between py-2 px-2 rounded-md"
+              style={{ transition: 'background-color 0.1s ease' }}
             >
               <span
                 className="text-sm"
@@ -100,11 +107,12 @@ export function KeyboardShortcuts({ isOpen, onClose }: KeyboardShortcutsProps) {
                 {shortcut.description}
               </span>
               <kbd
-                className="px-2 py-0.5 text-xs font-mono rounded"
+                className="px-2.5 py-1 text-xs font-mono rounded-md ml-4 flex-shrink-0"
                 style={{
                   backgroundColor: 'var(--term-bg-deep)',
                   border: '1px solid var(--term-border)',
                   color: 'var(--term-text-primary)',
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
                 }}
               >
                 {shortcut.keys}

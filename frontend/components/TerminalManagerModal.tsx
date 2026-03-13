@@ -198,8 +198,8 @@ export function TerminalManagerModal({
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Filter by project, session name, tool, or path"
-              className="w-full rounded-md px-3 py-2.5 text-sm outline-none transition-colors"
-              style={{ backgroundColor: 'var(--term-bg-surface)', border: '1px solid var(--term-border)', color: 'var(--term-text-primary)', fontFamily: 'var(--font-mono)' }}
+              className="term-input w-full rounded-md px-3 py-2.5 text-sm outline-none"
+              style={{ backgroundColor: 'var(--term-bg-surface)', border: '1px solid var(--term-border)', color: 'var(--term-text-primary)', fontFamily: 'var(--font-mono)', transition: 'border-color 0.15s ease, box-shadow 0.15s ease' }}
             />
             <p
               className="mt-2 text-[11px]"
@@ -223,7 +223,7 @@ export function TerminalManagerModal({
               <button
                 type="button"
                 onClick={handleCreateGeneric}
-                className="flex items-center gap-3 w-full px-3 py-3 min-h-[44px] rounded-md transition-colors text-left"
+                className="interactive-row flex items-center gap-3 w-full px-3 py-3 min-h-[44px] rounded-md text-left"
                 style={{ fontFamily: 'var(--font-mono)' }}
               >
                 <Terminal size={16} style={iconStyle} />

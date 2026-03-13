@@ -14,56 +14,69 @@ export function TerminalSkeleton() {
     >
       {/* Header skeleton */}
       <div
-        className="flex items-center gap-2 px-3 py-2"
+        className="flex items-center gap-2 px-3 h-8"
         style={{
           backgroundColor: 'var(--term-bg-surface)',
           borderBottom: '1px solid var(--term-border)',
         }}
       >
         <div
-          className="h-4 w-24 rounded animate-pulse"
+          className="h-4 w-6 rounded animate-pulse"
           style={{ backgroundColor: 'var(--term-bg-elevated)' }}
+        />
+        <div
+          className="h-3.5 w-20 rounded animate-pulse"
+          style={{ backgroundColor: 'var(--term-bg-elevated)', animationDelay: '50ms' }}
+        />
+        <div
+          className="h-3 w-12 rounded-full animate-pulse"
+          style={{ backgroundColor: 'var(--term-bg-elevated)', animationDelay: '100ms' }}
         />
         <div className="flex-1" />
-        <div
-          className="h-4 w-4 rounded animate-pulse"
-          style={{ backgroundColor: 'var(--term-bg-elevated)' }}
-        />
+        <div className="flex gap-1">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={`header-dot-${i}`}
+              className="h-3.5 w-3.5 rounded animate-pulse"
+              style={{ backgroundColor: 'var(--term-bg-elevated)', animationDelay: `${150 + i * 50}ms` }}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Terminal content skeleton */}
-      <div className="flex-1 p-3 space-y-2 overflow-hidden">
+      <div className="flex-1 p-4 space-y-2.5 overflow-hidden">
         {/* Fake prompt line */}
         <div className="flex items-center gap-2">
           <div
-            className="h-3 w-20 rounded animate-pulse"
-            style={{ backgroundColor: 'var(--term-bg-elevated)' }}
+            className="h-3.5 w-16 rounded animate-pulse"
+            style={{ backgroundColor: 'var(--term-accent-glow)' }}
           />
           <div
-            className="h-3 w-32 rounded animate-pulse opacity-60"
-            style={{ backgroundColor: 'var(--term-bg-elevated)' }}
+            className="h-3.5 w-28 rounded animate-pulse"
+            style={{ backgroundColor: 'var(--term-bg-elevated)', animationDelay: '100ms' }}
           />
         </div>
 
-        {/* Fake output lines */}
-        {[0.8, 0.6, 0.9, 0.4, 0.7, 0.5, 0.85, 0.3].map((width, i) => (
+        {/* Fake output lines with staggered delays */}
+        {[0.7, 0.55, 0.85, 0.4, 0.65, 0.5, 0.75, 0.35].map((width, i) => (
           <div
-            key={`skeleton-line-${width}`}
+            key={`skeleton-${width}`}
             className="h-3 rounded animate-pulse"
             style={{
               backgroundColor: 'var(--term-bg-elevated)',
               width: `${width * 100}%`,
-              opacity: 0.3 + i * 0.05,
-              animationDelay: `${i * 100}ms`,
+              opacity: 0.4 + i * 0.04,
+              animationDelay: `${200 + i * 80}ms`,
             }}
           />
         ))}
 
-        {/* Blinking cursor */}
-        <div className="flex items-center gap-2 mt-4">
+        {/* Blinking cursor line */}
+        <div className="flex items-center gap-2 mt-6">
           <div
-            className="h-3 w-20 rounded animate-pulse"
-            style={{ backgroundColor: 'var(--term-bg-elevated)' }}
+            className="h-3.5 w-16 rounded animate-pulse"
+            style={{ backgroundColor: 'var(--term-accent-glow)' }}
           />
           <div
             className="h-4 w-2 rounded-sm animate-pulse"

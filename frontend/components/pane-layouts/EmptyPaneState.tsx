@@ -1,5 +1,7 @@
 'use client'
 
+import { Terminal } from 'lucide-react'
+
 interface EmptyPaneStateProps {
   containerRef: React.RefObject<HTMLDivElement | null>
   onOpenModal?: () => void
@@ -21,30 +23,39 @@ export function EmptyPaneState({
       <button
         type="button"
         onClick={onOpenModal}
-        aria-label="Open a new terminal"
-        className="flex flex-col items-center gap-3 p-6 rounded-lg cursor-pointer transition-all hover:scale-105"
+        aria-label="Open terminal manager to create a new terminal"
+        className="flex flex-col items-center gap-4 p-8 rounded-lg cursor-pointer transition-all duration-200 hover:scale-[1.02]"
         style={{
           backgroundColor: 'var(--term-bg-surface)',
-          border: '1px dashed var(--term-border)',
+          border: '1px dashed var(--term-border-active)',
         }}
       >
         <div
-          className="flex items-center justify-center w-12 h-12 rounded-full"
+          className="flex items-center justify-center w-14 h-14 rounded-full"
           style={{
             backgroundColor: 'var(--term-bg-elevated)',
             border: '1px solid var(--term-border)',
           }}
         >
-          <span
-            className="text-2xl font-light"
+          <Terminal
+            className="w-6 h-6"
             style={{ color: 'var(--term-accent)' }}
+          />
+        </div>
+        <div className="text-center">
+          <span
+            className="block text-sm font-medium mb-1"
+            style={{ color: 'var(--term-text-primary)' }}
           >
-            +
+            Open a terminal
+          </span>
+          <span
+            className="block text-xs"
+            style={{ color: 'var(--term-text-muted)' }}
+          >
+            Create or attach to a session
           </span>
         </div>
-        <span className="text-sm" style={{ color: 'var(--term-text-muted)' }}>
-          Open terminal
-        </span>
       </button>
     </div>
   )
