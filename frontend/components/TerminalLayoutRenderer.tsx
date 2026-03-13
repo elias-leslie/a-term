@@ -12,12 +12,11 @@ export function getLayoutRemountKey(
   layoutMode: LayoutMode,
   terminalSlots: (TerminalSlot | PaneSlot)[],
 ): string {
-  const externalSlotIds = terminalSlots
-    .filter((slot) => slot.type === 'adhoc' && slot.isExternal)
+  const orderedSlotIds = terminalSlots
     .map((slot) => getSlotPanelId(slot))
     .join('|')
 
-  return `${layoutMode}:${externalSlotIds}`
+  return `${layoutMode}:${orderedSlotIds}`
 }
 
 interface TerminalLayoutRendererProps {

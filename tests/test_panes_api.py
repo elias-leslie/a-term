@@ -160,6 +160,43 @@ def test_create_pane_project_without_project_id_returns_400(test_app: TestClient
     assert "project_id" in response.json()["detail"].lower()
 
 
+def test_create_project_pane_passes_requested_agent_tool_slug(test_app: TestClient) -> None:
+    """POST /api/terminal/panes -- project pane forwards agent_tool_slug to storage."""
+    pane = _make_pane(
+        pane_type="project",
+        project_id="proj-1",
+        pane_name="Project Pane",
+        active_mode="codex",
+        sessions=[
+            _make_session_in_pane(mode="shell", name="Shell"),
+            _make_session_in_pane(mode="codex", name="Codex"),
+        ],
+    )
+    with patch(
+        "terminal.api.panes.pane_crud.create_pane_with_sessions",
+        return_value=pane,
+    ) as create_mock:
+        response = test_app.post(
+            "/api/terminal/panes",
+            json={
+                "pane_type": "project",
+                "pane_name": "Project Pane",
+                "project_id": "proj-1",
+                "working_dir": "/workspace/proj-1",
+                "agent_tool_slug": "codex",
+            },
+        )
+
+    assert response.status_code == 200
+    create_mock.assert_called_once_with(
+        pane_type="project",
+        pane_name="Project Pane",
+        project_id="proj-1",
+        working_dir="/workspace/proj-1",
+        agent_tool_slug="codex",
+    )
+
+
 # ---------------------------------------------------------------------------
 # Get pane
 # ---------------------------------------------------------------------------
@@ -257,6 +294,30 @@ def test_update_project_pane_accepts_existing_mode(test_app: TestClient) -> None
     # Assert
     assert response.status_code == 200
     assert response.json()["active_mode"] == "claude"
+
+
+# ---------------------------------------------------------------------------
+# Swap panes
+# ---------------------------------------------------------------------------
+
+
+def test_swap_panes_uses_static_route_before_pane_id(test_app: TestClient) -> None:
+    """POST /api/terminal/panes/swap -- resolves the static route instead of {pane_id}."""
+    pane_id_a = str(uuid.uuid4())
+    pane_id_b = str(uuid.uuid4())
+    with patch("terminal.api.panes.pane_crud.swap_pane_positions", return_value=True) as swap_mock:
+        response = test_app.post(
+            "/api/terminal/panes/swap",
+            json={"pane_id_a": pane_id_a, "pane_id_b": pane_id_b},
+        )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "swapped": True,
+        "pane_id_a": pane_id_a,
+        "pane_id_b": pane_id_b,
+    }
+    swap_mock.assert_called_once_with(pane_id_a, pane_id_b)
 
 
 # ---------------------------------------------------------------------------

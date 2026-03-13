@@ -84,6 +84,8 @@ async def create_pane(request: Request, body: CreatePaneRequest) -> PaneResponse
     For adhoc panes: creates shell session only.
     """
     validate_create_pane_request(body.pane_type, body.project_id)
+    if body.agent_tool_slug is not None:
+        _validate_agent_tool(body.agent_tool_slug)
 
     try:
         pane = pane_crud.create_pane_with_sessions(
@@ -91,6 +93,7 @@ async def create_pane(request: Request, body: CreatePaneRequest) -> PaneResponse
             pane_name=body.pane_name,
             project_id=body.project_id,
             working_dir=body.working_dir,
+            agent_tool_slug=body.agent_tool_slug,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from None

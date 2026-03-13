@@ -14,6 +14,7 @@ class CreatePaneRequest(BaseModel):
     pane_name: str
     project_id: str | None = None
     working_dir: str | None = None
+    agent_tool_slug: str | None = Field(None, min_length=1, pattern=r"^[a-z0-9_-]+$")
 
 
 class UpdatePaneRequest(BaseModel):

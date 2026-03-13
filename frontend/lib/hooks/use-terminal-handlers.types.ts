@@ -24,6 +24,7 @@ export interface UseTerminalHandlersProps {
     paneName: string,
     projectId: string,
     workingDir?: string,
+    agentToolSlug?: string,
   ) => Promise<TerminalPane>
   createAdHocPane: (paneName: string, workingDir?: string) => Promise<TerminalPane>
   setActiveMode: (

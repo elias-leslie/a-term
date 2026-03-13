@@ -45,6 +45,7 @@ export async function addProjectPaneAction(
     paneName: string,
     projectId: string,
     workingDir?: string,
+    agentToolSlug?: string,
   ) => Promise<TerminalPane>,
   navigateToSession: (sessionId: string) => void,
   startAgent: (sessionId: string) => Promise<boolean>,
@@ -65,6 +66,7 @@ export async function addProjectPaneAction(
       paneName,
       targetProjectId,
       workingDir ?? undefined,
+      mode !== 'shell' ? mode : undefined,
     )
 
     const targetSession = findSessionByMode(newPane, mode)

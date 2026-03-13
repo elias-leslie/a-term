@@ -2,7 +2,7 @@
 
 import { clsx } from 'clsx'
 import { ArrowLeftRight, ChevronDown } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState, type DragEvent } from 'react'
 import { useClickOutside } from '@/lib/hooks/use-click-outside'
 import {
   getSlotName,
@@ -35,9 +35,11 @@ export function PaneSwapDropdown({
   isMobile = false,
 }: PaneSwapDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [isDragTarget, setIsDragTarget] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const currentName = getSlotName(currentSlot)
   const currentId = getSlotPanelId(currentSlot)
+  const dragMimeType = 'application/x-terminal-pane-slot'
 
   // Other slots to show in dropdown (exclude current)
   const otherSlots = allSlots.filter((s) => getSlotPanelId(s) !== currentId)
@@ -45,6 +47,56 @@ export function PaneSwapDropdown({
   const closeDropdown = useCallback(() => setIsOpen(false), [])
   const clickOutsideRefs = useMemo(() => [dropdownRef], [])
   useClickOutside(clickOutsideRefs, closeDropdown, isOpen)
+
+  const readDraggedSlotId = useCallback(
+    (event: React.DragEvent<HTMLElement>) =>
+      event.dataTransfer?.getData(dragMimeType) ?? '',
+    [],
+  )
+
+  const handleDragStart = useCallback(
+    (event: DragEvent<HTMLButtonElement>) => {
+      if (isMobile) return
+      event.dataTransfer.effectAllowed = 'move'
+      event.dataTransfer.setData(dragMimeType, currentId)
+    },
+    [currentId, isMobile],
+  )
+
+  const handleDragEnd = useCallback(() => {
+    setIsDragTarget(false)
+  }, [])
+
+  const handleDragOver = useCallback(
+    (event: DragEvent<HTMLButtonElement>) => {
+      const draggedSlotId = readDraggedSlotId(event)
+      if (!draggedSlotId || draggedSlotId === currentId) return
+      event.preventDefault()
+      event.dataTransfer.dropEffect = 'move'
+      setIsDragTarget(true)
+    },
+    [currentId, readDraggedSlotId],
+  )
+
+  const handleDragLeave = useCallback(
+    (event: DragEvent<HTMLButtonElement>) => {
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+        setIsDragTarget(false)
+      }
+    },
+    [],
+  )
+
+  const handleDrop = useCallback(
+    (event: DragEvent<HTMLButtonElement>) => {
+      const draggedSlotId = readDraggedSlotId(event)
+      setIsDragTarget(false)
+      if (!draggedSlotId || draggedSlotId === currentId) return
+      event.preventDefault()
+      onSwapWith(draggedSlotId)
+    },
+    [currentId, onSwapWith, readDraggedSlotId],
+  )
 
   // Don't show dropdown if there's nothing to swap with
   if (otherSlots.length === 0) {
@@ -65,14 +117,21 @@ export function PaneSwapDropdown({
       <button
         data-testid="pane-swap-dropdown"
         onClick={() => setIsOpen(!isOpen)}
+        draggable={!isMobile}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         className={clsx(
           'flex items-center gap-1 px-1.5 py-0.5 rounded text-xs truncate max-w-[140px] transition-all duration-150',
           'hover:bg-[var(--term-bg-elevated)]',
+          isDragTarget && 'ring-1 ring-[var(--term-accent)] bg-[var(--term-bg-elevated)]',
         )}
         style={{
           color: 'var(--term-text-primary)',
         }}
-        title={`${currentName} (click to swap position)`}
+        title={`${currentName} (click to swap position${isMobile ? '' : ' or drag to another pane'})`}
         aria-label={`Swap ${currentName} with another pane`}
         aria-haspopup="menu"
         aria-expanded={isOpen}

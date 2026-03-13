@@ -143,11 +143,10 @@ export function useProjectModeSwitch({
           return
         }
 
-        // Start the agent if needed after a shell -> agent toggle.
-        if (mode !== 'shell' && !isAgentToAgentSwitch) {
-          const agentState = projectSessions.find(
-            (s) => s.id === targetSession.id,
-          )?.claude_state
+        if (mode !== 'shell') {
+          const agentState =
+            targetSession.claude_state ??
+            projectSessions.find((s) => s.id === targetSession.id)?.claude_state
           const needsAgentStart =
             agentState !== 'running' && agentState !== 'starting'
 

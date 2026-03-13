@@ -71,8 +71,19 @@ export function useTerminalPanes() {
   const layoutMutation = useMutation({ mutationFn: api.updateAllLayouts })
 
   const createProjectPane = useCallback(
-    (name: string, projectId: string, workingDir?: string) =>
-      createMutation.mutateAsync({ pane_type: 'project', pane_name: name, project_id: projectId, working_dir: workingDir }),
+    (
+      name: string,
+      projectId: string,
+      workingDir?: string,
+      agentToolSlug?: string,
+    ) =>
+      createMutation.mutateAsync({
+        pane_type: 'project',
+        pane_name: name,
+        project_id: projectId,
+        working_dir: workingDir,
+        agent_tool_slug: agentToolSlug,
+      }),
     [createMutation]
   )
 

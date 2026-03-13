@@ -40,6 +40,7 @@ export interface CreatePaneRequest {
   pane_name: string
   project_id?: string
   working_dir?: string
+  agent_tool_slug?: string
 }
 
 export interface UpdatePaneRequest {
