@@ -14,7 +14,7 @@ SummitFlow Terminal provides browser-accessible terminal sessions backed by tmux
 | Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4 |
 | Terminal | xterm.js 6 (rendering), tmux (session persistence) |
 | Database | PostgreSQL (shared with SummitFlow) |
-| Quality | Ruff, Mypy, pytest, Vitest, Biome |
+| Quality | Ruff, Ty, pytest, Vitest, Biome |
 
 ## Architecture
 
@@ -105,10 +105,14 @@ npm run dev
 
 ### Environment
 
-Database URL is read from `~/.env.local`:
+Runtime settings are read from `~/.env.local` by default. Use
+[`.env.example`](.env.example) as the placeholder reference for local setup.
+Only `DATABASE_URL` is required; the rest are optional overrides.
 
-```
+```bash
 DATABASE_URL=postgresql://user:pass@localhost/summitflow
+SUMMITFLOW_API_BASE=http://localhost:8001/api
+LOG_LEVEL=INFO
 MAINTENANCE_INTERVAL_SECONDS=900
 MAINTENANCE_SESSION_PURGE_DAYS=7
 UPLOAD_MAX_AGE_SECONDS=86400
@@ -168,4 +172,16 @@ scripts/shutdown.sh   # Stop services
 
 ## License
 
-MIT
+Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+## Security
+
+Please report suspected vulnerabilities privately as described in
+[SECURITY.md](SECURITY.md).
+
+## Commercial
+
+Commercial use is permitted under the Apache 2.0 license.
+
+For commercial support, custom work, partnership discussions, or private
+licensing for future versions, contact `summitflow42@gmail.com`.
