@@ -11,7 +11,9 @@ import {
   type TerminalSlot,
 } from '@/lib/utils/slot'
 import {
+  clearDraggedPaneSlotId,
   getDraggedPaneSlotId,
+  isPaneSwapDragEvent,
   setDraggedPaneSlotId,
 } from '@/lib/utils/pane-swap-dnd'
 
@@ -66,11 +68,13 @@ export function PaneSwapDropdown({
   )
 
   const handleDragEnd = useCallback(() => {
+    clearDraggedPaneSlotId()
     setIsDragTarget(false)
   }, [])
 
   const handleDragOver = useCallback(
     (event: DragEvent<HTMLButtonElement>) => {
+      if (!isPaneSwapDragEvent(event)) return
       const draggedSlotId = readDraggedSlotId(event)
       if (!draggedSlotId || draggedSlotId === currentId) return
       event.preventDefault()
@@ -92,6 +96,7 @@ export function PaneSwapDropdown({
   const handleDrop = useCallback(
     (event: DragEvent<HTMLButtonElement>) => {
       const draggedSlotId = readDraggedSlotId(event)
+      clearDraggedPaneSlotId()
       setIsDragTarget(false)
       if (!draggedSlotId || draggedSlotId === currentId) return
       event.preventDefault()

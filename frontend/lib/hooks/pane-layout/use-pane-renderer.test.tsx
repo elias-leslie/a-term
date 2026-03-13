@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { usePaneRenderer } from './use-pane-renderer'
 import type { PaneSlot } from '@/lib/utils/slot'
@@ -24,8 +24,10 @@ vi.mock('@/components/UnifiedTerminalHeader', () => ({
 
 function RenderHarness({
   slots,
+  onSwapPanes,
 }: {
   slots: PaneSlot[]
+  onSwapPanes?: (slotIdA: string, slotIdB: string) => void
 }) {
   const renderPane = usePaneRenderer({
     props: {
@@ -59,6 +61,7 @@ function RenderHarness({
         brightCyan: '#11ffff',
         brightWhite: '#f5f5f5',
       },
+      onSwapPanes,
     },
     displaySlots: slots,
     paneCount: slots.length,
@@ -108,5 +111,49 @@ describe('usePaneRenderer', () => {
       { sessionId: 'session-1', isVisible: undefined },
       { sessionId: 'session-2', isVisible: undefined },
     ])
+  })
+
+  it('swaps panes when a dragged pane is dropped anywhere on another pane', () => {
+    const onSwapPanes = vi.fn()
+    const slots: PaneSlot[] = [
+      {
+        type: 'project',
+        paneId: 'pane-1',
+        projectId: 'project-1',
+        projectName: 'Project 1',
+        rootPath: '/tmp/project-1',
+        activeMode: 'shell',
+        activeSessionId: 'session-1',
+        sessionBadge: null,
+      },
+      {
+        type: 'project',
+        paneId: 'pane-2',
+        projectId: 'project-2',
+        projectName: 'Project 2',
+        rootPath: '/tmp/project-2',
+        activeMode: 'shell',
+        activeSessionId: 'session-2',
+        sessionBadge: null,
+      },
+    ]
+
+    render(<RenderHarness slots={slots} onSwapPanes={onSwapPanes} />)
+
+    const paneTarget = screen.getByTestId('pane-drop-target-pane-2')
+    const dataTransfer = {
+      types: ['application/x-terminal-pane-slot', 'text/plain'],
+      effectAllowed: 'move',
+      dropEffect: 'move',
+      getData: (type: string) =>
+        type === 'application/x-terminal-pane-slot' || type === 'text/plain'
+          ? 'pane-1'
+          : '',
+    }
+
+    fireEvent.dragOver(paneTarget, { dataTransfer })
+    fireEvent.drop(paneTarget, { dataTransfer })
+
+    expect(onSwapPanes).toHaveBeenCalledWith('pane-2', 'pane-1')
   })
 })

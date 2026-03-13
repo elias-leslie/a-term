@@ -1,10 +1,16 @@
-import { useCallback } from 'react'
+import { useCallback, useState, type DragEvent } from 'react'
+import { clsx } from 'clsx'
 import type { PaneSlot, TerminalSlot } from '@/lib/utils/slot'
 import {
   getSlotSessionId,
   getSlotWorkingDir,
   getSlotPanelId,
 } from '@/lib/utils/slot'
+import {
+  clearDraggedPaneSlotId,
+  getDraggedPaneSlotId,
+  isPaneSwapDragEvent,
+} from '@/lib/utils/pane-swap-dnd'
 import { TerminalComponent } from '@/components/Terminal'
 import { UnifiedTerminalHeader } from '@/components/UnifiedTerminalHeader'
 import type { ResizablePaneLayoutProps } from '@/types/pane-layout'
@@ -77,16 +83,54 @@ export function usePaneRenderer({
     onLayoutModeChange,
     terminalStatuses,
   } = props
+  const [dragTargetPanelId, setDragTargetPanelId] = useState<string | null>(null)
 
   const renderPane = useCallback(
     (slot: TerminalSlot | PaneSlot, _index: number) => {
       const sessionId = getSlotSessionId(slot)
       const workingDir = getSlotWorkingDir(slot)
       const panelId = getSlotPanelId(slot)
+      const canSwapByDrop = !!onSwapPanes && paneCount > 1
+      const isDragTarget = dragTargetPanelId === panelId
+
+      const handlePaneDragOver = (event: DragEvent<HTMLDivElement>) => {
+        if (!canSwapByDrop) return
+        if (!isPaneSwapDragEvent(event)) return
+        const draggedSlotId = getDraggedPaneSlotId(event)
+        if (!draggedSlotId || draggedSlotId === panelId) return
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'move'
+        setDragTargetPanelId(panelId)
+      }
+
+      const handlePaneDragLeave = (event: DragEvent<HTMLDivElement>) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setDragTargetPanelId((currentId) =>
+            currentId === panelId ? null : currentId,
+          )
+        }
+      }
+
+      const handlePaneDrop = (event: DragEvent<HTMLDivElement>) => {
+        if (!canSwapByDrop || !onSwapPanes) return
+        const draggedSlotId = getDraggedPaneSlotId(event)
+        clearDraggedPaneSlotId()
+        setDragTargetPanelId(null)
+        if (!draggedSlotId || draggedSlotId === panelId) return
+        event.preventDefault()
+        onSwapPanes(panelId, draggedSlotId)
+      }
 
       return (
         <div
-          className="flex flex-col h-full min-h-0 overflow-hidden rounded-md"
+          data-testid={`pane-drop-target-${panelId}`}
+          onDragOver={handlePaneDragOver}
+          onDragLeave={handlePaneDragLeave}
+          onDrop={handlePaneDrop}
+          className={clsx(
+            'flex flex-col h-full min-h-0 overflow-hidden rounded-md transition-colors duration-150',
+            isDragTarget && 'ring-1 ring-[var(--term-accent)]',
+          )}
           style={{
             backgroundColor: 'var(--term-bg-surface)',
             border: '1px solid var(--term-border)',
@@ -187,6 +231,7 @@ export function usePaneRenderer({
       availableLayouts,
       onLayoutModeChange,
       terminalStatuses,
+      dragTargetPanelId,
     ],
   )
 

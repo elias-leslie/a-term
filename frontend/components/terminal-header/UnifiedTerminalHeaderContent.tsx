@@ -7,7 +7,9 @@ import { useAgentTools } from '@/lib/hooks/use-agent-tools'
 import { LayoutModeButtons } from '@/components/LayoutModeButton'
 import { getSlotName, getSlotPanelId } from '@/lib/utils/slot'
 import {
+  clearDraggedPaneSlotId,
   getDraggedPaneSlotId,
+  isPaneSwapDragEvent,
   setDraggedPaneSlotId,
 } from '@/lib/utils/pane-swap-dnd'
 import { ModeToggle } from '../ModeToggle'
@@ -65,12 +67,14 @@ export const UnifiedTerminalHeaderContent = memo(
     )
 
     const handleDragEnd = useCallback(() => {
+      clearDraggedPaneSlotId()
       setIsDragTarget(false)
     }, [])
 
     const handleDragOver = useCallback(
       (event: DragEvent<HTMLDivElement>) => {
         if (!canSwapByDrag) return
+        if (!isPaneSwapDragEvent(event)) return
         const draggedSlotId = getDraggedPaneSlotId(event)
         if (!draggedSlotId || draggedSlotId === slotId) return
         event.preventDefault()
@@ -93,6 +97,7 @@ export const UnifiedTerminalHeaderContent = memo(
       (event: DragEvent<HTMLDivElement>) => {
         if (!canSwapByDrag || !onSwapWith) return
         const draggedSlotId = getDraggedPaneSlotId(event)
+        clearDraggedPaneSlotId()
         setIsDragTarget(false)
         if (!draggedSlotId || draggedSlotId === slotId) return
         event.preventDefault()
