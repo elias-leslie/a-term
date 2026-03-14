@@ -1,15 +1,22 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Router DNS Override for *.summitflow.dev → LAN (192.168.8.233)
+# Router DNS Override for *.summitflow.dev → LAN
 #
 # Run with: bash ~/terminal/scripts/setup-router-dns.sh
 #
 # Prerequisites:
-#   - SSH access to router (root@192.168.8.1)
+#   - SSH access to router (root@$ROUTER_IP)
 #   - Run setup-caddy-lan-proxy.sh first
+#
+# Environment variables (with defaults):
+#   LAN_IP      — LAN address of this machine (default: 192.168.1.100)
+#   ROUTER_IP   — Router address (default: 192.168.1.1)
 # =============================================================================
 
 set -euo pipefail
+
+LAN_IP="${LAN_IP:-192.168.1.100}"
+ROUTER_IP="${ROUTER_IP:-192.168.1.1}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -21,16 +28,15 @@ warn()  { echo -e "${YELLOW}[WARN]${NC} $*"; }
 error() { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 
 ROUTER="router"
-LAN_IP="192.168.8.233"
 
 # ─── Step 1: Ensure SSH config for router ────────────────────────────────────
 
 if ! grep -q 'Host router' ~/.ssh/config 2>/dev/null; then
     info "Adding router to ~/.ssh/config..."
-    cat >> ~/.ssh/config << 'SSH'
+    cat >> ~/.ssh/config << SSH
 
 Host router glinet
-  HostName 192.168.8.1
+  HostName $ROUTER_IP
   User root
   IdentityFile ~/.ssh/id_ed25519
   IdentitiesOnly yes
@@ -46,12 +52,12 @@ info "Testing SSH access to router..."
 if ! ssh -o ConnectTimeout=5 -o BatchMode=yes "$ROUTER" 'echo ok' &>/dev/null; then
     echo ""
     warn "Cannot connect to router with key-based auth."
-    echo "  Run: ssh-copy-id -i ~/.ssh/id_ed25519.pub root@192.168.8.1"
+    echo "  Run: ssh-copy-id -i ~/.ssh/id_ed25519.pub root@$ROUTER_IP"
     echo "  Then re-run this script."
     echo ""
     read -rp "Try ssh-copy-id now? [y/N] " COPY
     if [[ "$COPY" =~ ^[Yy] ]]; then
-        ssh-copy-id -i ~/.ssh/id_ed25519.pub root@192.168.8.1
+        ssh-copy-id -i ~/.ssh/id_ed25519.pub root@"$ROUTER_IP"
     else
         error "SSH access required. Set up key auth first."
     fi
@@ -104,7 +110,7 @@ if echo "$DHCP_OPTION" | grep -qE '6,.*208\.67|6,.*1\.1\.1|6,.*8\.8\.8'; then
     warn "DHCP is pushing external DNS directly to clients!"
     warn "This bypasses dnsmasq. Clients won't see our override."
     echo ""
-    echo "  Fix: Remove dhcp_option 6 so router (192.168.8.1) is the DNS server."
+    echo "  Fix: Remove dhcp_option 6 so router ($ROUTER_IP) is the DNS server."
     echo "  The router's dnsmasq will forward to upstream DNS for non-overridden domains."
     echo ""
     read -rp "  Fix DHCP DNS config now? [y/N] " FIX

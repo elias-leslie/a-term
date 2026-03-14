@@ -6,7 +6,7 @@
 # IP config and rebuilds from scratch on each bounce. Windows keeps its
 # IP stack active through brief carrier loss — this makes Linux do the same.
 #
-# This only affects eno1 (static IP 192.168.8.233). Since the IP is manually
+# This only affects eno1 (static LAN IP via $LAN_IP). Since the IP is manually
 # configured, there's no reason to re-negotiate on brief link drops.
 
 set -euo pipefail

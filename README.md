@@ -184,4 +184,5 @@ Please report suspected vulnerabilities privately as described in
 Commercial use is permitted under the Apache 2.0 license.
 
 For commercial support, custom work, partnership discussions, or private
-licensing for future versions, contact `summitflow42@gmail.com`.
+licensing for future versions, start a thread in
+[GitHub Discussions](https://github.com/summitflow-solutions/terminal/discussions).

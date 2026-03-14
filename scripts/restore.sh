@@ -14,7 +14,7 @@
 # Sources (checked in order):
 #   1. Local: ~/terminal/backups/
 #   2. Pending: ~/.local/share/backup-pending/
-#   3. SMB: //192.168.8.128/davion-gem/project-backups/terminal/
+#   3. SMB: //$SMB_HOST/$SMB_SHARE/project-backups/terminal/
 #
 # Database: Restores terminal-specific tables to shared summitflow DB:
 #   - terminal_sessions
