@@ -45,6 +45,7 @@ TERMINAL_DB_USER="summitflow_app"
 # Parse arguments
 RESTORE_MODE=""
 TARGET_FILE=""
+TARGET_NAME=""
 DB_ONLY=false
 FILES_ONLY=false
 DRY_RUN=false
@@ -62,6 +63,11 @@ while [[ $# -gt 0 ]]; do
         --file)
             RESTORE_MODE="file"
             TARGET_FILE="$2"
+            shift 2
+            ;;
+        --name)
+            RESTORE_MODE="name"
+            TARGET_NAME="$2"
             shift 2
             ;;
         --db-only)
@@ -83,6 +89,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --list         List available backups (local, pending, SMB)"
             echo "  --latest       Restore from most recent backup"
             echo "  --file <path>  Restore from specific archive file"
+            echo "  --name <file>  Restore a specific archive name from local, pending, or SMB"
             echo "  --db-only      Restore terminal tables only, skip files"
             echo "  --files-only   Restore files only, skip tables"
             echo "  --dry-run      Show what would be restored without doing it"
@@ -113,6 +120,80 @@ cleanup() {
 }
 trap cleanup EXIT
 
+print_archive_preview() {
+    local archive="$1"
+    local limit="${2:-20}"
+    local entry=""
+    local shown=0
+    local omitted=0
+
+    while IFS= read -r entry; do
+        if [ "$shown" -lt "$limit" ]; then
+            echo "$entry"
+            shown=$((shown + 1))
+        else
+            omitted=$((omitted + 1))
+        fi
+    done < <(tar -tzf "$archive")
+
+    if [ "$omitted" -gt 0 ]; then
+        echo "  ... (truncated $omitted more entries)"
+    fi
+}
+
+list_local_backup_paths() {
+    if [ ! -d "$LOCAL_BACKUP_DIR" ]; then
+        return 0
+    fi
+    find "$LOCAL_BACKUP_DIR" -maxdepth 1 -type f -name "${PROJECT_NAME}-*.tar.gz" 2>/dev/null | sort
+}
+
+list_pending_backup_paths() {
+    if [ ! -d "$PENDING_BACKUP_DIR" ]; then
+        return 0
+    fi
+    find "$PENDING_BACKUP_DIR" -maxdepth 1 -type f -name "${PROJECT_NAME}-*.tar.gz" 2>/dev/null | sort
+}
+
+download_remote_backup() {
+    local backup_name="$1"
+    local local_path="$RESTORE_STAGING/$backup_name"
+
+    mkdir -p "$RESTORE_STAGING"
+
+    if smb_download "$backup_name" "$local_path" >&2; then
+        echo "$local_path"
+        return 0
+    fi
+
+    return 1
+}
+
+resolve_backup_by_name() {
+    local backup_name="$1"
+    local local_path="$LOCAL_BACKUP_DIR/$backup_name"
+    local pending_path="$PENDING_BACKUP_DIR/$backup_name"
+
+    if [ -f "$local_path" ]; then
+        echo "$local_path"
+        return 0
+    fi
+
+    if [ -f "$pending_path" ]; then
+        echo "$pending_path"
+        return 0
+    fi
+
+    if [ -f "$CREDENTIALS_FILE" ] && test_smb_connection_quiet; then
+        if smb_list_backups | grep -Fxq "$backup_name"; then
+            download_remote_backup "$backup_name"
+            return $?
+        fi
+    fi
+
+    return 1
+}
+
 # List available backups
 list_backups() {
     echo ""
@@ -124,11 +205,11 @@ list_backups() {
     # Local backups
     echo "LOCAL ($LOCAL_BACKUP_DIR/):"
     if [ -d "$LOCAL_BACKUP_DIR" ]; then
-        local local_backups=$(ls -1t "$LOCAL_BACKUP_DIR"/*.tar.gz 2>/dev/null || true)
+        local local_backups
+        local_backups=$(list_local_backup_paths || true)
         if [ -n "$local_backups" ]; then
             echo "$local_backups" | while read f; do
                 local size=$(du -h "$f" | cut -f1)
-                local date=$(basename "$f" | sed "s/${PROJECT_NAME}-\([0-9-]*\)\.tar\.gz/\1/")
                 echo "  $(basename "$f")  ($size)"
             done
         else
@@ -142,7 +223,8 @@ list_backups() {
     # Pending backups
     echo "PENDING ($PENDING_BACKUP_DIR/):"
     if [ -d "$PENDING_BACKUP_DIR" ]; then
-        local pending_backups=$(ls -1t "$PENDING_BACKUP_DIR"/*.tar.gz 2>/dev/null || true)
+        local pending_backups
+        pending_backups=$(list_pending_backup_paths || true)
         if [ -n "$pending_backups" ]; then
             echo "$pending_backups" | while read f; do
                 local size=$(du -h "$f" | cut -f1)
@@ -170,34 +252,21 @@ list_backups() {
 
 # Find latest backup across all sources
 find_latest_backup() {
-    local latest=""
-    local latest_time=0
+    local local_latest pending_latest smb_latest latest_name
 
-    # Check local
-    if [ -d "$LOCAL_BACKUP_DIR" ]; then
-        local local_latest=$(ls -1t "$LOCAL_BACKUP_DIR"/*.tar.gz 2>/dev/null | head -1)
-        if [ -n "$local_latest" ] && [ -f "$local_latest" ]; then
-            local mtime=$(stat -c %Y "$local_latest" 2>/dev/null || stat -f %m "$local_latest" 2>/dev/null)
-            if [ "$mtime" -gt "$latest_time" ]; then
-                latest="$local_latest"
-                latest_time="$mtime"
-            fi
-        fi
+    read -r local_latest < <(list_local_backup_paths | sed 's|.*/||' | tail -1) || true
+    read -r pending_latest < <(list_pending_backup_paths | sed 's|.*/||' | tail -1) || true
+
+    if [ -f "$CREDENTIALS_FILE" ] && test_smb_connection_quiet; then
+        read -r smb_latest < <(smb_list_backups | tail -1) || true
     fi
 
-    # Check pending
-    if [ -d "$PENDING_BACKUP_DIR" ]; then
-        local pending_latest=$(ls -1t "$PENDING_BACKUP_DIR"/*.tar.gz 2>/dev/null | head -1)
-        if [ -n "$pending_latest" ] && [ -f "$pending_latest" ]; then
-            local mtime=$(stat -c %Y "$pending_latest" 2>/dev/null || stat -f %m "$pending_latest" 2>/dev/null)
-            if [ "$mtime" -gt "$latest_time" ]; then
-                latest="$pending_latest"
-                latest_time="$mtime"
-            fi
-        fi
+    latest_name=$(printf '%s\n%s\n%s\n' "$local_latest" "$pending_latest" "$smb_latest" | grep -v '^$' | sort | tail -1)
+    if [ -z "$latest_name" ]; then
+        return 0
     fi
 
-    echo "$latest"
+    resolve_backup_by_name "$latest_name"
 }
 
 # Verify archive contents
@@ -212,12 +281,12 @@ verify_archive() {
     fi
 
     # Check for expected components
-    local has_terminal=$(tar -tzf "$archive" | grep -c "${PROJECT_NAME}/terminal/" || true)
-    local has_frontend=$(tar -tzf "$archive" | grep -c "${PROJECT_NAME}/frontend/" || true)
-    local has_scripts=$(tar -tzf "$archive" | grep -c "${PROJECT_NAME}/scripts/" || true)
+    local has_project=$(tar -tzf "$archive" | grep -Ec "${PROJECT_NAME}/(\\./)?(api/|services/|storage/|pyproject\\.toml|main\\.py|terminal/)" || true)
+    local has_frontend=$(tar -tzf "$archive" | grep -Ec "${PROJECT_NAME}/(\\./)?frontend/" || true)
+    local has_scripts=$(tar -tzf "$archive" | grep -Ec "${PROJECT_NAME}/(\\./)?scripts/" || true)
     local has_db=$(tar -tzf "$archive" | grep -c "terminal_tables.sql.gz" || true)
 
-    echo "  Terminal backend: $([ "$has_terminal" -gt 0 ] && echo "✓" || echo "✗")"
+    echo "  Project code: $([ "$has_project" -gt 0 ] && echo "✓" || echo "✗")"
     echo "  Frontend code: $([ "$has_frontend" -gt 0 ] && echo "✓" || echo "✗")"
     echo "  Scripts: $([ "$has_scripts" -gt 0 ] && echo "✓" || echo "✗")"
     echo "  Table dump: $([ "$has_db" -gt 0 ] && echo "✓" || echo "✗")"
@@ -286,20 +355,25 @@ restore_tables() {
 restore_files() {
     local archive="$1"
     local staging="$2"
+    local restore_root="$staging/${PROJECT_NAME}"
 
     log "Restoring files..."
 
     if [ "$DRY_RUN" = true ]; then
         log_info "[DRY RUN] Would restore files from: $archive"
         log_info "[DRY RUN] Files to restore:"
-        tar -tzf "$archive" | head -20
-        echo "  ... (truncated)"
+        print_archive_preview "$archive" 20
         return 0
     fi
 
     # Extract to staging
     log "Extracting archive..."
     tar -xzf "$archive" -C "$staging"
+
+    if [ ! -d "$restore_root" ]; then
+        log_error "Archive does not contain project files for $PROJECT_NAME"
+        return 1
+    fi
 
     # Stop services
     log "Stopping services..."
@@ -309,40 +383,19 @@ restore_files() {
     local pre_restore_backup="$PROJECT_DIR/backups/.pre-restore-$(date +%Y%m%d-%H%M%S)"
     mkdir -p "$pre_restore_backup"
 
-    # Restore terminal backend (excluding venv)
-    if [ -d "$staging/${PROJECT_NAME}/terminal" ]; then
-        log "Restoring terminal backend..."
-        rsync -a --delete \
-            --exclude='__pycache__' \
-            --exclude='.pytest_cache' \
-            --exclude='.mypy_cache' \
-            --exclude='.ruff_cache' \
-            "$staging/${PROJECT_NAME}/terminal/" "$PROJECT_DIR/terminal/"
-    fi
-
-    # Restore frontend (excluding node_modules and .next)
-    if [ -d "$staging/${PROJECT_NAME}/frontend" ]; then
-        log "Restoring frontend..."
-        rsync -a --delete \
-            --exclude='node_modules' \
-            --exclude='.next' \
-            "$staging/${PROJECT_NAME}/frontend/" "$PROJECT_DIR/frontend/"
-    fi
-
-    # Restore other directories
-    for dir in scripts; do
-        if [ -d "$staging/${PROJECT_NAME}/$dir" ]; then
-            log "Restoring $dir..."
-            rsync -a "$staging/${PROJECT_NAME}/$dir/" "$PROJECT_DIR/$dir/"
-        fi
-    done
-
-    # Restore root files
-    for file in CLAUDE.md pyproject.toml; do
-        if [ -f "$staging/${PROJECT_NAME}/$file" ]; then
-            cp "$staging/${PROJECT_NAME}/$file" "$PROJECT_DIR/$file"
-        fi
-    done
+    log "Restoring project files..."
+    rsync -a --delete \
+        --exclude='.git' \
+        --exclude='backups' \
+        --exclude='.venv' \
+        --exclude='frontend/node_modules' \
+        --exclude='frontend/.next' \
+        --exclude='node_modules' \
+        --exclude='__pycache__' \
+        --exclude='.pytest_cache' \
+        --exclude='.mypy_cache' \
+        --exclude='.ruff_cache' \
+        "$restore_root/" "$PROJECT_DIR/"
 
     log_success "Files restored successfully"
 
@@ -449,8 +502,21 @@ case "$RESTORE_MODE" in
         fi
         do_restore "$TARGET_FILE"
         ;;
+    name)
+        if [ -z "$TARGET_NAME" ]; then
+            log_error "No archive name specified"
+            exit 1
+        fi
+        archive=$(resolve_backup_by_name "$TARGET_NAME")
+        if [ -z "$archive" ]; then
+            log_error "Backup not found: $TARGET_NAME"
+            exit 1
+        fi
+        log "Resolved backup: $archive"
+        do_restore "$archive"
+        ;;
     *)
-        echo "Usage: $0 --list | --latest | --file <archive>"
+        echo "Usage: $0 --list | --latest | --file <archive> | --name <archive-name>"
         echo ""
         echo "Run '$0 --help' for more options"
         exit 1
