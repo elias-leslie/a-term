@@ -2,6 +2,8 @@
 
 Web-based terminal service with tmux-backed persistent sessions, multi-pane layouts, configurable CLI agent integrations, and a built-in maintenance loop.
 
+**Terminal is a standalone product.** It starts and runs independently — no other SummitFlow service is required. SummitFlow and Agent Hub integrations are optional and degrade gracefully when unavailable.
+
 ## Overview
 
 SummitFlow Terminal provides browser-accessible terminal sessions backed by tmux for persistence. It supports multiple panes with split layouts, project-scoped working directories, and dual-mode operation (shell plus the configured default agent tool). Sessions survive browser disconnects, are reconciled with tmux state on startup and on a recurring maintenance interval, and expose maintenance status through `/health`.
@@ -13,7 +15,7 @@ SummitFlow Terminal provides browser-accessible terminal sessions backed by tmux
 | Backend | FastAPI, Python 3.13+, Uvicorn |
 | Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4 |
 | Terminal | xterm.js 6 (rendering), tmux (session persistence) |
-| Database | PostgreSQL (shared with SummitFlow) |
+| Database | PostgreSQL (own schema; can be a dedicated database) |
 | Quality | Ruff, Ty, pytest, Vitest, Biome |
 
 ## Architecture
@@ -64,6 +66,28 @@ terminal/
 - **Scrollback capture** - Retrieves terminal history when reconnecting
 - **Real-time resize** - Terminal dimensions sync between browser and tmux
 
+## Standalone Usage and Optional Integrations
+
+Terminal requires only PostgreSQL and tmux. It has no hard dependency on any other service.
+
+### Standalone (default)
+
+All core features work without SummitFlow or Agent Hub: persistent tmux sessions, multi-pane layouts, shell/agent mode switching, project settings, maintenance, and the full REST/WebSocket API. When no external service is reachable, the project list is populated from local `terminal_project_settings` only.
+
+### Optional: SummitFlow API (`SUMMITFLOW_API_BASE`)
+
+When the SummitFlow backend is available at `SUMMITFLOW_API_BASE` (default `http://localhost:8001/api`), Terminal fetches project metadata (name, root path) and merges it with local terminal settings. This enriches the project list and enables features like opening terminals in project-specific working directories by name. If the SummitFlow API is unreachable, the client returns an empty list and Terminal continues with local data only (`summitflow_client.py` catches all connection/timeout errors).
+
+### Optional: Agent Hub (`NEXT_PUBLIC_AGENT_HUB_URL`)
+
+When `NEXT_PUBLIC_AGENT_HUB_URL` is set (default port 8003), the frontend gains:
+
+- **Model catalog** — fetches available Claude models from Agent Hub's `/api/models` endpoint for the model-switcher control bar. Falls back to a built-in Haiku/Sonnet/Opus list when unavailable.
+- **Voice transcription** — connects to Agent Hub's voice WebSocket (`/api/voice/ws`) for speech-to-text input via `@agent-hub/passport-client`. Disabled when Agent Hub is unreachable.
+- **Prompt cleaning** — uses the model catalog to select a model for cleaning voice-transcribed prompts before sending to the terminal.
+
+All Agent Hub features are guarded by the environment variable and fail gracefully.
+
 ## Ports
 
 | Service | Port |
@@ -110,8 +134,14 @@ Runtime settings are read from `~/.env.local` by default. Use
 Only `DATABASE_URL` is required; the rest are optional overrides.
 
 ```bash
-DATABASE_URL=postgresql://user:pass@localhost/summitflow
-SUMMITFLOW_API_BASE=http://localhost:8001/api
+# Required
+DATABASE_URL=postgresql://user:pass@localhost/terminal
+
+# Optional integrations (Terminal works without these)
+SUMMITFLOW_API_BASE=http://localhost:8001/api       # SummitFlow project metadata
+NEXT_PUBLIC_AGENT_HUB_URL=http://localhost:8003     # Agent Hub models + voice
+
+# Optional tuning
 LOG_LEVEL=INFO
 MAINTENANCE_INTERVAL_SECONDS=900
 MAINTENANCE_SESSION_PURGE_DAYS=7
@@ -136,7 +166,7 @@ UPLOAD_MAX_AGE_SECONDS=86400
 | POST | `/api/terminal/panes` | Create pane (max 6) |
 | PATCH | `/api/terminal/panes/{id}` | Update pane |
 | DELETE | `/api/terminal/panes/{id}` | Delete pane |
-| GET | `/api/terminal/projects` | List project settings merged with SummitFlow projects |
+| GET | `/api/terminal/projects` | List project settings (merged with SummitFlow projects when available) |
 | PUT | `/api/terminal/project-settings/{id}` | Update project settings |
 | PUT | `/api/terminal/projects/{id}/mode` | Set shell/agent mode |
 | POST | `/api/terminal/projects/{id}/reset` | Reset project sessions |
