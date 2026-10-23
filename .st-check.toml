@@ -1,0 +1,15 @@
+# Archived: the code moved to Aico (github.com/elias-leslie/aico, under web/),
+# where its checks run. Here only the secret scan and the pointer README remain.
+[native]
+schema_version = 1
+locks = ["uv.lock"]
+legacy_tools = ["security"]
+
+[native.tools]
+grep = "/usr/bin/grep"
+
+[[native.stages]]
+id = "pointer-readme"
+kind = "check"
+coverage = "full"
+argv = ["grep", "-q", "github.com/elias-leslie/aico", "README.md"]
